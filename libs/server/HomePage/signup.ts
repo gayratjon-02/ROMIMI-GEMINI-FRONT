@@ -13,10 +13,16 @@ import {
 
 // Re-export for convenience
 export { AuthApiError } from "@/libs/components/types/config";
-export type { ApiError, AuthResponse, LoginData, RegisterData, UserInfo } from "@/libs/types/signup/signup.input";
+export type {
+  ApiError,
+  AuthResponse,
+  LoginData,
+  RegisterData,
+  UserInfo,
+} from "@/libs/types/signup/signup.input";
 
 // API Configuration
-const API_URL = API_URL_NEXT || "http://167.172.90.235:5031";
+const API_URL = API_URL_NEXT;
 const API_BASE = `${API_URL}/api`;
 
 export async function signup(data: RegisterData): Promise<AuthResponse> {
@@ -88,15 +94,11 @@ export async function login(data: LoginData): Promise<AuthResponse> {
     }
 
     // Network or other errors
-    throw new AuthApiError(
-      500,
-      [Messages.CONNECTION_ERROR],
-      {
-        statusCode: 500,
-        message: Messages.NETWORK_ERROR,
-        error: Messages.INTERNAL_SERVER_ERROR,
-      },
-    );
+    throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+      statusCode: 500,
+      message: Messages.NETWORK_ERROR,
+      error: Messages.INTERNAL_SERVER_ERROR,
+    });
   }
 }
 

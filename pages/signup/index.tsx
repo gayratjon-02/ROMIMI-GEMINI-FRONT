@@ -21,72 +21,70 @@ interface SnakeInputProps {
   name?: string;
 }
 
-const SnakeInput = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  onKeyDown,
-  name,
-}: SnakeInputProps) => {
-  const pathRef = useRef<SVGPathElement>(null);
-  const pathLengthRef = useRef<number>(0);
+const SnakeInput = React.forwardRef<HTMLInputElement, SnakeInputProps>(
+  ({ label, type = "text", value, onChange, onKeyDown, name }, ref) => {
+    const pathRef = useRef<SVGPathElement>(null);
+    const pathLengthRef = useRef<number>(0);
 
-  useLayoutEffect(() => {
-    if (pathRef.current) {
-      const length = pathRef.current.getTotalLength();
-      pathLengthRef.current = length;
-      pathRef.current.style.strokeDasharray = `${length}`;
-      pathRef.current.style.strokeDashoffset = `${length}`;
-    }
-  }, []);
+    useLayoutEffect(() => {
+      if (pathRef.current) {
+        const length = pathRef.current.getTotalLength();
+        pathLengthRef.current = length;
+        pathRef.current.style.strokeDasharray = `${length}`;
+        pathRef.current.style.strokeDashoffset = `${length}`;
+      }
+    }, []);
 
-  const handleFocus = () => {
-    if (!pathRef.current) return;
-    animate(pathRef.current, {
-      strokeDashoffset: [pathLengthRef.current, 0],
-      opacity: [0, 1],
-      easing: "easeInOutSine",
-      duration: 300,
-    });
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (!pathRef.current) return;
-    if (e.target.value === "") {
+    const handleFocus = () => {
+      if (!pathRef.current) return;
       animate(pathRef.current, {
-        strokeDashoffset: [0, pathLengthRef.current],
-        opacity: [1, 0],
+        strokeDashoffset: [pathLengthRef.current, 0],
+        opacity: [0, 1],
         easing: "easeInOutSine",
         duration: 300,
       });
-    }
-  };
+    };
 
-  return (
-    <div className={styles.inputGroup}>
-      <input
-        className={styles.inputField}
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        placeholder=" "
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-      />
-      <label className={styles.label}>{label}</label>
-      <svg
-        className={styles.snakeSvg}
-        viewBox="0 0 300 2"
-        preserveAspectRatio="none"
-      >
-        <path ref={pathRef} className={styles.snakePath} d="M0,2 L300,2" />
-      </svg>
-    </div>
-  );
-};
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (!pathRef.current) return;
+      if (e.target.value === "") {
+        animate(pathRef.current, {
+          strokeDashoffset: [0, pathLengthRef.current],
+          opacity: [1, 0],
+          easing: "easeInOutSine",
+          duration: 300,
+        });
+      }
+    };
+
+    return (
+      <div className={styles.inputGroup}>
+        <input
+          ref={ref}
+          className={styles.inputField}
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onKeyDown={onKeyDown}
+          placeholder=" "
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+        <label className={styles.label}>{label}</label>
+        <svg
+          className={styles.snakeSvg}
+          viewBox="0 0 300 2"
+          preserveAspectRatio="none"
+        >
+          <path ref={pathRef} className={styles.snakePath} d="M0,2 L300,2" />
+        </svg>
+      </div>
+    );
+  }
+);
+
+SnakeInput.displayName = 'SnakeInput';
 
 // --- Page Component ---
 const SignupPage = () => {
@@ -193,7 +191,6 @@ const SignupPage = () => {
       });
       setSignupData({ name: "", email: "", password: "" });
 
-      // Redirect to dashboard or home page
       setTimeout(() => {
         router.push("/"); // Change to your desired route
       }, 1500);
@@ -234,9 +231,8 @@ const SignupPage = () => {
       });
       setLoginData({ email: "", password: "" });
 
-      // Redirect to dashboard or home page
       setTimeout(() => {
-        router.push("/dashboard"); // Change to your desired route
+        router.push("/"); // Change to your desired route HOmEPAGE
       }, 1500);
     } catch (error) {
       if (error instanceof AuthApiError) {
@@ -252,9 +248,18 @@ const SignupPage = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent,
+    nextRef?: React.RefObject<HTMLInputElement | null>,
+    submitAction?: () => void
+  ) => {
     if (e.key === "Enter") {
-      action();
+      e.preventDefault();
+      if (nextRef?.current) {
+        nextRef.current.focus();
+      } else if (submitAction) {
+        submitAction();
+      }
     }
   };
 
@@ -310,27 +315,30 @@ const SignupPage = () => {
             {isSignup ? (
               <>
                 <SnakeInput
+                  ref={signupNameRef}
                   name="name"
                   label="Name"
                   value={signupData.name}
                   onChange={handleSignupInputChange}
-                  onKeyDown={(e: any) => handleKeyDown(e, handleSignup)}
+                  onKeyDown={(e) => handleKeyDown(e, signupEmailRef)}
                 />
                 <SnakeInput
+                  ref={signupEmailRef}
                   name="email"
                   label="Email"
                   type="email"
                   value={signupData.email}
                   onChange={handleSignupInputChange}
-                  onKeyDown={(e: any) => handleKeyDown(e, handleSignup)}
+                  onKeyDown={(e) => handleKeyDown(e, signupPasswordRef)}
                 />
                 <SnakeInput
+                  ref={signupPasswordRef}
                   name="password"
                   label="Password"
                   type="password"
                   value={signupData.password}
                   onChange={handleSignupInputChange}
-                  onKeyDown={(e: any) => handleKeyDown(e, handleSignup)}
+                  onKeyDown={(e) => handleKeyDown(e, undefined, handleSignup)}
                 />
                 <button
                   className={styles.submitButton}
@@ -343,20 +351,22 @@ const SignupPage = () => {
             ) : (
               <>
                 <SnakeInput
+                  ref={loginEmailRef}
                   name="email"
                   label="Email"
                   type="email"
                   value={loginData.email}
                   onChange={handleLoginInputChange}
-                  onKeyDown={(e: any) => handleKeyDown(e, handleLogin)}
+                  onKeyDown={(e) => handleKeyDown(e, loginPasswordRef)}
                 />
                 <SnakeInput
+                  ref={loginPasswordRef}
                   name="password"
                   label="Password"
                   type="password"
                   value={loginData.password}
                   onChange={handleLoginInputChange}
-                  onKeyDown={(e: any) => handleKeyDown(e, handleLogin)}
+                  onKeyDown={(e) => handleKeyDown(e, undefined, handleLogin)}
                 />
                 <button
                   className={styles.submitButton}
