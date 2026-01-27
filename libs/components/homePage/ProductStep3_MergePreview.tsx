@@ -71,12 +71,12 @@ interface ProductStep3Props {
 // ===== THE 6-SHOT SYSTEM =====
 // Exactly 6 selectable shot types - NO matrix, NO complexity
 const SHOT_TYPES = [
-    { id: 'DUO', name: 'Duo', desc: 'Father & Son', icon: Users },
-    { id: 'SOLO', name: 'Solo', desc: 'Male Model', icon: User },
-    { id: 'FLAT_F', name: 'Flatlay', desc: 'Front', icon: Box },
-    { id: 'FLAT_B', name: 'Flatlay', desc: 'Angled/Back', icon: Layers },
-    { id: 'CLOSE_F', name: 'Detail', desc: 'Front', icon: Camera },
-    { id: 'CLOSE_B', name: 'Detail', desc: 'Back', icon: Camera },
+    { id: 'duo', name: 'Duo', desc: 'Father & Son', icon: Users },
+    { id: 'solo', name: 'Solo', desc: 'Male Model', icon: User },
+    { id: 'flatlay_front', name: 'Flatlay', desc: 'Front', icon: Box },
+    { id: 'flatlay_back', name: 'Flatlay', desc: 'Angled/Back', icon: Layers },
+    { id: 'closeup_front', name: 'Detail', desc: 'Front', icon: Camera },
+    { id: 'closeup_back', name: 'Detail', desc: 'Back', icon: Camera },
 ] as const;
 
 // Aspect Ratios

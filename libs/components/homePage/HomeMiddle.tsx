@@ -258,12 +258,12 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
             const basePrompt = `A ${product.type} in ${product.color} ${product.material}. ${product.details}. ${da.lighting.type} (${da.lighting.temperature}) lighting. ${da.background.description}. ${da.mood} aesthetic.`;
 
             const initialPrompts: MergedPrompts = {
-                DUO: `Father & Son duo shot. ${basePrompt} Lifestyle setting.`,
-                SOLO: `Male Model solo shot. ${basePrompt} Professional pose.`,
-                FLAT_F: `Flatlay front view. ${basePrompt} Clean arrangement.`,
-                FLAT_B: `Flatlay angled back view. ${basePrompt} Detail focus.`,
-                CLOSE_F: `Close-up detail front. Focus on ${product.material} texture and ${product.logo_front}.`,
-                CLOSE_B: `Close-up detail back. Focus on features and ${product.logo_back}.`,
+                duo: `Father & Son duo shot. ${basePrompt} Lifestyle setting.`,
+                solo: `Male Model solo shot. ${basePrompt} Professional pose.`,
+                flatlay_front: `Flatlay front view. ${basePrompt} Clean arrangement.`,
+                flatlay_back: `Flatlay angled back view. ${basePrompt} Detail focus.`,
+                closeup_front: `Close-up detail front. Focus on ${product.material} texture and ${product.logo_front}.`,
+                closeup_back: `Close-up detail back. Focus on features and ${product.logo_back}.`,
             };
 
             // Save prompts to backend immediately
