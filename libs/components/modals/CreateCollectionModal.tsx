@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import LockIcon from '@mui/icons-material/Lock';
 import styles from '@/scss/styles/Modals/CreateCollectionModal.module.scss';
 import { createCollection } from '@/libs/server/HomePage/collection';
 import { Collection } from '@/libs/types/homepage/collection';
@@ -43,6 +44,16 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false);
+
+  // Check if brand is pre-selected (locked)
+  const isBrandLocked = !!selectedBrandId;
+
+  // Sync selectedBrandId when modal opens
+  useEffect(() => {
+    if (selectedBrandId) {
+      setFormData(prev => ({ ...prev, brand_id: selectedBrandId }));
+    }
+  }, [selectedBrandId, isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -185,7 +196,8 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
               <label className={styles.label}>
                 Brand <span className={styles.required}>*</span>
               </label>
-              {onOpenBrandModal && (
+              {/* Only show + New Brand when brand is not locked */}
+              {onOpenBrandModal && !isBrandLocked && (
                 <button
                   type="button"
                   className={styles.newBrandButton}
@@ -199,14 +211,23 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
               )}
             </div>
             <div className={styles.selectWrapper}>
-              <div
-                className={`${styles.selectButton} ${isBrandDropdownOpen ? styles.open : ''}`}
-                onClick={() => !isLoading && setIsBrandDropdownOpen(!isBrandDropdownOpen)}
-              >
-                <span>{selectedBrand?.name || 'Select a brand'}</span>
-                <KeyboardArrowDownIcon fontSize="small" className={styles.arrowIcon} />
-              </div>
-              {isBrandDropdownOpen && (
+              {isBrandLocked ? (
+                /* Locked brand display */
+                <div className={`${styles.selectButton} ${styles.locked}`}>
+                  <span>{selectedBrand?.name || 'Selected Brand'}</span>
+                  <LockIcon fontSize="small" className={styles.lockIcon} />
+                </div>
+              ) : (
+                /* Editable brand dropdown */
+                <div
+                  className={`${styles.selectButton} ${isBrandDropdownOpen ? styles.open : ''}`}
+                  onClick={() => !isLoading && setIsBrandDropdownOpen(!isBrandDropdownOpen)}
+                >
+                  <span>{selectedBrand?.name || 'Select a brand'}</span>
+                  <KeyboardArrowDownIcon fontSize="small" className={styles.arrowIcon} />
+                </div>
+              )}
+              {!isBrandLocked && isBrandDropdownOpen && (
                 <div className={styles.dropdown}>
                   {brands.length === 0 ? (
                     <div className={styles.dropdownEmpty}>
