@@ -1,0 +1,179 @@
+/* Sliding Toggle Design */
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #E5E5E5;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+.wrapper {
+  position: relative;
+  width: 900px;
+  height: 550px; /* Fixed height for consistency */
+  max-width: 95%;
+  background: #FFFFFF;
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  overflow: hidden; /* Important for sliding effect */
+  display: flex;
+}
+
+/* Background Layers (The Static Parts) */
+.backgroundLayer {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  transition: opacity 0.5s ease;
+  z-index: 1;
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  p {
+    color: #666;
+    margin-bottom: 30px;
+    line-height: 1.6;
+  }
+}
+
+.toggleButton {
+  padding: 12px 40px;
+  border: 2px solid #333;
+  background: transparent;
+  color: #333;
+  border-radius: 30px;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: 0.3s;
+
+  &:hover {
+    background: #333;
+    color: #fff;
+  }
+}
+
+/* Sliding Overlay Card (The Moving Part) */
+.overlayCard {
+  position: absolute;
+  top: -5%; /* Overhang top */
+  left: 50%; /* Default Start Position (Login) */
+  width: 50%;
+  height: 110%; /* Overhang bottom */
+  background: #3b3e4a;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.6s ease-in-out;
+  /* padding: 40px; -> moved to content */
+}
+
+/* Form Content inside Overlay */
+.formContent {
+  width: 100%;
+  padding: 0 50px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  /* Shared Form Styles from before */
+}
+
+/* Snake Input Styles (Reused) */
+.inputGroup {
+  position: relative;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.inputField {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #555;
+  padding: 10px 0;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  
+  &::placeholder { color: transparent; }
+  &:focus { border-bottom-color: transparent; }
+}
+
+.label {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  color: #888;
+  pointer-events: none;
+  font-size: 1rem;
+  transition: 0.3s ease all;
+}
+
+.inputField:focus ~ .label,
+.inputField:not(:placeholder-shown) ~ .label {
+  top: -20px;
+  font-size: 0.8rem;
+  color: #ff4081;
+}
+
+.snakeSvg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.snakePath {
+  fill: none;
+  stroke: #ff4081;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 0 1000;
+  opacity: 0;
+}
+
+.submitButton {
+  background: #ff4081; /* Changed to accent color for primary action */
+  color: #fff;
+  border: none;
+  padding: 15px;
+  border-radius: 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 10px;
+  box-shadow: 0 5px 15px rgba(255, 64, 129, 0.3);
+
+  &:hover {
+    background: #e91e63;
+    transform: translateY(-2px);
+  }
+}

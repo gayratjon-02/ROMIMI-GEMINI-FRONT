@@ -1,0 +1,134 @@
+/* Modern Creative Signup Styles */
+
+.backgroundContainer {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1646C1, #E92C28, #120E3D);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.glassPaper {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  padding: 3rem;
+  width: 100%;
+  max-width: 450px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.title {
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.formField {
+  & .MuiOutlinedInput-root {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    &.Mui-focused {
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+
+    fieldset {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &:hover fieldset {
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    &.Mui-focused fieldset {
+      border-color: transparent;
+    }
+  }
+
+  & .MuiInputLabel-root {
+    color: rgba(255, 255, 255, 0.7);
+    
+    &.Mui-focused {
+      color: #fff;
+    }
+  }
+}
+
+.submitButton {
+  background: linear-gradient(90deg, #E92C28 0%, #ff6b6b 100%);
+  color: white;
+  font-weight: bold;
+  padding: 12px;
+  border-radius: 12px;
+  text-transform: none;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 15px rgba(233, 44, 40, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 44, 40, 0.6);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.decorativeCircle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.circle1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #1646C1, transparent);
+  top: -50px;
+  left: -100px;
+}
+
+.circle2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #E92C28, transparent);
+  bottom: -100px;
+  right: -100px;
+}

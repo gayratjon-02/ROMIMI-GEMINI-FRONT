@@ -8,9 +8,16 @@
     "start": "next start"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
+    "animejs": "^4.3.5",
     "next": "16.1.5",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-is": "18.3.1",
+    "sass": "^1.97.3"
   },
   "devDependencies": {
     "@types/node": "^20",
