@@ -158,14 +158,16 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   flex: 1;
-  min-height: 200px;
-  max-height: 320px;
+  min-height: 180px;
   margin-bottom: 12px;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 12px;
-    max-height: none;
+  }
+
+  @media (min-width: 1200px) {
+    gap: 24px;
   }
 }
 
