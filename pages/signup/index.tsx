@@ -129,7 +129,6 @@ const SignupPage = () => {
                 <div
                     className={styles.backgroundLayer}
                     style={{
-                        alignItems: 'flex-start',
                         textAlign: 'left',
                         opacity: isSignup ? 0 : 1, // Hide when overlaid (Signup Mode)
                         pointerEvents: isSignup ? 'none' : 'all'
@@ -146,7 +145,6 @@ const SignupPage = () => {
                 <div
                     className={styles.backgroundLayer}
                     style={{
-                        alignItems: 'flex-end',
                         textAlign: 'right',
                         opacity: isSignup ? 1 : 0, // Hide when overlaid (Login Mode)
                         pointerEvents: isSignup ? 'all' : 'none'
