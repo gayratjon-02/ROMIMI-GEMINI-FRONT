@@ -40,13 +40,42 @@ interface VisualOutput {
     error?: string;
 }
 
-// Mock DA Analysis (from collection setup)
+// Mock DA Analysis matching AnalyzedDAJSON interface (from collection setup)
 const mockDAAnalysis = {
-    background: "Clean white cyclorama with soft natural shadows",
-    lighting: "Soft diffused daylight, warm golden hour tones",
-    composition: "Editorial centered portrait, depth of field",
-    props_decor: "Minimalist wooden stool, dried pampas grass",
-    mood: "Serene, sophisticated, effortlessly elegant",
+    background: {
+        color_hex: '#FFFFFF',
+        color_name: 'White',
+        description: 'Clean white cyclorama with soft natural shadows',
+        texture: 'smooth matte',
+    },
+    props: {
+        items: ['Minimalist wooden stool', 'Dried pampas grass'],
+        placement: 'asymmetric sides',
+        style: 'modern minimalist',
+    },
+    mood: 'Serene, sophisticated, effortlessly elegant',
+    lighting: {
+        type: 'softbox',
+        temperature: 'warm golden hour',
+        direction: 'front-left 45°',
+        intensity: 'medium-soft',
+    },
+    composition: {
+        layout: 'centered editorial',
+        poses: 'relaxed natural',
+        framing: 'full body with headroom',
+    },
+    styling: {
+        bottom: 'dark slim trousers',
+        feet: 'white minimalist sneakers',
+    },
+    camera: {
+        focal_length_mm: 85,
+        aperture: 2.8,
+        focus: 'subject eyes',
+    },
+    quality: 'professional editorial',
+    analyzed_at: new Date().toISOString(),
 };
 
 // Mock Product Analysis
@@ -226,7 +255,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
             const product = productAnalysis;
             const da = mockDAAnalysis; // In real app, this would be selected DA
 
-            const basePrompt = `A ${product.type} in ${product.color} ${product.material}. ${product.details}. ${da.lighting}. ${da.background}. ${da.mood} aesthetic.`;
+            const basePrompt = `A ${product.type} in ${product.color} ${product.material}. ${product.details}. ${da.lighting.type} (${da.lighting.temperature}) lighting. ${da.background.description}. ${da.mood} aesthetic.`;
 
             const initialPrompts: MergedPrompts = {
                 DUO: `Father & Son duo shot. ${basePrompt} Lifestyle setting.`,

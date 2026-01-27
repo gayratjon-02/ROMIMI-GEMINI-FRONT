@@ -17,13 +17,43 @@ import {
 import styles from '@/scss/styles/HomePage/ProductStep3.module.scss';
 import { ProductAnalysis } from './ProductStep2_Analysis';
 
-// Type definitions
+// Type definitions matching backend AnalyzedDAJSON
 interface DAAnalysis {
-    background: string;
-    lighting: string;
-    composition: string;
-    props_decor: string;
+    background: {
+        color_hex: string;
+        color_name: string;
+        description: string;
+        texture?: string;
+    };
+    props: {
+        items: string[];
+        placement: string;
+        style: string;
+    };
     mood: string;
+    lighting: {
+        type: string;
+        temperature: string;
+        direction: string;
+        intensity: string;
+    };
+    composition: {
+        layout: string;
+        poses: string;
+        framing: string;
+    };
+    styling: {
+        bottom: string;
+        feet: string;
+        accessories?: string;
+    };
+    camera: {
+        focal_length_mm: number;
+        aperture: number;
+        focus: string;
+    };
+    quality: string;
+    analyzed_at?: string;
 }
 
 type MergedPrompts = Record<string, string>;
@@ -32,7 +62,6 @@ interface ProductStep3Props {
     productAnalysis: ProductAnalysis;
     daAnalysis: DAAnalysis;
     mergedPrompts: MergedPrompts;
-    onPromptsChange: (key: keyof MergedPrompts, value: string) => void;
     onPromptsChange: (key: keyof MergedPrompts, value: string) => void;
     onBack: () => void;
     onGenerate: (selectedShots: string[]) => void;
@@ -110,7 +139,7 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
     const examplePrompt = useMemo(() => {
         const productPart = `${productAnalysis.color} ${productAnalysis.type} made of ${productAnalysis.material}`;
         const detailsPart = productAnalysis.details;
-        const daPart = `${daAnalysis.background} setting with ${daAnalysis.lighting} lighting, ${daAnalysis.mood} mood`;
+        const daPart = `${daAnalysis.background.description} setting with ${daAnalysis.lighting.type} (${daAnalysis.lighting.temperature}) lighting, ${daAnalysis.mood} mood`;
 
         return { productPart, detailsPart, daPart };
     }, [productAnalysis, daAnalysis]);
