@@ -1,8 +1,11 @@
 import Head from "next/head";
 import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
-import styles from "../scss/styles/Home.module.css";
 import { Stack } from "@mui/material";
+import HomeTop from "@/libs/components/homePage/HomeTop";
+import HomeLeft from "@/libs/components/homePage/HomeLeft";
+import HomeMiddle from "@/libs/components/homePage/HomeMiddle";
+import HomeBottom from "@/libs/components/homePage/HomeButtom";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +20,12 @@ const geistMono = Geist_Mono({
 export default function Home() {
   return (
     <>
-      <Stack className={styles.homepageMain}>HomePage</Stack>
+      <Stack className={("homepageMain")}>
+        <HomeTop />
+        <HomeLeft />
+        <HomeMiddle />
+        <HomeBottom />
+      </Stack>
     </>
   );
 }
