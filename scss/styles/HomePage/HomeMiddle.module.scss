@@ -156,9 +156,11 @@
 .dropzoneGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 20px;
   flex: 1;
   min-height: 0;
+  max-height: 240px;
+  margin-bottom: 16px;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -168,76 +170,120 @@
 
 .dropzone {
   position: relative;
-  min-height: 180px;
-  background: var(--wizard-surface);
-  border: 2px dashed var(--wizard-border);
-  border-radius: 12px;
+  height: 100%;
+  min-height: 140px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 24px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  // Subtle glow border effect
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.4) 0%, rgba(139, 92, 246, 0.2) 50%, rgba(79, 70, 229, 0.4) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
 
   &:hover {
-    border-color: var(--wizard-accent);
-    background: var(--wizard-accent-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(79, 70, 229, 0.2);
+
+    &::before {
+      opacity: 1;
+    }
   }
 
   &.dragging {
-    border-color: var(--wizard-accent);
-    background: var(--wizard-accent-light);
-    box-shadow: 0 0 0 4px var(--wizard-accent-light);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(79, 70, 229, 0.3);
+    border-color: rgba(79, 70, 229, 0.6);
+
+    &::before {
+      opacity: 1;
+      background: linear-gradient(135deg, #4f46e5 0%, #8b5cf6 50%, #4f46e5 100%);
+    }
   }
 
   &.hasImage {
-    border-style: solid;
-    border-color: var(--wizard-success);
+    border: 2px solid rgba(16, 185, 129, 0.5);
     background: transparent;
     padding: 0;
-    overflow: hidden;
+
+    &::before {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.5) 0%, rgba(16, 185, 129, 0.2) 100%);
+    }
   }
 
   &.required {
     &::before {
-      content: 'Required';
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: var(--wizard-accent);
-      background: var(--wizard-accent-light);
-      padding: 4px 8px;
-      border-radius: 4px;
+      opacity: 0.8;
     }
   }
 }
 
+.requiredBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.15);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  z-index: 5;
+}
+
 .dropzoneIcon {
-  width: 48px;
-  height: 48px;
-  background: var(--wizard-accent-light);
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--wizard-accent);
-  margin-bottom: 16px;
+  color: #8b5cf6;
+  margin-bottom: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  .dropzone:hover & {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  }
 }
 
 .dropzoneTitle {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--wizard-text-primary);
-  margin: 0 0 8px 0;
+  color: #f8fafc;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.01em;
 }
 
 .dropzoneSubtitle {
-  font-size: 13px;
-  color: var(--wizard-text-secondary);
+  font-size: 12px;
+  color: #94a3b8;
   margin: 0;
 }
 

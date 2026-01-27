@@ -136,6 +136,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
                         </>
                     ) : (
                         <>
+                            <span className={styles.requiredBadge}>REQUIRED</span>
                             <div className={styles.dropzoneIcon}>
                                 <ImageIcon size={24} />
                             </div>
@@ -190,6 +191,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
                         </>
                     ) : (
                         <>
+                            <span className={styles.requiredBadge}>REQUIRED</span>
                             <div className={styles.dropzoneIcon}>
                                 <ImageIcon size={24} />
                             </div>
