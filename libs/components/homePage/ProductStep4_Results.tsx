@@ -22,12 +22,12 @@ interface ProductStep4Props {
 }
 
 const visualTypeLabels: Record<string, string> = {
-    main_visual: 'Hero Shot',
-    lifestyle: 'Lifestyle',
-    detail_front: 'Front Detail',
-    detail_back: 'Back Detail',
-    model_pose_1: 'Model Pose 1',
-    model_pose_2: 'Model Pose 2',
+    duo: 'Duo Shot',
+    solo: 'Solo Shot',
+    flatlay_front: 'Flatlay Front',
+    flatlay_back: 'Flatlay Back',
+    closeup_front: 'Detail Front',
+    closeup_back: 'Detail Back',
 };
 
 const ProductStep4_Results: React.FC<ProductStep4Props> = ({
