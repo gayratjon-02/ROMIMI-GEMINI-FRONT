@@ -194,7 +194,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     const isComplete = visuals.length > 0 && visuals.every(v => v.status === 'completed' || v.status === 'failed');
 
     return (
-        <div className={`${styles.wizardContainer} ${isDarkMode ? styles.dark : ''}`}>
+        <div className={`${styles.wizardContainer} ${isDarkMode ? styles.dark : styles.light}`}>
             {/* Header */}
             <div className={styles.wizardHeader}>
                 <h1 className={styles.wizardTitle}>Create Product Visuals</h1>

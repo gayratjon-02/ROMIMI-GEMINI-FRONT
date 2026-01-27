@@ -43,8 +43,8 @@ export default function Home() {
       display: 'flex',
       height: '100vh',
       overflow: 'hidden',
-      background: isDarkMode ? '#1a1a1a' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#1a1a1a'
+      background: isDarkMode ? '#0a0a0f' : '#f8fafc',
+      color: isDarkMode ? '#f8fafc' : '#0f172a'
     }}>
       {/* Left Sidebar */}
       <HomeLeft
@@ -60,19 +60,19 @@ export default function Home() {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        background: isDarkMode ? '#1a1a1a' : '#ffffff'
+        height: '100vh'
       }}>
         <HomeTop selectedBrand={selectedBrand} />
+
+        {/* HomeMiddle - to'liq ko'rinishi, scroll yo'q */}
         <div style={{
           flex: 1,
-          overflow: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          background: isDarkMode ? '#1a1a1a' : '#f5f5f5'
+          overflow: 'hidden',
+          background: isDarkMode ? '#0a0a0f' : '#ffffff'
         }}>
-          <HomeMiddle />
-          <HomeRight />
-          <HomeBottom />
+          <HomeMiddle isDarkMode={isDarkMode} />
         </div>
       </div>
     </div>
