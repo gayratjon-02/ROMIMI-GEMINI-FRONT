@@ -8,10 +8,9 @@ import {
     Users,
     User,
     Box,
-    Eye,
     Maximize2,
-    Camera,
-    Layers
+    Pencil,
+    Check
 } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/ProductStep3.module.scss';
 import { ProductAnalysis } from './ProductStep2_Analysis';
@@ -42,22 +41,23 @@ interface ProductStep3Props {
     isGenerating: boolean;
 }
 
-// Shot Types configuration
+// Shot Types - Backend mapping
 const SHOT_TYPES = [
     { id: 'DUO', name: 'Duo Shot', desc: 'Father + Son', icon: Users },
     { id: 'SOLO', name: 'Solo Shot', desc: 'Male Model', icon: User },
     { id: 'FLAT', name: 'Flat Lay', desc: 'Ghost Mannequin', icon: Box },
 ] as const;
 
-// View Angles configuration
+// View Angles - with Backend mapping
+// Close-up maps to BOTH FCLOSE and BCLOSE
 const VIEW_ANGLES = [
-    { id: 'FRONT', name: 'Front', icon: Eye },
-    { id: 'BACK', name: 'Back', icon: Eye },
-    { id: 'CLOSEUP', name: 'Close-up', icon: Camera },
-    { id: 'FLATLAY', name: 'Flatlay', icon: Layers },
+    { id: 'FRONT', name: 'Front', backendCodes: ['F'] },
+    { id: 'BACK', name: 'Back', backendCodes: ['B'] },
+    { id: 'CLOSEUP', name: 'Close-up', backendCodes: ['FCLOSE', 'BCLOSE'] }, // Batch group
+    { id: 'FLATLAY', name: 'Flatlay', backendCodes: ['FFLAT'] },
 ] as const;
 
-// Aspect Ratio configuration
+// Aspect Ratios
 const ASPECT_RATIOS = [
     { id: '1:1', name: '1:1', className: 'square' },
     { id: '4:5', name: '4:5', className: 'portrait' },
@@ -70,32 +70,39 @@ const COST_PER_VARIATION = 2;
 const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
     productAnalysis,
     daAnalysis,
+    mergedPrompts,
+    onPromptsChange,
     onBack,
     onGenerate,
     isGenerating,
 }) => {
-    // Resolution: Single select (2K or 4K)
+    // Resolution: Single select (2K or 4K) - Default: 2K
     const [resolution, setResolution] = useState<'2K' | '4K'>('2K');
 
-    // Aspect Ratio: Single select
+    // Aspect Ratio: Single select - Default: 4:5
     const [aspectRatio, setAspectRatio] = useState<string>('4:5');
 
-    // Shot Types: Multi-select (ALL selected by default)
+    // Shot Types: Multi-select - Default: ALL selected
     const [selectedShots, setSelectedShots] = useState<Set<string>>(
         new Set(SHOT_TYPES.map(s => s.id))
     );
 
-    // View Angles: Multi-select (ALL selected by default)
+    // View Angles: Multi-select - Default: ALL selected
     const [selectedViews, setSelectedViews] = useState<Set<string>>(
         new Set(VIEW_ANGLES.map(v => v.id))
     );
 
-    // Toggle shot type
+    // Prompt editing state
+    const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+    const [editedPrompt, setEditedPrompt] = useState('');
+
+    // Toggle shot type (multi-select)
     const toggleShot = (shotId: string) => {
         setSelectedShots(prev => {
             const next = new Set(prev);
             if (next.has(shotId)) {
-                next.delete(shotId);
+                // Don't allow deselecting if it's the last one
+                if (next.size > 1) next.delete(shotId);
             } else {
                 next.add(shotId);
             }
@@ -103,12 +110,13 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
         });
     };
 
-    // Toggle view angle
+    // Toggle view angle (multi-select)
     const toggleView = (viewId: string) => {
         setSelectedViews(prev => {
             const next = new Set(prev);
             if (next.has(viewId)) {
-                next.delete(viewId);
+                // Don't allow deselecting if it's the last one
+                if (next.size > 1) next.delete(viewId);
             } else {
                 next.add(viewId);
             }
@@ -116,10 +124,21 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
         });
     };
 
-    // Calculate total variations
+    // Calculate total backend codes for variations
+    const totalBackendViews = useMemo(() => {
+        let count = 0;
+        VIEW_ANGLES.forEach(view => {
+            if (selectedViews.has(view.id)) {
+                count += view.backendCodes.length;
+            }
+        });
+        return count;
+    }, [selectedViews]);
+
+    // Calculate total variations (shots × views)
     const totalVariations = useMemo(() => {
-        return selectedShots.size * selectedViews.size;
-    }, [selectedShots, selectedViews]);
+        return selectedShots.size * totalBackendViews;
+    }, [selectedShots, totalBackendViews]);
 
     // Calculate total cost
     const totalCost = useMemo(() => {
@@ -128,25 +147,37 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
         return resolution === '4K' ? Math.ceil(baseCost * 1.5) : baseCost;
     }, [totalVariations, resolution]);
 
-    // Generate example prompt preview with highlighting
+    // Generate example prompt with highlighting
     const examplePrompt = useMemo(() => {
         const shotType = Array.from(selectedShots)[0] || 'DUO';
-        const viewAngle = Array.from(selectedViews)[0] || 'FRONT';
 
-        return {
-            product: `${productAnalysis.color} ${productAnalysis.type}`,
-            material: productAnalysis.material,
-            details: productAnalysis.details,
-            background: daAnalysis.background,
-            lighting: daAnalysis.lighting,
-            mood: daAnalysis.mood,
-            shotType,
-            viewAngle,
-        };
-    }, [selectedShots, selectedViews, productAnalysis, daAnalysis]);
+        // Build the example prompt text
+        const productPart = `${productAnalysis.color} ${productAnalysis.type} made of ${productAnalysis.material}`;
+        const detailsPart = productAnalysis.details;
+        const daPart = `${daAnalysis.background} setting with ${daAnalysis.lighting} lighting, ${daAnalysis.mood} mood`;
+
+        let modelDesc = '';
+        if (shotType === 'DUO') modelDesc = 'Father and son models wearing matching outfits';
+        else if (shotType === 'SOLO') modelDesc = 'Single male model in professional pose';
+        else modelDesc = 'Product displayed on ghost mannequin';
+
+        return { productPart, detailsPart, daPart, modelDesc };
+    }, [selectedShots, productAnalysis, daAnalysis]);
+
+    // Initialize edited prompt
+    React.useEffect(() => {
+        const fullPrompt = `A ${examplePrompt.productPart} with ${examplePrompt.detailsPart}. Shot in ${examplePrompt.daPart}. ${examplePrompt.modelDesc}.`;
+        setEditedPrompt(fullPrompt);
+    }, [examplePrompt]);
 
     // Can generate?
     const canGenerate = totalVariations > 0;
+
+    // Handle prompt save
+    const handleSavePrompt = () => {
+        setIsEditingPrompt(false);
+        // Here you could call onPromptsChange if needed
+    };
 
     return (
         <motion.div
@@ -158,9 +189,9 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
         >
             {/* Split Layout */}
             <div className={styles.consoleLayout}>
-                {/* LEFT PANEL - CONTROLS */}
+                {/* LEFT PANEL - CONFIGURATION */}
                 <div className={styles.controlsPanel}>
-                    {/* Resolution & Format Section */}
+                    {/* Resolution Section */}
                     <div className={styles.sectionCard}>
                         <h4 className={styles.sectionTitle}>Resolution</h4>
                         <div className={styles.segmentedControl}>
@@ -176,7 +207,7 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
                                 className={`${styles.segmentButton} ${resolution === '4K' ? styles.active : ''}`}
                                 onClick={() => setResolution('4K')}
                             >
-                                4K
+                                4K <span className={styles.premiumBadge}>+50%</span>
                             </motion.button>
                         </div>
                     </div>
@@ -206,12 +237,13 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
                             <AnimatePresence>
                                 {SHOT_TYPES.map(shot => {
                                     const Icon = shot.icon;
+                                    const isActive = selectedShots.has(shot.id);
                                     return (
                                         <motion.button
                                             key={shot.id}
                                             whileTap={{ scale: 0.95 }}
                                             layout
-                                            className={`${styles.shotTypeCard} ${selectedShots.has(shot.id) ? styles.active : ''}`}
+                                            className={`${styles.shotTypeCard} ${isActive ? styles.active : ''}`}
                                             onClick={() => toggleShot(shot.id)}
                                         >
                                             <div className={styles.shotTypeIcon}>
@@ -230,23 +262,32 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
                     <div className={styles.sectionCard}>
                         <h4 className={styles.sectionTitle}>View Angles</h4>
                         <div className={styles.viewAngleChips}>
-                            {VIEW_ANGLES.map(view => (
-                                <motion.button
-                                    key={view.id}
-                                    whileTap={{ scale: 0.95 }}
-                                    className={`${styles.viewChip} ${selectedViews.has(view.id) ? styles.active : ''}`}
-                                    onClick={() => toggleView(view.id)}
-                                >
-                                    {view.name}
-                                </motion.button>
-                            ))}
+                            {VIEW_ANGLES.map(view => {
+                                const isActive = selectedViews.has(view.id);
+                                return (
+                                    <motion.button
+                                        key={view.id}
+                                        whileTap={{ scale: 0.95 }}
+                                        className={`${styles.viewChip} ${isActive ? styles.active : ''}`}
+                                        onClick={() => toggleView(view.id)}
+                                    >
+                                        {view.name}
+                                        {view.id === 'CLOSEUP' && (
+                                            <span className={styles.chipBadge}>×2</span>
+                                        )}
+                                    </motion.button>
+                                );
+                            })}
                         </div>
+                        <p className={styles.viewHint}>
+                            *Close-up generates both front and back detail shots
+                        </p>
                     </div>
                 </div>
 
                 {/* RIGHT PANEL - PREVIEW */}
                 <div className={styles.previewPanel}>
-                    {/* Order Summary */}
+                    {/* Generation Summary */}
                     <motion.div
                         className={styles.summaryCard}
                         layout
@@ -257,30 +298,57 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
                             <span className={styles.highlight}>{aspectRatio}</span> aspect ratio at{' '}
                             <span className={styles.highlight}>{resolution}</span> resolution.
                         </p>
+                        <div className={styles.summaryBreakdown}>
+                            <span>{selectedShots.size} Shot Types</span>
+                            <span className={styles.separator}>×</span>
+                            <span>{totalBackendViews} Angles</span>
+                            <span className={styles.separator}>=</span>
+                            <span className={styles.total}>{totalVariations}</span>
+                        </div>
                     </motion.div>
 
                     {/* Prompt Preview */}
                     <div className={styles.promptPreviewCard}>
-                        <h5 className={styles.promptPreviewTitle}>
-                            <Sparkles size={14} />
-                            Example Prompt Preview
-                        </h5>
-                        <p className={styles.promptPreviewText}>
-                            A <span className={styles.productHighlight}>{examplePrompt.product}</span> made of{' '}
-                            <span className={styles.productHighlight}>{examplePrompt.material}</span> with{' '}
-                            <span className={styles.productHighlight}>{examplePrompt.details}</span>.{' '}
-                            Shot in <span className={styles.daHighlight}>{examplePrompt.background}</span> setting with{' '}
-                            <span className={styles.daHighlight}>{examplePrompt.lighting}</span> lighting.{' '}
-                            <span className={styles.daHighlight}>{examplePrompt.mood}</span> mood.{' '}
-                            {examplePrompt.shotType === 'DUO' && 'Father and son models wearing matching outfits.'}{' '}
-                            {examplePrompt.shotType === 'SOLO' && 'Single male model in professional pose.'}{' '}
-                            {examplePrompt.shotType === 'FLAT' && 'Product displayed on ghost mannequin.'}
-                        </p>
+                        <div className={styles.promptPreviewHeader}>
+                            <h5 className={styles.promptPreviewTitle}>
+                                <Sparkles size={14} />
+                                Example Prompt Preview
+                            </h5>
+                            <button
+                                className={styles.editButton}
+                                onClick={() => isEditingPrompt ? handleSavePrompt() : setIsEditingPrompt(true)}
+                            >
+                                {isEditingPrompt ? <Check size={14} /> : <Pencil size={14} />}
+                                {isEditingPrompt ? 'Save' : 'Edit'}
+                            </button>
+                        </div>
+
+                        {isEditingPrompt ? (
+                            <textarea
+                                className={styles.promptTextarea}
+                                value={editedPrompt}
+                                onChange={(e) => setEditedPrompt(e.target.value)}
+                                rows={5}
+                            />
+                        ) : (
+                            <p className={styles.promptPreviewText}>
+                                A <span className={styles.productHighlight}>{examplePrompt.productPart}</span> with{' '}
+                                <span className={styles.productHighlight}>{examplePrompt.detailsPart}</span>.{' '}
+                                Shot in <span className={styles.daHighlight}>{examplePrompt.daPart}</span>.{' '}
+                                {examplePrompt.modelDesc}.
+                            </p>
+                        )}
                     </div>
 
-                    {/* Cost Estimation */}
+                    {/* Cost Card */}
                     <div className={styles.costCard}>
-                        <p className={styles.costLabel}>Total Cost</p>
+                        <div className={styles.costInfo}>
+                            <p className={styles.costLabel}>Total Cost</p>
+                            <p className={styles.costBreakdown}>
+                                {totalVariations} × {COST_PER_VARIATION} credits
+                                {resolution === '4K' && ' (+50% for 4K)'}
+                            </p>
+                        </div>
                         <p className={styles.costValue}>{totalCost} Credits</p>
                     </div>
                 </div>
@@ -313,7 +381,7 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
                     ) : (
                         <>
                             <Maximize2 size={18} />
-                            Generate Batch ({totalCost} Credits)
+                            Generate Batch
                         </>
                     )}
                 </motion.button>
