@@ -283,6 +283,17 @@
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
   }
 
+  // Fix browser autofill/autocomplete background
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgba(40, 44, 47, 1) inset !important;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.9) !important;
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: rgba(255, 255, 255, 0.9);
+  }
+
   .light & {
     background: rgba(0, 0, 0, 0.02);
     border-color: rgba(0, 0, 0, 0.1);
@@ -295,6 +306,16 @@
     &:focus {
       border-color: #4f46e5;
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    // Fix browser autofill/autocomplete background for light mode
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus,
+    &:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 1000px rgba(248, 248, 250, 1) inset !important;
+      -webkit-text-fill-color: #1a1a1a !important;
+      caret-color: #1a1a1a;
     }
   }
 }
