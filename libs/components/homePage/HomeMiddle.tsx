@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Package, Sparkles, Wand2, Check } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeMiddle.module.scss';
@@ -11,6 +11,17 @@ import ProductStep4_Results from './ProductStep4_Results';
 import { createProduct, analyzeProduct } from '@/libs/server/HomePage/product';
 import { AnalyzedProductJSON } from '@/libs/types/homepage/product';
 import { Brand } from '@/libs/types/homepage/brand';
+// 🆕 Generation API imports
+import {
+    startGeneration,
+    pollGenerationStatus,
+    retryFailedVisual,
+    triggerDownload,
+} from '@/libs/server/HomePage/generate';
+import {
+    createGeneration,
+    updateMergedPrompts as updatePromptsAPI,
+} from '@/libs/server/HomePage/merging';
 
 interface HomeMiddleProps {
     isDarkMode?: boolean;
@@ -67,6 +78,8 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     // Step 2: Analysis
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [productAnalysis, setProductAnalysis] = useState<ProductAnalysis>(mockProductAnalysis);
+    const [productId, setProductId] = useState<string | null>(null);
+    const [generationId, setGenerationId] = useState<string | null>(null);
 
     // Step 3: Merged Prompts
     const [isGenerating, setIsGenerating] = useState(false);
@@ -128,6 +141,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
             };
 
             setProductAnalysis(mappedAnalysis);
+            setProductId(product.id);
             setCurrentStep(2);
         } catch (error) {
             console.error('Analysis failed:', error);
@@ -141,83 +155,161 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
         setProductAnalysis(prev => ({ ...prev, [field]: value }));
     }, []);
 
-    const handleGoToMerge = useCallback(() => {
-        // Generate merged prompts from product + DA
-        const product = productAnalysis;
-        const da = mockDAAnalysis;
+    const handleGoToMerge = useCallback(async () => {
+        if (!productId || !selectedCollection) {
+            alert('Missing product or collection information.');
+            return;
+        }
 
-        setMergedPrompts({
-            main_visual: `A ${product.type} in ${product.color} ${product.material} with ${product.details}. ${product.logo_front} on front. Photographed with ${da.lighting}. ${da.background}. ${da.mood} aesthetic.`,
-            lifestyle: `Fashion editorial featuring ${product.type} in ${product.color}. Model in natural pose with ${da.props_decor}. ${da.lighting}. Cinematic depth of field.`,
-            detail_shots: `Close-up product photography: ${product.material} texture, ${product.details}. ${da.lighting}. Clean white background.`,
-            model_poses: `Full body shot: ${product.type} styled casually. Model facing camera, hands in pockets. ${da.background}. ${da.composition}.`,
+        try {
+            // Create Generation record
+            const generation = await createGeneration({
+                product_id: productId,
+                collection_id: selectedCollection.id,
+                generation_type: 'standard',
+            });
+
+            setGenerationId(generation.id);
+
+            // Generate merged prompts from product + DA
+            const product = productAnalysis;
+            const da = mockDAAnalysis;
+
+            setMergedPrompts({
+                main_visual: `A ${product.type} in ${product.color} ${product.material} with ${product.details}. ${product.logo_front} on front. Photographed with ${da.lighting}. ${da.background}. ${da.mood} aesthetic.`,
+                lifestyle: `Fashion editorial featuring ${product.type} in ${product.color}. Model in natural pose with ${da.props_decor}. ${da.lighting}. Cinematic depth of field.`,
+                detail_shots: `Close-up product photography: ${product.material} texture, ${product.details}. ${da.lighting}. Clean white background.`,
+                model_poses: `Full body shot: ${product.type} styled casually. Model facing camera, hands in pockets. ${da.background}. ${da.composition}.`,
+            });
+            setCurrentStep(3);
+        } catch (error) {
+            console.error('Failed to create generation:', error);
+            alert('Failed to create generation. Please try again.');
+        }
+    }, [productAnalysis, productId, selectedCollection]);
+
+    const handlePromptsChange = useCallback(async (key: keyof MergedPrompts, value: string) => {
+        // Update local state immediately
+        setMergedPrompts(prev => {
+            const updated = { ...prev, [key]: value };
+
+            // Save to backend if we have a generationId
+            if (generationId) {
+                updatePromptsAPI(generationId, { prompts: updated }).catch(error => {
+                    console.error('Failed to update prompts on backend:', error);
+                });
+            }
+
+            return updated;
         });
-        setCurrentStep(3);
-    }, [productAnalysis]);
-
-    const handlePromptsChange = useCallback((key: keyof MergedPrompts, value: string) => {
-        setMergedPrompts(prev => ({ ...prev, [key]: value }));
-    }, []);
+    }, [generationId]);
 
     const handleGenerate = useCallback(async () => {
-        setIsGenerating(true);
-
-        // Initialize visuals with pending status
-        const initialVisuals: VisualOutput[] = [
-            { type: 'main_visual', status: 'pending' },
-            { type: 'lifestyle', status: 'pending' },
-            { type: 'detail_front', status: 'pending' },
-            { type: 'detail_back', status: 'pending' },
-            { type: 'model_pose_1', status: 'pending' },
-            { type: 'model_pose_2', status: 'pending' },
-        ];
-        setVisuals(initialVisuals);
-        setCurrentStep(4);
-        setIsGenerating(false);
-
-        // Simulate progressive generation
-        for (let i = 0; i < initialVisuals.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-
-            // Set processing
-            setVisuals(prev => prev.map((v, idx) =>
-                idx === i ? { ...v, status: 'processing' } : v
-            ));
-
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Set completed (or occasionally failed for demo)
-            const isFailed = i === 3 && Math.random() > 0.7; // Random failure for demo
-            setVisuals(prev => prev.map((v, idx) =>
-                idx === i ? {
-                    ...v,
-                    status: isFailed ? 'failed' : 'completed',
-                    image_url: isFailed ? undefined : `https://picsum.photos/seed/${i}/400/400`,
-                    error: isFailed ? 'Generation failed' : undefined,
-                } : v
-            ));
-
-            setProgress(((i + 1) / initialVisuals.length) * 100);
+        if (!generationId) {
+            alert('Generation ID not found. Please try again.');
+            return;
         }
-    }, []);
+
+        setIsGenerating(true);
+        setCurrentStep(4);
+
+        try {
+            // Start generation on the backend
+            await startGeneration(generationId, {
+                visual_types: ['main_visual', 'lifestyle', 'detail_front', 'detail_back', 'model_pose_1', 'model_pose_2'],
+                quality: 'standard',
+            });
+
+            // Poll for progress updates
+            const pollInterval = setInterval(async () => {
+                try {
+                    const status = await pollGenerationStatus(generationId);
+
+                    // Update visuals with backend data
+                    setVisuals(status.visuals);
+                    setProgress(status.progress);
+
+                    // Stop polling when complete
+                    if (status.isComplete) {
+                        clearInterval(pollInterval);
+                        setIsGenerating(false);
+                    }
+                } catch (error) {
+                    console.error('Error polling generation status:', error);
+                    clearInterval(pollInterval);
+                    setIsGenerating(false);
+                }
+            }, 2000); // Poll every 2 seconds
+
+            // Safety timeout: stop polling after 10 minutes
+            setTimeout(() => {
+                clearInterval(pollInterval);
+                setIsGenerating(false);
+            }, 600000);
+
+        } catch (error) {
+            console.error('Failed to start generation:', error);
+            alert('Failed to start generation. Please try again.');
+            setIsGenerating(false);
+        }
+    }, [generationId]);
 
     const handleRetry = useCallback(async (index: number) => {
-        setVisuals(prev => prev.map((v, i) =>
-            i === index ? { ...v, status: 'processing' } : v
-        ));
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setVisuals(prev => prev.map((v, i) =>
-            i === index ? {
-                ...v,
-                status: 'completed',
-                image_url: `https://picsum.photos/seed/retry-${index}/400/400`,
-            } : v
-        ));
-    }, []);
+        if (!generationId) {
+            alert('Generation ID not found.');
+            return;
+        }
 
-    const handleDownload = useCallback(() => {
-        alert('Download functionality - would trigger ZIP download of all completed visuals');
-    }, []);
+        try {
+            // Update UI to show processing
+            setVisuals(prev => prev.map((v, i) =>
+                i === index ? { ...v, status: 'processing' } : v
+            ));
+
+            // Call retry API
+            await retryFailedVisual(generationId, index);
+
+            // Poll for status update after retry
+            const pollRetry = setInterval(async () => {
+                try {
+                    const status = await pollGenerationStatus(generationId);
+                    setVisuals(status.visuals);
+
+                    // Check if this specific visual is done
+                    if (status.visuals[index]?.status === 'completed' || status.visuals[index]?.status === 'failed') {
+                        clearInterval(pollRetry);
+                    }
+                } catch (error) {
+                    console.error('Error polling retry status:', error);
+                    clearInterval(pollRetry);
+                }
+            }, 2000);
+
+            // Safety timeout
+            setTimeout(() => clearInterval(pollRetry), 60000);
+
+        } catch (error) {
+            console.error('Failed to retry visual:', error);
+            alert('Failed to retry. Please try again.');
+            setVisuals(prev => prev.map((v, i) =>
+                i === index ? { ...v, status: 'failed' } : v
+            ));
+        }
+    }, [generationId]);
+
+    const handleDownload = useCallback(async () => {
+        if (!generationId) {
+            alert('Generation ID not found.');
+            return;
+        }
+
+        try {
+            await triggerDownload(generationId, `product-visuals-${productId}.zip`);
+        } catch (error) {
+            console.error('Failed to download:', error);
+            alert('Failed to download visuals. Please try again.');
+        }
+    }, [generationId, productId]);
 
     const handleStartNew = useCallback(() => {
         setCurrentStep(1);
@@ -225,6 +317,8 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
         setBackImage(null);
         setReferenceImages([]);
         setProductAnalysis(mockProductAnalysis);
+        setProductId(null);
+        setGenerationId(null);
         setMergedPrompts({ main_visual: '', lifestyle: '', detail_shots: '', model_poses: '' });
         setVisuals([]);
         setProgress(0);
