@@ -7,6 +7,7 @@ import HomeTop from "@/libs/components/homePage/HomeTop";
 import HomeLeft from "@/libs/components/homePage/HomeLeft";
 import HomeMiddle from "@/libs/components/homePage/HomeMiddle";
 import HomeBottom from "@/libs/components/homePage/HomeButtom";
+import { Brand } from "@/libs/types/homepage/brand";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,12 +23,18 @@ export default function Home() {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  // State to trigger brand list refresh in HomeLeft
+  // Brand refresh trigger
   const [brandRefreshTrigger, setBrandRefreshTrigger] = useState(0);
 
-  // Callback to refresh brands list when a new brand is created
+  // Selected brand state - shared between HomeLeft and HomeTop
+  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+
   const handleBrandCreated = useCallback(() => {
     setBrandRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  const handleBrandSelect = useCallback((brand: Brand | null) => {
+    setSelectedBrand(brand);
   }, []);
 
   return (
@@ -39,7 +46,12 @@ export default function Home() {
       color: isDarkMode ? '#ffffff' : '#1a1a1a'
     }}>
       {/* Left Sidebar */}
-      <HomeLeft isDarkMode={isDarkMode} refreshTrigger={brandRefreshTrigger} />
+      <HomeLeft
+        isDarkMode={isDarkMode}
+        refreshTrigger={brandRefreshTrigger}
+        onBrandSelect={handleBrandSelect}
+        onBrandCreated={handleBrandCreated}
+      />
 
       {/* Main Content Area */}
       <div style={{
@@ -49,7 +61,7 @@ export default function Home() {
         overflow: 'hidden',
         background: isDarkMode ? '#1a1a1a' : '#ffffff'
       }}>
-        <HomeTop onBrandCreated={handleBrandCreated} />
+        <HomeTop selectedBrand={selectedBrand} />
         <div style={{
           flex: 1,
           overflow: 'auto',
