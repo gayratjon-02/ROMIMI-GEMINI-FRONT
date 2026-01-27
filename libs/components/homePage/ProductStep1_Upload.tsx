@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Image as ImageIcon, X, Plus, CheckCircle } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeMiddle.module.scss';
@@ -38,15 +38,70 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
     onNext,
     isAnalyzing,
 }) => {
-    const [dragStates, setDragStates] = React.useState({
+    const [dragStates, setDragStates] = useState({
         front: false,
         back: false,
         refs: false,
     });
 
+    // Global drag holati - butun sahifaga rasm olib kelganda ko'rinadi
+    const [isGlobalDragging, setIsGlobalDragging] = useState(false);
+
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
+    }, []);
+
+    // GLOBAL DROP - tashqaridan rasm olib kelganda tartib bilan joylaydi
+    const handleGlobalDrop = useCallback(
+        (e: React.DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsGlobalDragging(false);
+            setDragStates({ front: false, back: false, refs: false });
+
+            const files = Array.from(e.dataTransfer.files).filter((file) =>
+                file.type.startsWith('image/')
+            );
+
+            if (files.length === 0) return;
+
+            let fileIndex = 0;
+
+            // 1. Front View - bo'sh bo'lsa birinchi rasmni joylaymiz
+            if (!frontImage && files[fileIndex]) {
+                onFrontImageChange(files[fileIndex]);
+                fileIndex++;
+            }
+
+            // 2. Back View - bo'sh bo'lsa keyingi rasmni joylaymiz
+            if (!backImage && files[fileIndex]) {
+                onBackImageChange(files[fileIndex]);
+                fileIndex++;
+            }
+
+            // 3. Qolgan rasmlar - Detail References-ga (max 4)
+            if (fileIndex < files.length) {
+                const remainingFiles = files.slice(fileIndex);
+                const newRefs = [...referenceImages, ...remainingFiles].slice(0, 4);
+                onReferenceImagesChange(newRefs);
+            }
+        },
+        [frontImage, backImage, referenceImages, onFrontImageChange, onBackImageChange, onReferenceImagesChange]
+    );
+
+    // Global drag enter/leave
+    const handleGlobalDragEnter = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsGlobalDragging(true);
+    }, []);
+
+    const handleGlobalDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        // Faqat komponentdan chiqsa
+        if (e.currentTarget === e.target) {
+            setIsGlobalDragging(false);
+        }
     }, []);
 
     const handleDrop = useCallback(
@@ -54,6 +109,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
             e.preventDefault();
             e.stopPropagation();
             setDragStates((prev) => ({ ...prev, [type]: false }));
+            setIsGlobalDragging(false);
 
             const files = Array.from(e.dataTransfer.files).filter((file) =>
                 file.type.startsWith('image/')
@@ -97,6 +153,11 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
+            className={`${styles.stepContentWrapper} ${isGlobalDragging ? styles.globalDragging : ''}`}
+            onDragOver={handleDragOver}
+            onDragEnter={handleGlobalDragEnter}
+            onDragLeave={handleGlobalDragLeave}
+            onDrop={handleGlobalDrop}
         >
             {/* Main Dropzones Grid */}
             <div className={styles.dropzoneGrid}>

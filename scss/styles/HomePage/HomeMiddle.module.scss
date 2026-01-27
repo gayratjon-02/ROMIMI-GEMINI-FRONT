@@ -152,13 +152,66 @@
   justify-content: space-between;
 }
 
+// Global drag-drop wrapper
+.stepContentWrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+
+  // Global dragging holati - rasm olib kelganda ko'rinadi
+  &.globalDragging {
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(139, 92, 246, 0.08) 100%);
+      border: 2px dashed rgba(79, 70, 229, 0.5);
+      border-radius: 20px;
+      z-index: 10;
+      pointer-events: none;
+      animation: pulseGlow 1.5s ease-in-out infinite;
+    }
+
+    &::after {
+      content: 'Rasmlarni shu yerga tashlang';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      font-weight: 600;
+      color: #a78bfa;
+      background: rgba(15, 23, 42, 0.95);
+      padding: 16px 32px;
+      border-radius: 12px;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      z-index: 11;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.2);
+    border-color: rgba(79, 70, 229, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(79, 70, 229, 0.4);
+    border-color: rgba(139, 92, 246, 0.6);
+  }
+}
+
 // ===== DROPZONE STYLES =====
 .dropzoneGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   flex: 1;
-  min-height: 180px;
+  min-height: 360px;
   margin-bottom: 12px;
 
   @media (max-width: 768px) {
