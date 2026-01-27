@@ -216,8 +216,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
         try {
             // Start generation on the backend
             await startGeneration(generationId, {
-                visual_types: ['main_visual', 'lifestyle', 'detail_front', 'detail_back', 'model_pose_1', 'model_pose_2'],
-                quality: 'standard',
+                visualTypes: ['main_visual', 'lifestyle', 'detail_front', 'detail_back', 'model_pose_1', 'model_pose_2'],
             });
 
             // Poll for progress updates

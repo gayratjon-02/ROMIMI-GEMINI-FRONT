@@ -47,8 +47,9 @@ export interface UpdateGenerationData {
 }
 
 export interface GenerateData {
-    visual_types?: string[];
-    quality?: 'draft' | 'standard' | 'high';
+    prompts?: string[];
+    visualTypes?: string[];
+    model?: string;
 }
 
 export interface MergePromptsData {
