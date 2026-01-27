@@ -8,6 +8,8 @@ import ProductStep1_Upload from './ProductStep1_Upload';
 import ProductStep2_Analysis, { ProductAnalysis } from './ProductStep2_Analysis';
 import ProductStep3_MergePreview from './ProductStep3_MergePreview';
 import ProductStep4_Results from './ProductStep4_Results';
+import { createProduct, analyzeProduct } from '@/libs/server/HomePage/product';
+import { AnalyzedProductJSON } from '@/libs/types/homepage/product';
 
 interface HomeMiddleProps {
     isDarkMode?: boolean;
@@ -86,13 +88,51 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
 
     // Handlers
     const handleAnalyze = useCallback(async () => {
+        if (!frontImage || !backImage) {
+            alert('Please upload both front and back images.');
+            return;
+        }
+
+        if (!selectedCollection) {
+            alert('Please select a collection first.');
+            return;
+        }
+
         setIsAnalyzing(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setProductAnalysis(mockProductAnalysis);
-        setIsAnalyzing(false);
-        setCurrentStep(2);
-    }, []);
+        try {
+            // 1. Create Product
+            const productName = `Product ${new Date().toLocaleString()}`;
+            const product = await createProduct(
+                productName,
+                selectedCollection.id,
+                frontImage,
+                backImage,
+                referenceImages
+            );
+
+            // 2. Analyze Product
+            const analysisResponse = await analyzeProduct(product.id);
+            const json = analysisResponse.analyzed_product_json;
+
+            // 3. Map result to state
+            const mappedAnalysis: ProductAnalysis = {
+                type: json.product_type || 'Unknown Product',
+                color: json.colors?.[0] || 'Unknown Color',
+                material: json.materials?.[0] || 'Unknown Material',
+                details: json.features?.join(', ') || '',
+                logo_front: (json as any).logo_front || 'None',
+                logo_back: (json as any).logo_back || 'None',
+            };
+
+            setProductAnalysis(mappedAnalysis);
+            setCurrentStep(2);
+        } catch (error) {
+            console.error('Analysis failed:', error);
+            alert('Failed to analyze product. Please try again.');
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [frontImage, backImage, referenceImages, selectedCollection]);
 
     const handleAnalysisChange = useCallback((field: keyof ProductAnalysis, value: string) => {
         setProductAnalysis(prev => ({ ...prev, [field]: value }));
