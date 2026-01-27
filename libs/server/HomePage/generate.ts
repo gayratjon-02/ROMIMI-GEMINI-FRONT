@@ -228,15 +228,15 @@ export async function pollGenerationStatus(id: string): Promise<{
 }> {
     const progress = await getGenerationProgress(id);
 
-    const completedVisuals = progress.visual_outputs.filter(v => v.status === 'completed').length;
-    const failedVisuals = progress.visual_outputs.filter(v => v.status === 'failed').length;
+    const completedVisuals = (progress.visuals || []).filter(v => v.status === 'completed').length;
+    const failedVisuals = (progress.visuals || []).filter(v => v.status === 'failed').length;
 
     return {
         status: progress.status,
-        progress: progress.progress_percentage,
+        progress: progress.progress,
         completedCount: completedVisuals,
-        totalCount: progress.total_visuals,
-        visuals: progress.visual_outputs,
+        totalCount: progress.total,
+        visuals: progress.visuals || [],
         isComplete: progress.status === 'completed',
         hasFailed: failedVisuals > 0,
     };

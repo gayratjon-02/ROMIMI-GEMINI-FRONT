@@ -88,10 +88,11 @@ export interface GetPromptsResponse {
 }
 
 export interface GenerationProgressResponse {
-    generation_id: string;
     status: string;
-    total_visuals: number;
-    completed_visuals: number;
-    progress_percentage: number;
-    visual_outputs: VisualOutput[];
+    progress: number;
+    completed: number;
+    total: number;
+    visuals: VisualOutput[];
+    elapsed_seconds?: number;
+    estimated_remaining_seconds?: number;
 }
