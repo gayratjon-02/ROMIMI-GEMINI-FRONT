@@ -6,9 +6,7 @@
   color: #ffffff;
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 0;
-  left: 0;
+  flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
   transition: all 0.3s ease;

@@ -1,7 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Stack } from "@mui/material";
 import HomeTop from "@/libs/components/homePage/HomeTop";
 import HomeLeft from "@/libs/components/homePage/HomeLeft";
 import HomeMiddle from "@/libs/components/homePage/HomeMiddle";
@@ -19,13 +18,28 @@ const geistMono = Geist_Mono({
 
 export default function Home() {
   return (
-    <>
-      <Stack className={("homepageMain")}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      {/* Left Sidebar */}
+      <HomeLeft />
+
+      {/* Main Content Area */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
         <HomeTop />
-        <HomeLeft />
-        <HomeMiddle />
-        <HomeBottom />
-      </Stack>
-    </>
+        <div style={{
+          flex: 1,
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <HomeMiddle />
+          <HomeBottom />
+        </div>
+      </div>
+    </div>
   );
 }
