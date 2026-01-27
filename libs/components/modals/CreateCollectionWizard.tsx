@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@mui/material';
 import {
@@ -97,6 +97,11 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Input refs for keyboard navigation
+    const nameInputRef = useRef<HTMLInputElement>(null);
+    const codeInputRef = useRef<HTMLInputElement>(null);
+    const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -276,10 +281,17 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                     <div className={styles.formGroup}>
                                         <label>Collection Name *</label>
                                         <input
+                                            ref={nameInputRef}
                                             type="text"
                                             name="name"
                                             value={formData.name}
                                             onChange={handleInputChange}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    codeInputRef.current?.focus();
+                                                }
+                                            }}
                                             placeholder="e.g., Spring Summer 2026"
                                             className={styles.input}
                                         />
@@ -288,10 +300,17 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                     <div className={styles.formGroup}>
                                         <label>Collection Code *</label>
                                         <input
+                                            ref={codeInputRef}
                                             type="text"
                                             name="code"
                                             value={formData.code}
                                             onChange={handleInputChange}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    descriptionRef.current?.focus();
+                                                }
+                                            }}
                                             placeholder="e.g., SS26"
                                             className={styles.input}
                                         />
@@ -301,9 +320,19 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                 <div className={styles.formGroup}>
                                     <label>Description (Optional)</label>
                                     <textarea
+                                        ref={descriptionRef}
                                         name="description"
                                         value={formData.description}
                                         onChange={handleInputChange}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                // Allow Shift+Enter for new lines, Enter alone goes to next step
+                                                if (isStep1Valid) {
+                                                    e.preventDefault();
+                                                    goToNextStep();
+                                                }
+                                            }
+                                        }}
                                         placeholder="Describe the collection's vision and inspiration..."
                                         className={styles.textarea}
                                         rows={4}
