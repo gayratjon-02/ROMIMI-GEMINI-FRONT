@@ -173,6 +173,9 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
     // Drag state
     const [isDragging, setIsDragging] = useState(false);
 
+    // Color palette names (editable by user)
+    const [colorPaletteNames, setColorPaletteNames] = useState<string>('');
+
     // Handle input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData(prev => ({
@@ -721,10 +724,10 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                             </div>
                                             <input
                                                 type="text"
-                                                value={daAnalysis.color_palette.map(c => hexToColorName(c)).join(', ')}
-                                                readOnly
+                                                value={colorPaletteNames || daAnalysis.color_palette.map(c => hexToColorName(c)).join(', ')}
+                                                onChange={(e) => setColorPaletteNames(e.target.value)}
                                                 className={styles.colorNamesInput}
-                                                title="Color names based on palette"
+                                                placeholder="Describe your color palette..."
                                             />
                                         </div>
                                     </div>
