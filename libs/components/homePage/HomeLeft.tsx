@@ -5,7 +5,9 @@ import { useRouter } from 'next/router';
 import styles from '@/scss/styles/HomePage/HomeLeft.module.scss';
 import { getUserInfo, logout, UserInfo } from '@/libs/server/HomePage/signup';
 import { getAllBrands } from '@/libs/server/HomePage/brand';
+import { getCollectionsByBrand } from '@/libs/server/HomePage/collection';
 import { Brand } from '@/libs/types/homepage/brand';
+import { Collection } from '@/libs/types/homepage/collection';
 import CreateCollectionWizard from '@/libs/components/modals/CreateCollectionWizard';
 import CreateBrandModal from '@/libs/components/modals/CreateBrandModal';
 
@@ -35,6 +37,8 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
 
   // Brand dropdown state
   const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null);
+  const [brandCollections, setBrandCollections] = useState<Record<string, Collection[]>>({});
+  const [loadingCollections, setLoadingCollections] = useState<string | null>(null);
 
   // Modal states
   const [isCollectionWizardOpen, setIsCollectionWizardOpen] = useState(false);
@@ -79,7 +83,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
     if (onClose) onClose();
   };
 
-  const handleBrandClick = (brand: Brand) => {
+  const handleBrandClick = async (brand: Brand) => {
     if (expandedBrandId === brand.id) {
       setExpandedBrandId(null);
     } else {
@@ -87,6 +91,20 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
       setActiveBrandId(brand.id);
       setActiveMenu('');
       if (onBrandSelect) onBrandSelect(brand);
+
+      // Fetch collections for this brand if not already loaded
+      if (!brandCollections[brand.id]) {
+        setLoadingCollections(brand.id);
+        try {
+          const collections = await getCollectionsByBrand(brand.id);
+          setBrandCollections(prev => ({ ...prev, [brand.id]: collections }));
+        } catch (error) {
+          console.error('Error fetching collections:', error);
+          setBrandCollections(prev => ({ ...prev, [brand.id]: [] }));
+        } finally {
+          setLoadingCollections(null);
+        }
+      }
     }
   };
 
@@ -208,6 +226,43 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                 {/* Brand Dropdown */}
                 {expandedBrandId === brand.id && (
                   <div className={styles.brandDropdown}>
+                    {/* Loading state */}
+                    {loadingCollections === brand.id && (
+                      <div className={styles.loadingItem}>
+                        <span className={styles.loadingText}>Loading collections...</span>
+                      </div>
+                    )}
+
+                    {/* Collections list */}
+                    {brandCollections[brand.id]?.map((collection) => (
+                      <button
+                        key={collection.id}
+                        className={styles.collectionItem}
+                        onClick={() => {
+                          console.log('Collection selected:', collection);
+                          // TODO: Navigate to collection or select it
+                        }}
+                      >
+                        <span className={styles.collectionIcon}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          </svg>
+                        </span>
+                        <span className={styles.collectionName}>{collection.name}</span>
+                        {collection.code && (
+                          <span className={styles.collectionCode}>{collection.code}</span>
+                        )}
+                      </button>
+                    ))}
+
+                    {/* No collections message */}
+                    {!loadingCollections && brandCollections[brand.id]?.length === 0 && (
+                      <div className={styles.emptyCollections}>
+                        No collections yet
+                      </div>
+                    )}
+
+                    {/* Create new collection button */}
                     <button
                       className={styles.dropdownItem}
                       onClick={() => handleCreateCollectionClick(brand)}
