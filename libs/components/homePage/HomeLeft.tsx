@@ -71,8 +71,13 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
         setIsLoadingBrands(true);
         const fetchedBrands = await getAllBrands();
         setBrands(fetchedBrands);
-      } catch (error) {
-        console.error('Error fetching brands:', error);
+      } catch (error: any) {
+        // 401 Unauthorized - foydalanuvchi login qilmagan yoki token yaroqsiz
+        if (error?.status === 401) {
+          console.warn('Unauthorized: Token yaroqsiz yoki foydalanuvchi login qilmagan');
+        } else {
+          console.error('Error fetching brands:', error);
+        }
         setBrands([]);
       } finally {
         setIsLoadingBrands(false);
