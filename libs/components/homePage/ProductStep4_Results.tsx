@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Download, RefreshCw, Check, X, Loader2, ArrowLeft, Home } from 'lucide-react';
-import styles from '@/scss/styles/HomePage/HomeMiddle.module.scss';
+import { Download, RefreshCw, Check, X, Loader2, Home, Eye } from 'lucide-react';
+import styles from '@/scss/styles/HomePage/ProductStep4Results.module.scss';
 
 interface VisualOutput {
     type: string;
@@ -42,105 +42,110 @@ const ProductStep4_Results: React.FC<ProductStep4Props> = ({
     const failedCount = visuals.filter(v => v.status === 'failed').length;
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-        >
-            {/* Progress Section */}
-            <div style={{ marginBottom: 32 }}>
+        <div className={styles.container}>
+            {/* Header with Progress */}
+            <div className={styles.header}>
+                <div className={styles.headerContent}>
+                    <h2 className={styles.title}>Generated Visuals</h2>
+                    <div className={styles.stats}>
+                        <span className={styles.statItem}>
+                            {isComplete ? (
+                                <Check size={16} className={styles.iconSuccess} />
+                            ) : (
+                                <Loader2 size={16} className={styles.iconSpinning} />
+                            )}
+                            {completedCount} / {visuals.length} Complete
+                        </span>
+                        {failedCount > 0 && (
+                            <span className={`${styles.statItem} ${styles.error}`}>
+                                <X size={16} />
+                                {failedCount} Failed
+                            </span>
+                        )}
+                    </div>
+                </div>
+
                 <div className={styles.progressBar}>
-                    <div
+                    <motion.div
                         className={styles.progressFill}
-                        style={{ width: `${progress}%` }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
                     />
                 </div>
-                <p className={styles.progressText}>
-                    {isComplete ? (
-                        <>
-                            <Check size={16} style={{ color: 'var(--wizard-success)', marginRight: 8 }} />
-                            Generation complete! {completedCount} of {visuals.length} visuals ready.
-                            {failedCount > 0 && ` (${failedCount} failed)`}
-                        </>
-                    ) : (
-                        <>
-                            <Loader2 size={16} style={{ marginRight: 8, animation: 'spin 1s linear infinite' }} />
-                            Generating visuals... {completedCount} of {visuals.length}
-                        </>
-                    )}
-                </p>
             </div>
 
-            {/* Results Grid */}
+            {/* Results Grid - 3 columns */}
             <div className={styles.resultsGrid}>
                 {visuals.map((visual, index) => (
                     <motion.div
                         key={index}
                         className={styles.resultCard}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.08, duration: 0.3 }}
                     >
-                        {visual.status === 'completed' && visual.image_url ? (
-                            <img
-                                src={visual.image_url}
-                                alt={visual.type}
-                                className={styles.resultImage}
-                            />
-                        ) : visual.status === 'failed' ? (
-                            <div className={styles.resultLoading} style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
-                                <X size={32} style={{ color: 'var(--wizard-error)' }} />
-                                <p style={{ color: 'var(--wizard-error)', fontSize: 12, margin: 0 }}>
-                                    Generation failed
-                                </p>
-                                <button
-                                    onClick={() => onRetry(index)}
-                                    style={{
-                                        padding: '6px 12px',
-                                        background: 'var(--wizard-error)',
-                                        border: 'none',
-                                        borderRadius: 6,
-                                        color: '#fff',
-                                        fontSize: 12,
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 4,
-                                    }}
-                                >
-                                    <RefreshCw size={12} />
-                                    Retry
-                                </button>
+                        {/* Image Container */}
+                        <div className={styles.imageContainer}>
+                            {visual.status === 'completed' && visual.image_url ? (
+                                <>
+                                    <img
+                                        src={visual.image_url}
+                                        alt={visualTypeLabels[visual.type] || visual.type}
+                                        className={styles.resultImage}
+                                    />
+                                    <div className={styles.imageOverlay}>
+                                        <button className={styles.viewButton}>
+                                            <Eye size={20} />
+                                            View Full
+                                        </button>
+                                        <button className={styles.downloadButton}>
+                                            <Download size={18} />
+                                        </button>
+                                    </div>
+                                </>
+                            ) : visual.status === 'failed' ? (
+                                <div className={styles.imagePlaceholder}>
+                                    <X size={40} className={styles.failedIcon} />
+                                    <p className={styles.errorText}>Failed to generate</p>
+                                    <button
+                                        onClick={() => onRetry(index)}
+                                        className={styles.retryButton}
+                                    >
+                                        <RefreshCw size={14} />
+                                        Retry
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className={styles.imagePlaceholder}>
+                                    {visual.status === 'processing' ? (
+                                        <>
+                                            <Loader2 size={40} className={styles.processingIcon} />
+                                            <p className={styles.loadingText}>Generating...</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className={styles.pendingIcon} />
+                                            <p className={styles.loadingText}>Queued</p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Card Footer */}
+                        <div className={styles.cardFooter}>
+                            <div className={styles.cardInfo}>
+                                <h4 className={styles.cardTitle}>
+                                    {visualTypeLabels[visual.type] || visual.type}
+                                </h4>
+                                <span className={`${styles.statusBadge} ${styles[visual.status]}`}>
+                                    {visual.status === 'completed' && <Check size={12} />}
+                                    {visual.status === 'processing' && <Loader2 size={12} className={styles.spinning} />}
+                                    {visual.status === 'failed' && <X size={12} />}
+                                    {visual.status.charAt(0).toUpperCase() + visual.status.slice(1)}
+                                </span>
                             </div>
-                        ) : (
-                            <div className={styles.resultLoading}>
-                                {visual.status === 'processing' ? (
-                                    <Loader2 size={32} style={{ color: 'var(--wizard-accent)', animation: 'spin 1s linear infinite' }} />
-                                ) : (
-                                    <div style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: '50%',
-                                        background: 'var(--wizard-surface)',
-                                        border: '2px solid var(--wizard-border)',
-                                    }} />
-                                )}
-                                <p style={{ color: 'var(--wizard-text-muted)', fontSize: 12, margin: 0 }}>
-                                    {visual.status === 'processing' ? 'Generating...' : 'Queued'}
-                                </p>
-                            </div>
-                        )}
-                        <div className={styles.resultInfo}>
-                            <p className={styles.resultType}>
-                                {visualTypeLabels[visual.type] || visual.type}
-                            </p>
-                            <p className={`${styles.resultStatus} ${styles[visual.status]}`}>
-                                {visual.status === 'completed' && <Check size={12} />}
-                                {visual.status === 'processing' && <Loader2 size={12} />}
-                                {visual.status === 'failed' && <X size={12} />}
-                                {visual.status.charAt(0).toUpperCase() + visual.status.slice(1)}
-                            </p>
                         </div>
                     </motion.div>
                 ))}
@@ -153,7 +158,7 @@ const ProductStep4_Results: React.FC<ProductStep4Props> = ({
                     New Product
                 </button>
                 <button
-                    className={styles.btnSuccess}
+                    className={styles.btnPrimary}
                     onClick={onDownload}
                     disabled={!isComplete || completedCount === 0}
                 >
@@ -161,7 +166,7 @@ const ProductStep4_Results: React.FC<ProductStep4Props> = ({
                     Download All ({completedCount})
                 </button>
             </div>
-        </motion.div>
+        </div>
     );
 };
 
