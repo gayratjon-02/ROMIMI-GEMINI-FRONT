@@ -1,13 +1,15 @@
-import { Stack, useTheme } from "@mui/material";
+'use client';
+
+import React, { useContext } from 'react';
+import { useTheme } from "@mui/material";
 import FolderIcon from '@mui/icons-material/Folder';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
-import ViewStreamIcon from '@mui/icons-material/ViewStream';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import DownloadIcon from '@mui/icons-material/Download';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import HistoryIcon from '@mui/icons-material/History';
 import styles from "@/scss/styles/HomePage/HomeTop.module.scss";
-import { useContext } from "react";
 import { ColorModeContext } from "@/pages/_app";
 
 const HomeTop = () => {
@@ -15,7 +17,7 @@ const HomeTop = () => {
     const colorMode = useContext(ColorModeContext);
 
     return (
-        <Stack className={`${styles.container} ${styles[theme.palette.mode]}`}>
+        <div className={`${styles.container} ${styles[theme.palette.mode]}`}>
             {/* Left: Navigation & Context */}
             <div className={styles.leftSection}>
                 {/* Tab Group */}
@@ -27,16 +29,13 @@ const HomeTop = () => {
                 {/* Dropdown Context */}
                 <div className={styles.dropdown}>
                     <FolderIcon fontSize="small" />
-                    <span>SS26</span>
+                    <span>Urban</span>
                     <ArrowDropDownIcon fontSize="small" />
                 </div>
-            </div>
 
-            {/* Center: Status Indicator */}
-            <div className={styles.centerSection}>
-                <div className={styles.statusPill}>
-                    <span className={styles.statusDot}></span>
-                    Generating 4/6...
+                {/* Style Set Button */}
+                <div className={styles.styleSetButton}>
+                    <span>Style Set</span>
                 </div>
             </div>
 
@@ -53,17 +52,23 @@ const HomeTop = () => {
                         <NightlightRoundIcon fontSize="small" />
                     )}
                 </div>
+
+                {/* Fullscreen */}
                 <div className={styles.iconButton}>
-                    <ViewStreamIcon fontSize="small" />
+                    <FullscreenIcon fontSize="small" />
                 </div>
+
+                {/* Download */}
                 <div className={styles.iconButton}>
                     <DownloadIcon fontSize="small" />
                 </div>
+
+                {/* History */}
                 <div className={styles.iconButton}>
-                    <AccountCircleIcon fontSize="small" />
+                    <HistoryIcon fontSize="small" />
                 </div>
             </div>
-        </Stack>
+        </div>
     )
 }
 
