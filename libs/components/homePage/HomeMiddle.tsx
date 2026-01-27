@@ -21,6 +21,7 @@ import {
 import {
     createGeneration,
     updateMergedPrompts as updatePromptsAPI,
+    mergePrompts,
 } from '@/libs/server/HomePage/merging';
 
 interface HomeMiddleProps {
@@ -236,6 +237,10 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
             };
 
             // Save prompts to backend immediately
+            // 1. Trigger backend merge (required to initialize prompt slots)
+            await mergePrompts(generation.id);
+
+            // 2. Overwrite with our calculated 6-shot prompts
             await updatePromptsAPI(generation.id, { prompts: initialPrompts });
 
             setMergedPrompts(initialPrompts);
