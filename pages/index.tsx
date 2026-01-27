@@ -8,6 +8,7 @@ import HomeLeft from "@/libs/components/homePage/HomeLeft";
 import HomeMiddle from "@/libs/components/homePage/HomeMiddle";
 import HomeBottom from "@/libs/components/homePage/HomeButtom";
 import { Brand } from "@/libs/types/homepage/brand";
+import { Collection } from "@/libs/types/homepage/collection";
 import HomeRight from "@/libs/components/homePage/HomeRight";
 
 const geistSans = Geist({
@@ -29,6 +30,7 @@ export default function Home() {
 
   // Selected brand state - shared between HomeLeft and HomeTop
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
 
   const handleBrandCreated = useCallback(() => {
     setBrandRefreshTrigger(prev => prev + 1);
@@ -36,6 +38,12 @@ export default function Home() {
 
   const handleBrandSelect = useCallback((brand: Brand | null) => {
     setSelectedBrand(brand);
+    // Note: Collection reset is handled by HomeLeft via onCollectionSelect(null, brand)
+  }, []);
+
+  const handleCollectionSelect = useCallback((collection: Collection | null, brand: Brand | null) => {
+    setSelectedCollection(collection);
+    if (brand) setSelectedBrand(brand);
   }, []);
 
   return (
@@ -51,6 +59,7 @@ export default function Home() {
         isDarkMode={isDarkMode}
         refreshTrigger={brandRefreshTrigger}
         onBrandSelect={handleBrandSelect}
+        onCollectionSelect={handleCollectionSelect}
         onBrandCreated={handleBrandCreated}
       />
 
@@ -72,7 +81,11 @@ export default function Home() {
           overflow: 'hidden',
           background: isDarkMode ? '#0a0a0f' : '#ffffff'
         }}>
-          <HomeMiddle isDarkMode={isDarkMode} />
+          <HomeMiddle
+            isDarkMode={isDarkMode}
+            selectedCollection={selectedCollection}
+            selectedBrand={selectedBrand}
+          />
         </div>
       </div>
     </div>

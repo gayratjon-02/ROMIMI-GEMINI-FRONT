@@ -10,10 +10,12 @@ import ProductStep3_MergePreview from './ProductStep3_MergePreview';
 import ProductStep4_Results from './ProductStep4_Results';
 import { createProduct, analyzeProduct } from '@/libs/server/HomePage/product';
 import { AnalyzedProductJSON } from '@/libs/types/homepage/product';
+import { Brand } from '@/libs/types/homepage/brand';
 
 interface HomeMiddleProps {
     isDarkMode?: boolean;
     selectedCollection?: { id: string; name: string } | null;
+    selectedBrand?: Brand | null;
 }
 
 interface MergedPrompts {
@@ -52,6 +54,7 @@ const mockProductAnalysis: ProductAnalysis = {
 const HomeMiddle: React.FC<HomeMiddleProps> = ({
     isDarkMode = true,
     selectedCollection,
+    selectedBrand,
 }) => {
     // Wizard State
     const [currentStep, setCurrentStep] = useState(1);
@@ -239,9 +242,18 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
             <div className={styles.wizardHeader}>
                 <h1 className={styles.wizardTitle}>Create Product Visuals</h1>
                 <p className={styles.wizardSubtitle}>
-                    {selectedCollection
-                        ? `Generating for: ${selectedCollection.name}`
-                        : 'Upload product photos and generate AI visuals'
+                    {selectedCollection && selectedBrand
+                        ? (
+                            <>
+                                <span style={{ opacity: 0.6 }}>{selectedBrand.name}</span>
+                                <span style={{ margin: '0 8px', opacity: 0.4 }}>/</span>
+                                <span>{selectedCollection.name}</span>
+                            </>
+                        )
+                        : (selectedCollection
+                            ? `Generating for: ${selectedCollection.name}`
+                            : 'Upload product photos and generate AI visuals'
+                        )
                     }
                 </p>
             </div>

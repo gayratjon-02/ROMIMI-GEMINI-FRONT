@@ -17,6 +17,7 @@ interface HomeLeftProps {
   onClose?: () => void;
   refreshTrigger?: number;
   onBrandSelect?: (brand: Brand | null) => void;
+  onCollectionSelect?: (collection: Collection | null, brand: Brand | null) => void;
   onBrandCreated?: () => void;
 }
 
@@ -25,7 +26,9 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   isOpen = true,
   onClose,
   refreshTrigger = 0,
+  refreshTrigger = 0,
   onBrandSelect,
+  onCollectionSelect,
   onBrandCreated
 }) => {
   const router = useRouter();
@@ -37,6 +40,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
 
   // Brand dropdown state
   const [expandedBrandId, setExpandedBrandId] = useState<string | null>(null);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
   const [brandCollections, setBrandCollections] = useState<Record<string, Collection[]>>({});
   const [loadingCollections, setLoadingCollections] = useState<string | null>(null);
 
@@ -109,8 +113,10 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
     } else {
       setExpandedBrandId(brand.id);
       setActiveBrandId(brand.id);
+      setActiveCollectionId(null); // Reset collection when brand changes
       setActiveMenu('');
       if (onBrandSelect) onBrandSelect(brand);
+      if (onCollectionSelect) onCollectionSelect(null, brand); // Reset collection in parent
 
       // Fetch collections for this brand if not already loaded
       if (!brandCollections[brand.id]) {
@@ -361,10 +367,13 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                     {brandCollections[brand.id]?.map((collection) => (
                       <div key={collection.id} className={styles.collectionItemWrapper}>
                         <button
-                          className={styles.collectionItem}
-                          onClick={() => {
-                            console.log('Collection selected:', collection);
-                            // TODO: Navigate to collection or select it
+                          className={`${styles.collectionItem} ${activeCollectionId === collection.id ? styles.active : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveCollectionId(collection.id);
+                            setActiveBrandId(brand.id); // Ensure brand is active
+                            if (onBrandSelect) onBrandSelect(brand);
+                            if (onCollectionSelect) onCollectionSelect(collection, brand);
                           }}
                         >
                           <span className={styles.collectionIcon}>
