@@ -26,7 +26,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   isOpen = true,
   onClose,
   refreshTrigger = 0,
-  refreshTrigger = 0,
   onBrandSelect,
   onCollectionSelect,
   onBrandCreated
