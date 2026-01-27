@@ -226,3 +226,42 @@ export async function deleteCollection(id: string): Promise<{ message: string }>
         });
     }
 }
+
+/**
+ * Update DA JSON manually (Step 4 of Collection Flow)
+ * POST /api/collections/updateDAJson/:id
+ */
+export async function updateDAJSON(
+    id: string,
+    data: { analyzed_da_json: Record<string, any>; fixed_elements?: Record<string, any> }
+): Promise<{ analyzed_da_json: any; fixed_elements: any; updated_at: string }> {
+    try {
+        const response = await fetch(`${API_BASE}/collections/updateDAJson/${id}`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to update DA JSON"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData;
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}

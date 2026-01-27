@@ -23,7 +23,7 @@ import {
     updateMergedPrompts as updatePromptsAPI,
     mergePrompts,
 } from '@/libs/server/HomePage/merging';
-import { updateCollection } from '@/libs/server/HomePage/collection';
+import { updateDAJSON } from '@/libs/server/HomePage/collection';
 
 interface HomeMiddleProps {
     isDarkMode?: boolean;
@@ -248,7 +248,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
 
                 if (errorMsg.includes('Collection DA') || responseMsg.includes('Collection DA')) {
                     console.warn('Collection DA missing, injecting mock data...');
-                    await updateCollection(selectedCollection.id, {
+                    await updateDAJSON(selectedCollection.id, {
                         analyzed_da_json: mockDAAnalysis
                     });
                     // Retry merge
