@@ -6,8 +6,31 @@ import { X, Check, Loader2 } from 'lucide-react';
 import { Collection } from '@/libs/types/homepage/collection';
 import { updateCollection, updateDAJSON } from '@/libs/server/HomePage/collection';
 import { AuthApiError } from '@/libs/server/HomePage/signup';
-import { AnalyzedDAJSON } from '@/libs/types/homepage/analyzed-da-json';
 import styles from '@/scss/styles/HomePage/CreateCollectionWizard.module.scss';
+
+// AnalyzedDAJSON interface (same as in CreateCollectionWizard)
+interface AnalyzedDAJSON {
+    background?: {
+        color_hex?: string;
+        color_name?: string;
+        description?: string;
+        texture?: string;
+    };
+    lighting?: {
+        type?: string;
+        direction?: string;
+        temperature?: string;
+        intensity?: string;
+    };
+    props?: {
+        style?: string;
+        placement?: string;
+    };
+    composition?: {
+        framing?: string;
+    };
+    mood?: string;
+}
 
 interface EditCollectionModalProps {
     collection: Collection;
