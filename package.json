@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "start:prod": "serve -s build -l 5030",
+    "lint": "eslint"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
