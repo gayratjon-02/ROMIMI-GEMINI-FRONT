@@ -9,6 +9,7 @@ import { getCollectionsByBrand, updateCollection, deleteCollection } from '@/lib
 import { Brand, UpdateBrandData } from '@/libs/types/homepage/brand';
 import { Collection, UpdateCollectionData } from '@/libs/types/homepage/collection';
 import CreateCollectionWizard from '@/libs/components/modals/CreateCollectionWizard';
+import EditCollectionModal from '@/libs/components/modals/EditCollectionModal';
 import CreateBrandModal from '@/libs/components/modals/CreateBrandModal';
 
 interface HomeLeftProps {
@@ -58,8 +59,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   // Edit/Delete collection states
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = useState(false);
-  const [editCollectionName, setEditCollectionName] = useState('');
-  const [editCollectionCode, setEditCollectionCode] = useState('');
   const [isDeletingCollection, setIsDeletingCollection] = useState(false);
   const [deleteConfirmCollection, setDeleteConfirmCollection] = useState<{ collection: Collection, brandId: string } | null>(null);
 
@@ -221,34 +220,23 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   const handleEditCollectionClick = (collection: Collection, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingCollection(collection);
-    setEditCollectionName(collection.name);
-    setEditCollectionCode(collection.code || '');
     setIsEditCollectionModalOpen(true);
   };
 
-  const handleEditCollectionSave = async () => {
-    if (!editingCollection || !editCollectionName.trim()) return;
-
-    try {
-      const updatedCollection = await updateCollection(editingCollection.id, {
-        name: editCollectionName.trim()
-        // Note: code cannot be updated via this endpoint - it's set only during creation
+  const handleEditCollectionSave = (updatedCollection: Collection) => {
+    // Update in brandCollections
+    setBrandCollections(prev => {
+      const newState = { ...prev };
+      Object.keys(newState).forEach(brandId => {
+        const collections = newState[brandId];
+        const index = collections.findIndex(c => c.id === updatedCollection.id);
+        if (index !== -1) {
+          collections[index] = updatedCollection;
+        }
       });
-      // Update in brandCollections
-      setBrandCollections(prev => {
-        const newState = { ...prev };
-        Object.keys(newState).forEach(brandId => {
-          newState[brandId] = newState[brandId].map(c =>
-            c.id === updatedCollection.id ? updatedCollection : c
-          );
-        });
-        return newState;
-      });
-      setIsEditCollectionModalOpen(false);
-      setEditingCollection(null);
-    } catch (error) {
-      console.error('Error updating collection:', error);
-    }
+      return newState;
+    });
+    setEditingCollection(null);
   };
 
   // Delete collection handlers
@@ -613,45 +601,17 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
       )}
 
       {/* Edit Collection Modal */}
-      {isEditCollectionModalOpen && editingCollection && (
-        <div className={styles.modalOverlay} onClick={() => setIsEditCollectionModalOpen(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Edit Collection</h3>
-            <input
-              type="text"
-              value={editCollectionName}
-              onChange={(e) => setEditCollectionName(e.target.value)}
-              className={styles.modalInput}
-              placeholder="Collection name"
-              autoFocus
-            />
-            <input
-              type="text"
-              value={editCollectionCode}
-              className={styles.modalInput}
-              placeholder="Collection code"
-              style={{ marginTop: '12px', opacity: 0.6, cursor: 'not-allowed' }}
-              disabled
-              title="Collection code cannot be changed after creation"
-            />
-            <p style={{
-              fontSize: '11px',
-              color: 'rgba(255, 255, 255, 0.4)',
-              margin: '4px 0 0 0',
-              fontStyle: 'italic'
-            }}>
-              * Code cannot be changed after creation
-            </p>
-            <div className={styles.modalActions}>
-              <button className={styles.cancelBtn} onClick={() => setIsEditCollectionModalOpen(false)}>
-                Cancel
-              </button>
-              <button className={styles.saveBtn} onClick={handleEditCollectionSave}>
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+      {editingCollection && (
+        <EditCollectionModal
+          collection={editingCollection}
+          isOpen={isEditCollectionModalOpen}
+          onClose={() => {
+            setIsEditCollectionModalOpen(false);
+            setEditingCollection(null);
+          }}
+          onSave={handleEditCollectionSave}
+          isDarkMode={isDarkMode}
+        />
       )}
 
       {/* Delete Collection Confirmation Modal */}
