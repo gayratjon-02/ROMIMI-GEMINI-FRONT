@@ -44,7 +44,9 @@ export default function App({ Component, pageProps }: AppProps) {
     [],
   );
 
+
   const theme = useMemo(
+    //@ts-ignore
     () => createTheme(mode === 'light' ? light : dark),
     [mode],
   );
