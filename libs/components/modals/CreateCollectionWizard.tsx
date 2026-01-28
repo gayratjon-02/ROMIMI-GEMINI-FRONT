@@ -166,8 +166,8 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
     const processFile = useCallback((file: File) => {
         if (!file || !file.type.startsWith('image/')) return;
 
-        // Validate file
-        const validation = validateImageFile(file, 10);
+        // Validate file (30MB max to match backend)
+        const validation = validateImageFile(file, 30);
         if (!validation.isValid) {
             setError(validation.error || 'Invalid file');
             return;
