@@ -154,6 +154,14 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
         // Expand the brand to show the new collection
         setExpandedBrandId(selectedBrandForCollection.id);
         setActiveBrandId(selectedBrandForCollection.id);
+
+        // Auto-select the newly created collection
+        setActiveCollectionId(newCollection.id);
+
+        // Notify parent component about the selected collection
+        if (onCollectionSelect) {
+          onCollectionSelect(newCollection, selectedBrandForCollection);
+        }
       } catch (error) {
         console.error('Error refreshing collections:', error);
       }
