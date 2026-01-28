@@ -897,31 +897,5 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
     );
 };
 
+
 export default CreateCollectionWizard;
-/* Creating Collection & Analyzing - Loading State */
-<div className={styles.analyzingContainer}>
-    <div className={styles.aiLoader}>
-        <div className={styles.aiRing}>
-            <div className={styles.aiRingInner} />
-        </div>
-        <Sparkles className={styles.aiIcon} size={32} />
-    </div>
-    <h3 className={styles.analyzingTitle}>
-        {analysisProgress < 30 ? 'Creating Collection...' : 'Analyzing Visual Style...'}
-    </h3>
-    <p className={styles.analyzingText}>
-        {analysisProgress < 30 && 'Setting up your collection in the database...'}
-        {analysisProgress >= 30 && analysisProgress < 100 && 'Claude AI is extracting visual atmosphere, lighting, and mood...'}
-        {analysisProgress >= 100 && 'Finalizing collection...'}
-    </p>
-    <div className={styles.analyzeProgress}>
-        <motion.div
-            className={styles.analyzeProgressFill}
-            style={{ width: `${analysisProgress}%` }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-        />
-    </div>
-    <p className={styles.progressText}>
-        {analysisProgress}%
-    </p>
-</div>
