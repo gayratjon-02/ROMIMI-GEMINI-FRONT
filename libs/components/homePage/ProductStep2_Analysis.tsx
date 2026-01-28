@@ -71,7 +71,7 @@ const ProductStep2_Analysis: React.FC<ProductStep2Props> = ({
             </div>
 
             {/* Preview + Form Layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32, marginBottom: 32 }}>
+            <div className={styles.analysisLayout}>
                 {/* Image Preview */}
                 {frontImagePreview && (
                     <div style={{
