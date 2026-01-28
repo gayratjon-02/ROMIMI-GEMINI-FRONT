@@ -6,7 +6,7 @@ import { X, Check, Loader2 } from 'lucide-react';
 import { Collection } from '@/libs/types/homepage/collection';
 import { updateCollection, updateDAJSON } from '@/libs/server/HomePage/collection';
 import { AuthApiError } from '@/libs/server/HomePage/signup';
-import styles from '@/scss/styles/HomePage/CreateCollectionWizard.module.scss';
+import styles from '@/scss/styles/Modals/CreateCollectionWizard.module.scss';
 
 // AnalyzedDAJSON interface (same as in CreateCollectionWizard)
 interface AnalyzedDAJSON {
