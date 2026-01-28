@@ -1,0 +1,26 @@
+services:
+  romimi-frontend:
+    container_name: romimi-frontend
+    restart: always
+    image: node:24.13.0
+    ports:
+      - 5030:3011
+    environment:
+      - PORT=3011
+    volumes:
+      - ./:/usr/src/romimi-frontend
+    working_dir: /usr/src/romimi-frontend
+
+    networks:
+      - client-network
+
+    # FOR PRODUCTION
+    command: bash -c "yarn && yarn build && yarn start"
+
+networks:
+  client-network:
+    driver: bridge
+ 
+
+
+
