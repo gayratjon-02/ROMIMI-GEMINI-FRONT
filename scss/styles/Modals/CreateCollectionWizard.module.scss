@@ -927,3 +927,30 @@
     height: 80px;
   }
 }
+
+// Section Headers (Background, Lighting, Props, Atmosphere)
+.sectionDivider {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+
+  .light & {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+}
+
+.sectionHeader {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px 0;
+  
+  // Dark mode: Bright white for visibility
+  color: #ffffff !important;
+  
+  // Light mode: Dark text
+  .light & {
+    color: #1a1a1a !important;
+  }
+}

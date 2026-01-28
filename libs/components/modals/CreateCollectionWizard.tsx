@@ -654,7 +654,7 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                     <div className={styles.reviewFields}>
                                         {/* Background Section */}
                                         <div className={styles.sectionDivider}>
-                                            <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Background</h4>
+                                            <h4 className={styles.sectionHeader}>Background</h4>
                                         </div>
 
                                         <div className={styles.formGroup}>
@@ -712,7 +712,7 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
 
                                         {/* Lighting Section */}
                                         <div className={styles.sectionDivider} style={{ marginTop: '24px' }}>
-                                            <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Lighting</h4>
+                                            <h4 className={styles.sectionHeader}>Lighting</h4>
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -765,7 +765,7 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
 
                                         {/* Props Section */}
                                         <div className={styles.sectionDivider} style={{ marginTop: '24px' }}>
-                                            <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Props & Styling</h4>
+                                            <h4 className={styles.sectionHeader}>Props & Styling</h4>
                                         </div>
 
                                         <div className={styles.formGroup}>
@@ -792,7 +792,7 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
 
                                         {/* Atmosphere */}
                                         <div className={styles.sectionDivider} style={{ marginTop: '24px' }}>
-                                            <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Atmosphere</h4>
+                                            <h4 className={styles.sectionHeader}>Atmosphere</h4>
                                         </div>
 
                                         <div className={styles.formGroup}>
