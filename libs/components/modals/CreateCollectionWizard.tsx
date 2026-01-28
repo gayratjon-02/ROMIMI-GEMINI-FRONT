@@ -641,8 +641,8 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                 className={styles.stepContent}
                             >
                                 <div className={styles.stepHeader}>
-                                    <h3>Review & Edit</h3>
-                                    <p>Fine-tune the AI-generated visual direction</p>
+                                    <h3>Review & Edit Visual Direction</h3>
+                                    <p>Fine-tune the AI-generated attributes for your collection</p>
                                 </div>
 
                                 {error && (
@@ -661,18 +661,150 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                         </div>
                                     </div>
 
-                                    {/* Editable Fields */}
+                                    {/* Editable Fields - Organized by Section */}
                                     {daAnalysis && (
                                         <div className={styles.reviewFields}>
+                                            {/* Background Section */}
+                                            <div className={styles.sectionDivider}>
+                                                <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Background</h4>
+                                            </div>
+
                                             <div className={styles.formGroup}>
-                                                <label>Props Style & Decor</label>
+                                                <label>Background Color</label>
+                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                    <div style={{
+                                                        width: '48px',
+                                                        height: '48px',
+                                                        borderRadius: '8px',
+                                                        backgroundColor: daAnalysis.background?.color_hex || '#ffffff',
+                                                        border: '2px solid var(--wizard-border)',
+                                                        flexShrink: 0,
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                    }} />
+                                                    <input
+                                                        type="text"
+                                                        value={daAnalysis.background?.color_hex || ''}
+                                                        onChange={e => handleAnalysisChange('background.color_hex', e.target.value)}
+                                                        className={styles.input}
+                                                        placeholder="#HEXCODE"
+                                                        style={{ width: '120px' }}
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={daAnalysis.background?.color_name || ''}
+                                                        onChange={e => handleAnalysisChange('background.color_name', e.target.value)}
+                                                        className={styles.input}
+                                                        placeholder="Color Name"
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className={styles.formGroup}>
+                                                <label>Background Description</label>
+                                                <textarea
+                                                    value={daAnalysis.background?.description || ''}
+                                                    onChange={e => handleAnalysisChange('background.description', e.target.value)}
+                                                    className={styles.textarea}
+                                                    rows={2}
+                                                    placeholder="e.g., Burgundy studio wall with soft texture"
+                                                />
+                                            </div>
+
+                                            <div className={styles.formGroup}>
+                                                <label>Background Texture</label>
+                                                <input
+                                                    type="text"
+                                                    value={daAnalysis.background?.texture || ''}
+                                                    onChange={e => handleAnalysisChange('background.texture', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="e.g., Concrete, Velvet, Seamless Paper"
+                                                />
+                                            </div>
+
+                                            {/* Lighting Section */}
+                                            <div className={styles.sectionDivider} style={{ marginTop: '24px' }}>
+                                                <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Lighting</h4>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                                <div className={styles.formGroup}>
+                                                    <label>Type</label>
+                                                    <input
+                                                        type="text"
+                                                        value={daAnalysis.lighting?.type || ''}
+                                                        onChange={e => handleAnalysisChange('lighting.type', e.target.value)}
+                                                        className={styles.input}
+                                                        placeholder="e.g., Soft Natural"
+                                                    />
+                                                </div>
+
+                                                <div className={styles.formGroup}>
+                                                    <label>Direction</label>
+                                                    <input
+                                                        type="text"
+                                                        value={daAnalysis.lighting?.direction || ''}
+                                                        onChange={e => handleAnalysisChange('lighting.direction', e.target.value)}
+                                                        className={styles.input}
+                                                        placeholder="e.g., Front-lit"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                                <div className={styles.formGroup}>
+                                                    <label>Temperature</label>
+                                                    <input
+                                                        type="text"
+                                                        value={daAnalysis.lighting?.temperature || ''}
+                                                        onChange={e => handleAnalysisChange('lighting.temperature', e.target.value)}
+                                                        className={styles.input}
+                                                        placeholder="e.g., Warm 3000K"
+                                                    />
+                                                </div>
+
+                                                <div className={styles.formGroup}>
+                                                    <label>Intensity</label>
+                                                    <input
+                                                        type="text"
+                                                        value={daAnalysis.lighting?.intensity || ''}
+                                                        onChange={e => handleAnalysisChange('lighting.intensity', e.target.value)}
+                                                        className={styles.input}
+                                                        placeholder="e.g., Medium"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Props Section */}
+                                            <div className={styles.sectionDivider} style={{ marginTop: '24px' }}>
+                                                <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Props & Styling</h4>
+                                            </div>
+
+                                            <div className={styles.formGroup}>
+                                                <label>Props Style</label>
                                                 <textarea
                                                     value={daAnalysis.props?.style || ''}
                                                     onChange={e => handleAnalysisChange('props.style', e.target.value)}
                                                     className={styles.textarea}
                                                     rows={2}
-                                                    placeholder="Describe props and styling..."
+                                                    placeholder="e.g., Playful romantic Valentine theme"
                                                 />
+                                            </div>
+
+                                            <div className={styles.formGroup}>
+                                                <label>Props Placement</label>
+                                                <input
+                                                    type="text"
+                                                    value={daAnalysis.props?.placement || ''}
+                                                    onChange={e => handleAnalysisChange('props.placement', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="e.g., Heart props on left and right sides"
+                                                />
+                                            </div>
+
+                                            {/* Mood */}
+                                            <div className={styles.sectionDivider} style={{ marginTop: '24px' }}>
+                                                <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--wizard-text-primary)' }}>Atmosphere</h4>
                                             </div>
 
                                             <div className={styles.formGroup}>
@@ -682,38 +814,20 @@ const CreateCollectionWizard: React.FC<CreateCollectionWizardProps> = ({
                                                     value={daAnalysis.mood || ''}
                                                     onChange={e => handleAnalysisChange('mood', e.target.value)}
                                                     className={styles.input}
+                                                    placeholder="e.g., Romantic, Playful, Minimalist"
                                                 />
                                             </div>
 
-                                            {/* Background & Color */}
+                                            {/* Composition */}
                                             <div className={styles.formGroup}>
-                                                <label>Background Description</label>
-                                                <textarea
-                                                    value={daAnalysis.background?.description || ''}
-                                                    onChange={e => handleAnalysisChange('background.description', e.target.value)}
-                                                    className={styles.textarea}
-                                                    rows={2}
+                                                <label>Composition Framing</label>
+                                                <input
+                                                    type="text"
+                                                    value={daAnalysis.composition?.framing || ''}
+                                                    onChange={e => handleAnalysisChange('composition.framing', e.target.value)}
+                                                    className={styles.input}
+                                                    placeholder="e.g., Medium shot, centered"
                                                 />
-                                            </div>
-
-                                            <div className={styles.formGroup}>
-                                                <label>Primary Background Color</label>
-                                                <div className={styles.colorInputRow} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                                    <input
-                                                        type="color"
-                                                        value={daAnalysis.background?.color_hex || '#ffffff'}
-                                                        onChange={e => handleAnalysisChange('background.color_hex', e.target.value)}
-                                                        className={styles.colorPicker}
-                                                        style={{ width: '40px', height: '40px', padding: 0, border: 'none', cursor: 'pointer' }}
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={daAnalysis.background?.color_name || ''}
-                                                        onChange={e => handleAnalysisChange('background.color_name', e.target.value)}
-                                                        className={styles.input}
-                                                        placeholder="Color Name (e.g. Off White)"
-                                                    />
-                                                </div>
                                             </div>
                                         </div>
                                     )}
