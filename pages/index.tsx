@@ -74,7 +74,11 @@ function Home() {
         overflow: 'hidden',
         height: '100vh'
       }}>
-        <HomeTop selectedBrand={selectedBrand} />
+        <HomeTop
+          selectedBrand={selectedBrand}
+          selectedCollection={selectedCollection}
+          onCollectionSelect={handleCollectionSelect}
+        />
 
         {/* HomeMiddle - to'liq ko'rinishi, scroll yo'q */}
         <div style={{

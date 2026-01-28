@@ -111,35 +111,7 @@
   }
 }
 
-// Selected Brand Display
-.selectedBrand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(79, 70, 229, 0.12);
-  color: #a5a0ff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: default;
-  border: 1px solid rgba(79, 70, 229, 0.25);
-
-  .light & {
-    background: rgba(79, 70, 229, 0.08);
-    color: #4f46e5;
-    border: 1px solid rgba(79, 70, 229, 0.15);
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  span {
-    user-select: none;
-  }
-}
+// Selected Brand Display\n.selectedBrand {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 8px 12px;\n  border-radius: 8px;\n  background: rgba(79, 70, 229, 0.12);\n  color: #a5a0ff;\n  font-size: 14px;\n  font-weight: 500;\n  cursor: default;\n  border: 1px solid rgba(79, 70, 229, 0.25);\n\n  .light & {\n    background: rgba(79, 70, 229, 0.08);\n    color: #4f46e5;\n    border: 1px solid rgba(79, 70, 229, 0.15);\n  }\n\n  svg {\n    width: 18px;\n    height: 18px;\n  }\n\n  span {\n    user-select: none;\n  }\n}
 
 // Style Set Button
 .styleSetButton {
