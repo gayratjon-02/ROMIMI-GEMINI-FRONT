@@ -44,16 +44,12 @@ function Home() {
 
   const handleBrandSelect = useCallback((brand: Brand | null) => {
     setSelectedBrand(brand);
-    // Close mobile drawer after selection
-    setIsMobileDrawerOpen(false);
     // Note: Collection reset is handled by HomeLeft via onCollectionSelect(null, brand)
   }, []);
 
   const handleCollectionSelect = useCallback((collection: Collection | null, brand: Brand | null) => {
     setSelectedCollection(collection);
     if (brand) setSelectedBrand(brand);
-    // Close mobile drawer after selection
-    setIsMobileDrawerOpen(false);
   }, []);
 
   return (
