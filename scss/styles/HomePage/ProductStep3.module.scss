@@ -505,3 +505,86 @@
     background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
   }
 }
+
+// ===== MERGING OVERLAY =====
+.mergingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  
+  :global(body.light) &,
+  :global(body[data-theme='light']) & {
+    background: rgba(255, 255, 255, 0.95);
+  }
+}
+
+.mergingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.mergingSpinner {
+  color: var(--accent);
+  opacity: 0.9;
+}
+
+.mergingTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.mergingText {
+  font-size: 16px;
+  color: var(--text-sub);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.mergingDots {
+  display: flex;
+  gap: 12px;
+  font-size: 20px;
+  color: var(--accent);
+  
+  span {
+    display: inline-block;
+    animation: mergingDotPulse 1.5s ease-in-out infinite;
+    
+    &:nth-child(1) {
+      animation-delay: 0s;
+    }
+    &:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+  }
+}
+
+@keyframes mergingDotPulse {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}

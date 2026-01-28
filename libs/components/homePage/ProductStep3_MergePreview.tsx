@@ -66,6 +66,7 @@ interface ProductStep3Props {
     onBack: () => void;
     onGenerate: (selectedShots: string[]) => void;
     isGenerating: boolean;
+    isMerging: boolean; // NEW: for merge loading state
 }
 
 // ===== THE 6-SHOT SYSTEM =====
@@ -95,6 +96,7 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
     onBack,
     onGenerate,
     isGenerating,
+    isMerging, // NEW
 }) => {
     // Resolution: Single select (2K or 4K) - Default: 2K
     const [resolution, setResolution] = useState<'2K' | '4K'>('2K');
@@ -173,6 +175,42 @@ const ProductStep3_MergePreview: React.FC<ProductStep3Props> = ({
             transition={{ duration: 0.3 }}
             className={styles.step3Container}
         >
+            {/* Merging Loading Overlay */}
+            <AnimatePresence>
+                {isMerging && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={styles.mergingOverlay}
+                    >
+                        <div className={styles.mergingContent}>
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                                className={styles.mergingSpinner}
+                            >
+                                <Sparkles size={48} />
+                            </motion.div>
+                            <h3 className={styles.mergingTitle}>Merging Prompts...</h3>
+                            <p className={styles.mergingText}>
+                                AI is combining product details with collection style
+                            </p>
+                            <motion.div
+                                className={styles.mergingDots}
+                                initial={{ opacity: 0.3 }}
+                                animate={{ opacity: [0.3, 1, 0.3] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                            >
+                                <span>●</span>
+                                <span>●</span>
+                                <span>●</span>
+                            </motion.div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Split Layout */}
             <div className={styles.consoleLayout}>
                 {/* LEFT PANEL - CONFIGURATION */}
