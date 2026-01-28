@@ -71,7 +71,7 @@ function Home() {
         style={{
           display: 'none', // Hidden on desktop
           position: 'fixed',
-          top: '16px',
+          top: '72px', // Lower position to not overlap content
           left: '16px',
           zIndex: 1100,
           width: '44px',
@@ -138,15 +138,9 @@ function Home() {
       {/* Left Sidebar */}
       <div
         style={{
-          transform: isMobileDrawerOpen ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.3s ease-in-out',
-          position: 'fixed', // Fixed on mobile
-          top: 0,
-          left: 0,
-          height: '100vh',
-          zIndex: 1100,
         }}
-        className="home-left-container"
+        className={`home-left-container ${isMobileDrawerOpen ? 'drawer-open' : 'drawer-closed'}`}
       >
         <HomeLeft
           isDarkMode={isDarkMode}
@@ -202,6 +196,18 @@ function Home() {
           
           .home-left-container {
             position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            height: 100vh !important;
+            z-index: 1100 !important;
+          }
+          
+          .home-left-container.drawer-closed {
+            transform: translateX(-100%) !important;
+          }
+          
+          .home-left-container.drawer-open {
+            transform: translateX(0) !important;
           }
         }
         
