@@ -292,15 +292,41 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 <h2>Product Analyzed Successfully</h2>
             </div>
 
-            {/* Product Image Preview */}
-            {fullAnalysisResponse?.imageUrl && (
-                <div className={styles.productImagePreview}>
-                    <img
-                        src={fullAnalysisResponse.imageUrl}
-                        alt={fullAnalysisResponse.name || 'Product'}
-                    />
-                </div>
-            )}
+            {/* Product Images Preview */}
+            <div className={styles.previewContainer}>
+                {/* Main/Front Image */}
+                {(fullAnalysisResponse?.front_image_url || fullAnalysisResponse?.imageUrl) && (
+                    <div className={styles.imageCard}>
+                        <div className={styles.imageLabel}>Front</div>
+                        <img
+                            src={fullAnalysisResponse.front_image_url || fullAnalysisResponse.imageUrl}
+                            alt="Front View"
+                        />
+                    </div>
+                )}
+
+                {/* Back Image */}
+                {fullAnalysisResponse?.back_image_url && (
+                    <div className={styles.imageCard}>
+                        <div className={styles.imageLabel}>Back</div>
+                        <img
+                            src={fullAnalysisResponse.back_image_url}
+                            alt="Back View"
+                        />
+                    </div>
+                )}
+
+                {/* Reference Images */}
+                {fullAnalysisResponse?.reference_images?.map((url: string, idx: number) => (
+                    <div className={styles.imageCard} key={`ref-${idx}`}>
+                        <div className={styles.imageLabel}>Ref {idx + 1}</div>
+                        <img
+                            src={url}
+                            alt={`Reference ${idx + 1}`}
+                        />
+                    </div>
+                ))}
+            </div>
 
             {/* Product Info Summary */}
             {fullAnalysisResponse && (

@@ -122,6 +122,9 @@ export interface AnalyzeProductDirectResponse {
     category: string;
     analysis: AnalyzedProductJSON;
     imageUrl: string;
+    front_image_url?: string;
+    back_image_url?: string;
+    reference_images?: string[];
     message: string;
     next_step: string;
 }
