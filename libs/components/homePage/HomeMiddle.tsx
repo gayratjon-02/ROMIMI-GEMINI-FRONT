@@ -174,28 +174,28 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
         analysis: productJSON,
     };
 
-    // Get current JSON for editing based on active tab
-    const getCurrentJson = () => {
+    // Get current JSON for display/editing
+    const getCurrentJsonObj = useCallback(() => {
         if (activeTab === 'analysis') {
             return displayResponse.analysis;
         } else if (activeTab === 'da' && daJSON) {
             return daJSON;
         }
         return displayResponse;
-    };
+    }, [activeTab, displayResponse, daJSON]);
 
-    // Start editing
-    const handleEdit = () => {
-        setEditedJson(formatJSON(getCurrentJson()));
-        setIsEditing(true);
-        setSaveError(null);
+    // Update editedJson when tab or data changes
+    useEffect(() => {
+        if (!isEditing) {
+            setEditedJson(formatJSON(getCurrentJsonObj()));
+        }
+    }, [activeTab, fullAnalysisResponse, getCurrentJsonObj, isEditing]);
+
+    // Handle text change
+    const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setEditedJson(e.target.value);
+        setIsEditing(true); // Mark as dirty/editing
         setSaveSuccess(false);
-    };
-
-    // Cancel editing
-    const handleCancel = () => {
-        setIsEditing(false);
-        setEditedJson('');
         setSaveError(null);
     };
 
@@ -228,7 +228,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
             }
 
             setSaveSuccess(true);
-            setIsEditing(false);
+            setIsEditing(false); // Reset dirty state
 
             // Clear success message after 3 seconds
             setTimeout(() => setSaveSuccess(false), 3000);
@@ -268,6 +268,9 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                     analysis: response.analyzed_product_json,
                 });
             }
+
+            // Allow useEffect to update editedJson with new data
+            setIsEditing(false);
 
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
@@ -374,36 +377,22 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 {/* Edit/Save/Reset Buttons */}
                 {activeTab === 'analysis' && productId && (
                     <div className={styles.editControls}>
-                        {!isEditing ? (
-                            <>
-                                <button className={styles.editBtn} onClick={handleEdit}>
-                                    <Plus size={14} />
-                                    Edit
-                                </button>
-                                <button className={styles.resetBtn} onClick={handleReset} disabled={isSaving}>
-                                    <RefreshCw size={14} className={isSaving ? styles.spin : ''} />
-                                    Reset
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <button
-                                    className={styles.saveBtn}
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                >
-                                    {isSaving ? (
-                                        <Loader2 size={14} className={styles.spin} />
-                                    ) : (
-                                        <CheckCircle2 size={14} />
-                                    )}
-                                    {isSaving ? 'Saving...' : 'Save'}
-                                </button>
-                                <button className={styles.cancelBtn} onClick={handleCancel}>
-                                    Cancel
-                                </button>
-                            </>
-                        )}
+                        <button
+                            className={styles.saveBtn}
+                            onClick={handleSave}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <Loader2 size={14} className={styles.spin} />
+                            ) : (
+                                <CheckCircle2 size={14} />
+                            )}
+                            {isSaving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button className={styles.resetBtn} onClick={handleReset} disabled={isSaving}>
+                            <RefreshCw size={14} className={isSaving ? styles.spin : ''} />
+                            Reset
+                        </button>
                     </div>
                 )}
             </div>
@@ -424,17 +413,16 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
 
             {/* JSON Display/Editor */}
             <div className={styles.jsonContainer}>
-                {isEditing ? (
+                {activeTab === 'analysis' ? (
                     <textarea
                         className={styles.jsonEditor}
                         value={editedJson}
-                        onChange={(e) => setEditedJson(e.target.value)}
+                        onChange={handleJsonChange}
                         spellCheck={false}
                     />
                 ) : (
                     <pre className={styles.jsonContent}>
                         {activeTab === 'full' && formatJSON(displayResponse)}
-                        {activeTab === 'analysis' && formatJSON(displayResponse.analysis)}
                         {activeTab === 'da' && daJSON && formatJSON(daJSON)}
                     </pre>
                 )}
