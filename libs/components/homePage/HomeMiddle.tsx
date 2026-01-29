@@ -134,6 +134,62 @@ const EmptyState: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => (
     </motion.div>
 );
 
+// Analyzed State - Show JSON result after analysis
+interface AnalyzedStateProps {
+    isDarkMode: boolean;
+    productJSON: ProductJSON;
+    daJSON?: DAJSON | null;
+}
+
+const AnalyzedState: React.FC<AnalyzedStateProps> = ({ isDarkMode, productJSON, daJSON }) => {
+    const [activeTab, setActiveTab] = useState<'product' | 'da' | 'merged'>('product');
+
+    // Format JSON for display
+    const formatJSON = (obj: any) => JSON.stringify(obj, null, 2);
+
+    return (
+        <motion.div
+            className={styles.analyzedState}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+        >
+            <div className={styles.analyzedHeader}>
+                <CheckCircle2 size={24} className={styles.successIcon} />
+                <h2>Product Analyzed Successfully</h2>
+            </div>
+
+            <div className={styles.jsonTabs}>
+                <button
+                    className={`${styles.jsonTab} ${activeTab === 'product' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('product')}
+                >
+                    Product JSON
+                </button>
+                {daJSON && (
+                    <button
+                        className={`${styles.jsonTab} ${activeTab === 'da' ? styles.active : ''}`}
+                        onClick={() => setActiveTab('da')}
+                    >
+                        DA JSON
+                    </button>
+                )}
+            </div>
+
+            <div className={styles.jsonContainer}>
+                <pre className={styles.jsonContent}>
+                    {activeTab === 'product' && formatJSON(productJSON)}
+                    {activeTab === 'da' && daJSON && formatJSON(daJSON)}
+                </pre>
+            </div>
+
+            <div className={styles.nextStepHint}>
+                <p>✨ Select a DA Preset and click Generate to create visuals</p>
+            </div>
+        </motion.div>
+    );
+};
+
 // Visual Card Component
 interface VisualCardProps {
     visual: VisualOutput;
@@ -412,7 +468,16 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
             {/* Main Content */}
             <div className={styles.content}>
                 {visuals.length === 0 ? (
-                    <EmptyState isDarkMode={isDarkMode} />
+                    // Show AnalyzedState if product has been analyzed, otherwise show EmptyState
+                    productJSON ? (
+                        <AnalyzedState
+                            isDarkMode={isDarkMode}
+                            productJSON={productJSON}
+                            daJSON={daJSON || collectionDA}
+                        />
+                    ) : (
+                        <EmptyState isDarkMode={isDarkMode} />
+                    )
                 ) : (
                     <div className={styles.visualsGrid}>
                         <AnimatePresence>
