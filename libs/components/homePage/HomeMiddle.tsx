@@ -38,6 +38,7 @@ interface HomeMiddleProps {
     frontImage?: File | null;
     backImage?: File | null;
     productJSON?: ProductJSON | null;
+    fullAnalysisResponse?: any; // Full backend response for display
     daJSON?: DAJSON | null;
     mergedPrompts?: Record<string, string>;
     selectedShots?: string[];
@@ -138,14 +139,24 @@ const EmptyState: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => (
 interface AnalyzedStateProps {
     isDarkMode: boolean;
     productJSON: ProductJSON;
+    fullAnalysisResponse?: any;
     daJSON?: DAJSON | null;
 }
 
-const AnalyzedState: React.FC<AnalyzedStateProps> = ({ isDarkMode, productJSON, daJSON }) => {
-    const [activeTab, setActiveTab] = useState<'product' | 'da' | 'merged'>('product');
+const AnalyzedState: React.FC<AnalyzedStateProps> = ({ isDarkMode, productJSON, fullAnalysisResponse, daJSON }) => {
+    const [activeTab, setActiveTab] = useState<'full' | 'analysis' | 'da'>('full');
 
     // Format JSON for display
     const formatJSON = (obj: any) => JSON.stringify(obj, null, 2);
+
+    // Full response to display
+    const displayResponse = fullAnalysisResponse || {
+        success: true,
+        product_id: 'N/A',
+        name: productJSON.type,
+        category: productJSON.type,
+        analysis: productJSON,
+    };
 
     return (
         <motion.div
@@ -159,12 +170,46 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({ isDarkMode, productJSON, 
                 <h2>Product Analyzed Successfully</h2>
             </div>
 
+            {/* Product Image Preview */}
+            {fullAnalysisResponse?.imageUrl && (
+                <div className={styles.productImagePreview}>
+                    <img
+                        src={fullAnalysisResponse.imageUrl}
+                        alt={fullAnalysisResponse.name || 'Product'}
+                    />
+                </div>
+            )}
+
+            {/* Product Info Summary */}
+            {fullAnalysisResponse && (
+                <div className={styles.productSummary}>
+                    <div className={styles.summaryItem}>
+                        <span className={styles.summaryLabel}>Name:</span>
+                        <span className={styles.summaryValue}>{fullAnalysisResponse.name}</span>
+                    </div>
+                    <div className={styles.summaryItem}>
+                        <span className={styles.summaryLabel}>Category:</span>
+                        <span className={styles.summaryValue}>{fullAnalysisResponse.category}</span>
+                    </div>
+                    <div className={styles.summaryItem}>
+                        <span className={styles.summaryLabel}>Product ID:</span>
+                        <span className={styles.summaryValue}>{fullAnalysisResponse.product_id}</span>
+                    </div>
+                </div>
+            )}
+
             <div className={styles.jsonTabs}>
                 <button
-                    className={`${styles.jsonTab} ${activeTab === 'product' ? styles.active : ''}`}
-                    onClick={() => setActiveTab('product')}
+                    className={`${styles.jsonTab} ${activeTab === 'full' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('full')}
                 >
-                    Product JSON
+                    Full Response
+                </button>
+                <button
+                    className={`${styles.jsonTab} ${activeTab === 'analysis' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('analysis')}
+                >
+                    Analysis Details
                 </button>
                 {daJSON && (
                     <button
@@ -178,7 +223,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({ isDarkMode, productJSON, 
 
             <div className={styles.jsonContainer}>
                 <pre className={styles.jsonContent}>
-                    {activeTab === 'product' && formatJSON(productJSON)}
+                    {activeTab === 'full' && formatJSON(displayResponse)}
+                    {activeTab === 'analysis' && formatJSON(displayResponse.analysis)}
                     {activeTab === 'da' && daJSON && formatJSON(daJSON)}
                 </pre>
             </div>
@@ -333,6 +379,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     frontImage,
     backImage,
     productJSON,
+    fullAnalysisResponse,
     daJSON,
     mergedPrompts = {},
     selectedShots = [],
@@ -473,6 +520,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                         <AnalyzedState
                             isDarkMode={isDarkMode}
                             productJSON={productJSON}
+                            fullAnalysisResponse={fullAnalysisResponse}
                             daJSON={daJSON || collectionDA}
                         />
                     ) : (

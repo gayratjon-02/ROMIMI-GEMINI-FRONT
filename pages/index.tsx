@@ -84,6 +84,8 @@ function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [productJSON, setProductJSON] = useState<ProductJSON | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
+  // Full analysis response from backend (for display)
+  const [fullAnalysisResponse, setFullAnalysisResponse] = useState<any>(null);
 
   // DA State
   const [daJSON, setDAJSON] = useState<DAJSON | null>(null);
@@ -222,6 +224,8 @@ function Home() {
 
       setProductJSON(mappedAnalysis);
       setProductId(response.product_id);
+      // Save full response for display
+      setFullAnalysisResponse(response);
 
       // 6. Generate prompts locally (DA can be selected later)
       const da = daJSON || mockDAAnalysis;
@@ -478,6 +482,7 @@ function Home() {
               frontImage={frontImage}
               backImage={backImage}
               productJSON={productJSON}
+              fullAnalysisResponse={fullAnalysisResponse}
               daJSON={daJSON}
               mergedPrompts={mergedPrompts}
               selectedShots={selectedShots}
