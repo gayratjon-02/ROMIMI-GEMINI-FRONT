@@ -14,6 +14,11 @@ import {
     AnalyzeProductResponse,
     UpdateProductJsonResponse,
     AnalyzeImagesResponse,
+    AnalyzeProductDirectResponse,
+    ProductResponse,
+    ProductJsonResponse,
+    UpdateProductAnalysisResponse,
+    AnalyzedProductJSON,
 } from "@/libs/types/homepage/product";
 
 // API Configuration
@@ -347,6 +352,263 @@ export async function updateProductJson(
         }
 
         return responseData as UpdateProductJsonResponse;
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEW PRODUCT API FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * STEP 1: Analyze Product Images Directly (NEW MAIN FLOW)
+ * POST /api/products/analyze
+ * FormData: front_images[], back_images[] (optional), reference_images[] (optional)
+ * Creates product record and returns analyzed product JSON
+ */
+export async function analyzeProductDirect(
+    frontImages: File[],
+    backImages?: File[],
+    referenceImages?: File[],
+    productName?: string
+): Promise<AnalyzeProductDirectResponse> {
+    try {
+        const formData = new FormData();
+
+        // Add front images (required)
+        frontImages.forEach((img) => {
+            formData.append("front_images", img);
+        });
+
+        // Add back images (optional)
+        if (backImages && backImages.length > 0) {
+            backImages.forEach((img) => {
+                formData.append("back_images", img);
+            });
+        }
+
+        // Add reference images (optional)
+        if (referenceImages && referenceImages.length > 0) {
+            referenceImages.forEach((img) => {
+                formData.append("reference_images", img);
+            });
+        }
+
+        // Add product name if provided
+        if (productName) {
+            formData.append("product_name", productName);
+        }
+
+        const response = await fetch(`${API_BASE}/products/analyze`, {
+            method: "POST",
+            headers: getAuthHeadersForFormData(),
+            body: formData,
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to analyze product"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as AnalyzeProductDirectResponse;
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+/**
+ * Get Product with all JSONs
+ * GET /api/products/:id
+ */
+export async function getProductWithJson(id: string): Promise<ProductResponse> {
+    try {
+        const response = await fetch(`${API_BASE}/products/${id}`, {
+            method: "GET",
+            headers: getAuthHeaders(),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to fetch product"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as ProductResponse;
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+/**
+ * Get Product JSON Only
+ * GET /api/products/:id/json
+ */
+export async function getProductJson(id: string): Promise<ProductJsonResponse> {
+    try {
+        const response = await fetch(`${API_BASE}/products/${id}/json`, {
+            method: "GET",
+            headers: getAuthHeaders(),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to fetch product JSON"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as ProductJsonResponse;
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+/**
+ * Update Product JSON with User Overrides (New Endpoint)
+ * PUT /api/products/:id/json
+ */
+export async function updateProductJsonNew(
+    id: string,
+    manualOverrides: Partial<AnalyzedProductJSON>
+): Promise<ProductJsonResponse> {
+    try {
+        const response = await fetch(`${API_BASE}/products/${id}/json`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ manual_overrides: manualOverrides }),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to update product JSON"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as ProductJsonResponse;
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+/**
+ * Reset Product JSON to Original Analysis
+ * POST /api/products/:id/reset
+ */
+export async function resetProductJson(id: string): Promise<ProductJsonResponse> {
+    try {
+        const response = await fetch(`${API_BASE}/products/${id}/reset`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to reset product JSON"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as ProductJsonResponse;
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+/**
+ * Update Product Analysis JSON (Persistent Edit)
+ * PUT /api/products/:id/analysis
+ * Allows direct editing of analyzed_product_json
+ */
+export async function updateProductAnalysis(
+    id: string,
+    analysisData: AnalyzedProductJSON
+): Promise<UpdateProductAnalysisResponse> {
+    try {
+        const response = await fetch(`${API_BASE}/products/${id}/analysis`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(analysisData),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to update product analysis"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as UpdateProductAnalysisResponse;
     } catch (error) {
         if (error instanceof AuthApiError) {
             throw error;
