@@ -598,13 +598,14 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     isAnalyzing = false,
     onProductAnalyzed,
     onGenerationIdCreated,
+    productId,
+    onAnalysisUpdate,
 }) => {
     // Visuals State
     const [visuals, setVisuals] = useState<VisualOutput[]>([]);
     const [progress, setProgress] = useState(0);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationId, setGenerationId] = useState<string | null>(null);
-    const [productId, setProductId] = useState<string | null>(null);
 
     // DA Analysis from collection
     const [collectionDA, setCollectionDA] = useState<DAJSON | null>(null);
@@ -733,6 +734,8 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             productJSON={productJSON}
                             fullAnalysisResponse={fullAnalysisResponse}
                             daJSON={daJSON || collectionDA}
+                            productId={productId || undefined}
+                            onAnalysisUpdate={onAnalysisUpdate}
                         />
                     ) : (
                         <EmptyState isDarkMode={isDarkMode} />
