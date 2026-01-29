@@ -2,33 +2,41 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import styles from '@/scss/styles/HomePage/ProductUploadSection.module.scss';
-import { Upload, Image as ImageIcon, X, Check, Loader2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, X, Check, Loader2, Plus } from 'lucide-react';
 
 interface ProductUploadSectionProps {
     isDarkMode?: boolean;
     frontImage: File | null;
     backImage: File | null;
+    referenceImages?: File[];
     onFrontImageChange: (file: File | null) => void;
     onBackImageChange: (file: File | null) => void;
+    onReferenceImagesChange?: (files: File[]) => void;
     onAnalyze: () => void;
     isAnalyzing?: boolean;
     isAnalyzed?: boolean;
 }
 
+const MAX_REFERENCE_IMAGES = 10;
+
 const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
     isDarkMode = true,
     frontImage,
     backImage,
+    referenceImages = [],
     onFrontImageChange,
     onBackImageChange,
+    onReferenceImagesChange,
     onAnalyze,
     isAnalyzing = false,
     isAnalyzed = false,
 }) => {
     const [dragOverFront, setDragOverFront] = useState(false);
     const [dragOverBack, setDragOverBack] = useState(false);
+    const [dragOverRef, setDragOverRef] = useState(false);
     const frontInputRef = useRef<HTMLInputElement>(null);
     const backInputRef = useRef<HTMLInputElement>(null);
+    const refInputRef = useRef<HTMLInputElement>(null);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -36,35 +44,50 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
 
     const handleDrop = useCallback((
         e: React.DragEvent,
-        type: 'front' | 'back'
+        type: 'front' | 'back' | 'reference'
     ) => {
         e.preventDefault();
         setDragOverFront(false);
         setDragOverBack(false);
+        setDragOverRef(false);
 
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            if (type === 'front') {
-                onFrontImageChange(file);
-            } else {
-                onBackImageChange(file);
-            }
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+
+        if (type === 'front' && files[0]) {
+            onFrontImageChange(files[0]);
+        } else if (type === 'back' && files[0]) {
+            onBackImageChange(files[0]);
+        } else if (type === 'reference' && onReferenceImagesChange) {
+            const newFiles = [...referenceImages, ...files].slice(0, MAX_REFERENCE_IMAGES);
+            onReferenceImagesChange(newFiles);
         }
-    }, [onFrontImageChange, onBackImageChange]);
+    }, [onFrontImageChange, onBackImageChange, onReferenceImagesChange, referenceImages]);
 
     const handleFileSelect = useCallback((
         e: React.ChangeEvent<HTMLInputElement>,
-        type: 'front' | 'back'
+        type: 'front' | 'back' | 'reference'
     ) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (type === 'front') {
-                onFrontImageChange(file);
-            } else {
-                onBackImageChange(file);
-            }
+        const files = e.target.files ? Array.from(e.target.files) : [];
+
+        if (type === 'front' && files[0]) {
+            onFrontImageChange(files[0]);
+        } else if (type === 'back' && files[0]) {
+            onBackImageChange(files[0]);
+        } else if (type === 'reference' && onReferenceImagesChange) {
+            const newFiles = [...referenceImages, ...files].slice(0, MAX_REFERENCE_IMAGES);
+            onReferenceImagesChange(newFiles);
         }
-    }, [onFrontImageChange, onBackImageChange]);
+
+        // Reset input
+        e.target.value = '';
+    }, [onFrontImageChange, onBackImageChange, onReferenceImagesChange, referenceImages]);
+
+    const removeReferenceImage = useCallback((index: number) => {
+        if (onReferenceImagesChange) {
+            const newFiles = referenceImages.filter((_, i) => i !== index);
+            onReferenceImagesChange(newFiles);
+        }
+    }, [onReferenceImagesChange, referenceImages]);
 
     const renderUploadZone = (
         type: 'front' | 'back',
@@ -77,7 +100,7 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
         return (
             <div className={styles.uploadZoneWrapper}>
                 <label className={styles.uploadLabel}>
-                    {type === 'front' ? 'Front' : 'Back'}
+                    {type === 'front' ? 'FRONT' : 'BACK'}
                 </label>
                 <div
                     className={`${styles.uploadZone} ${isDragOver ? styles.dragOver : ''} ${image ? styles.hasImage : ''}`}
@@ -111,7 +134,6 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
                     ) : (
                         <div className={styles.uploadPlaceholder}>
                             <ImageIcon size={24} />
-                            <span>{type === 'front' ? 'Front' : 'Back'}</span>
                         </div>
                     )}
                 </div>
@@ -119,7 +141,8 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
         );
     };
 
-    const canAnalyze = frontImage && backImage && !isAnalyzing;
+    // Can analyze if at least one image is uploaded
+    const canAnalyze = (frontImage || backImage) && !isAnalyzing;
 
     return (
         <div className={`${styles.container} ${isDarkMode ? styles.dark : styles.light}`}>
@@ -129,10 +152,62 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
                 {isAnalyzed && <Check size={14} className={styles.checkIcon} />}
             </div>
 
+            {/* Front & Back Images */}
             <div className={styles.uploadGrid}>
                 {renderUploadZone('front', frontImage, dragOverFront, frontInputRef)}
                 {renderUploadZone('back', backImage, dragOverBack, backInputRef)}
             </div>
+
+            {/* Reference Images Section */}
+            {onReferenceImagesChange && (
+                <div className={styles.referenceSection}>
+                    <div className={styles.referenceHeader}>
+                        <span>Reference Images</span>
+                        <span className={styles.refCount}>{referenceImages.length}/{MAX_REFERENCE_IMAGES}</span>
+                    </div>
+
+                    <div className={styles.referenceGrid}>
+                        {/* Existing reference images */}
+                        {referenceImages.map((file, index) => (
+                            <div key={index} className={styles.refImageWrapper}>
+                                <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={`Reference ${index + 1}`}
+                                    className={styles.refImage}
+                                />
+                                <button
+                                    className={styles.refRemoveBtn}
+                                    onClick={() => removeReferenceImage(index)}
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        ))}
+
+                        {/* Add more button */}
+                        {referenceImages.length < MAX_REFERENCE_IMAGES && (
+                            <div
+                                className={`${styles.refAddBtn} ${dragOverRef ? styles.dragOver : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragEnter={() => setDragOverRef(true)}
+                                onDragLeave={() => setDragOverRef(false)}
+                                onDrop={(e) => handleDrop(e, 'reference')}
+                                onClick={() => refInputRef.current?.click()}
+                            >
+                                <Plus size={16} />
+                                <input
+                                    ref={refInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={(e) => handleFileSelect(e, 'reference')}
+                                    style={{ display: 'none' }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <button
                 className={`${styles.analyzeBtn} ${canAnalyze ? styles.ready : styles.disabled}`}

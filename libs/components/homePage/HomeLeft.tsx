@@ -25,8 +25,10 @@ interface HomeLeftProps {
   // NEW: Product Upload props
   frontImage?: File | null;
   backImage?: File | null;
+  referenceImages?: File[];
   onFrontImageChange?: (file: File | null) => void;
   onBackImageChange?: (file: File | null) => void;
+  onReferenceImagesChange?: (files: File[]) => void;
   onAnalyze?: () => void;
   isAnalyzing?: boolean;
   isAnalyzed?: boolean;
@@ -48,8 +50,10 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   // NEW: Product Upload props
   frontImage = null,
   backImage = null,
+  referenceImages = [],
   onFrontImageChange,
   onBackImageChange,
+  onReferenceImagesChange,
   onAnalyze,
   isAnalyzing = false,
   isAnalyzed = false,
@@ -350,8 +354,10 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
               isDarkMode={isDarkMode}
               frontImage={frontImage || null}
               backImage={backImage || null}
+              referenceImages={referenceImages}
               onFrontImageChange={onFrontImageChange}
               onBackImageChange={onBackImageChange}
+              onReferenceImagesChange={onReferenceImagesChange}
               onAnalyze={onAnalyze}
               isAnalyzing={isAnalyzing}
               isAnalyzed={isAnalyzed}

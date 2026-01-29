@@ -78,6 +78,7 @@ function Home() {
   // Product Upload
   const [frontImage, setFrontImage] = useState<File | null>(null);
   const [backImage, setBackImage] = useState<File | null>(null);
+  const [referenceImages, setReferenceImages] = useState<File[]>([]);
 
   // Analysis State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -434,8 +435,10 @@ function Home() {
             // NEW: Pass upload props
             frontImage={frontImage}
             backImage={backImage}
+            referenceImages={referenceImages}
             onFrontImageChange={setFrontImage}
             onBackImageChange={setBackImage}
+            onReferenceImagesChange={setReferenceImages}
             onAnalyze={handleAnalyze}
             isAnalyzing={isAnalyzing}
             isAnalyzed={isAnalyzed}
