@@ -507,7 +507,31 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 ))}
             </div>
 
-            {/* Tabs and Edit Controls */}
+            {/* Error/Success Messages */}
+            {saveError && (
+                <div className={styles.errorMessage}>
+                    <AlertCircle size={16} />
+                    {saveError}
+                </div>
+            )}
+            {saveSuccess && (
+                <div className={styles.successMessage}>
+                    <CheckCircle2 size={16} />
+                    Changes saved successfully!
+                </div>
+            )}
+
+            {/* JSON Display/Editor */}
+            <div className={styles.jsonContainer}>
+                <textarea
+                    className={styles.jsonEditor}
+                    value={editedJson}
+                    onChange={handleJsonChange}
+                    spellCheck={false}
+                />
+            </div>
+
+            {/* Tabs and Edit Controls - at bottom */}
             <div className={styles.jsonControls}>
                 <div className={styles.jsonTabs}>
                     <button
@@ -557,30 +581,6 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 </div>
             </div>
 
-            {/* Error/Success Messages */}
-            {saveError && (
-                <div className={styles.errorMessage}>
-                    <AlertCircle size={16} />
-                    {saveError}
-                </div>
-            )}
-            {saveSuccess && (
-                <div className={styles.successMessage}>
-                    <CheckCircle2 size={16} />
-                    Changes saved successfully!
-                </div>
-            )}
-
-            {/* JSON Display/Editor */}
-            <div className={styles.jsonContainer}>
-                <textarea
-                    className={styles.jsonEditor}
-                    value={editedJson}
-                    onChange={handleJsonChange}
-                    spellCheck={false}
-                />
-            </div>
-
             {/* Confirm Generation Button (Only when merged prompts exist) */}
             {hasMergedPrompts && onConfirmGeneration && (
                 <div className={styles.actionButtons}>
@@ -627,15 +627,6 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                     </button>
                 </div>
             )}
-
-            <div className={styles.nextStepHint}>
-                {hasMergedPrompts
-                    ? <p>✨ Edit the prompts above if needed. Click "Generate Images" to start creation with Gemini AI.</p>
-                    : daJSON
-                        ? <p>✨ Click "Merge Product & DA" to create prompts for generation</p>
-                        : <p>✨ Select a DA collection from the left sidebar to enable merging</p>
-                }
-            </div>
         </motion.div>
     );
 };

@@ -193,9 +193,9 @@ function Home() {
       return;
     }
 
-    // At least one image is required (front OR back)
-    if (!frontImage && !backImage) {
-      alert('Please upload at least one image (Front or Back).');
+    // Both front and back images are required
+    if (!frontImage || !backImage) {
+      alert('Please upload both FRONT and BACK images.');
       return;
     }
 
