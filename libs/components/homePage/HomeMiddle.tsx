@@ -353,60 +353,65 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
         setSaveError(null);
     };
 
-    // Save changes
+    // Save changes - Saves all JSONs (Analysis Details, DA JSON, Merged Prompts)
     const handleSave = async () => {
         try {
-            // Validate JSON first
+            // Validate current JSON first
             const parsedJson = JSON.parse(editedJson);
             setIsSaving(true);
             setSaveError(null);
 
-            if (activeTab === 'analysis') {
-                // Save Product JSON - Direct edit to analyzed_product_json (persistent)
-                if (!productId) {
-                    setSaveError('Product ID not available');
-                    setIsSaving(false);
-                    return;
-                }
+            const savePromises: Promise<void>[] = [];
 
-                // Use updateProductAnalysis for persistent database save
-                const { updateProductAnalysis } = await import('@/libs/server/HomePage/product');
-                const response = await updateProductAnalysis(productId, parsedJson);
-                console.log('✅ Product Analysis JSON saved to database:', response);
+            // 1. Save Analysis Details (Product JSON) if available
+            if (productId && fullAnalysisResponse?.analysis) {
+                savePromises.push((async () => {
+                    const analysisJson = activeTab === 'analysis' ? parsedJson : fullAnalysisResponse.analysis;
+                    const { updateProductAnalysis } = await import('@/libs/server/HomePage/product');
+                    const response = await updateProductAnalysis(productId, analysisJson);
+                    console.log('✅ Product Analysis JSON saved to database:', response);
 
-                if (onAnalysisUpdate && response.analyzed_product_json) {
-                    onAnalysisUpdate({
-                        ...fullAnalysisResponse,
-                        analysis: response.analyzed_product_json,
-                    });
-                }
-            } else if (activeTab === 'da') {
-                // Save DA JSON
-                if (!collectionId) {
-                    setSaveError('Collection ID not available');
-                    setIsSaving(false);
-                    return;
-                }
-
-                const { updateDAJSON } = await import('@/libs/server/HomePage/collection');
-                const response = await updateDAJSON(collectionId, {
-                    analyzed_da_json: parsedJson
-                });
-                console.log('✅ DA JSON updated:', response);
-
-                if (onDAUpdate && response.analyzed_da_json) {
-                    onDAUpdate(response.analyzed_da_json as DAJSON);
-                }
-            } else if (activeTab === 'merged' && hasMergedPrompts && generationId) {
-                // Update Merged Prompts
-                const { updateMergedPrompts } = await import('@/libs/server/HomePage/merging');
-                const response = await updateMergedPrompts(generationId, { prompts: parsedJson });
-                console.log('✅ Merged prompts updated:', response);
-
-                if (onPromptsUpdated && response.merged_prompts) {
-                    onPromptsUpdated(response.merged_prompts);
-                }
+                    if (onAnalysisUpdate && response.analyzed_product_json) {
+                        onAnalysisUpdate({
+                            ...fullAnalysisResponse,
+                            analysis: response.analyzed_product_json,
+                        });
+                    }
+                })());
             }
+
+            // 2. Save DA JSON if available
+            if (collectionId && daJSON) {
+                savePromises.push((async () => {
+                    const daJsonToSave = activeTab === 'da' ? parsedJson : daJSON;
+                    const { updateDAJSON } = await import('@/libs/server/HomePage/collection');
+                    const response = await updateDAJSON(collectionId, {
+                        analyzed_da_json: daJsonToSave
+                    });
+                    console.log('✅ DA JSON updated:', response);
+
+                    if (onDAUpdate && response.analyzed_da_json) {
+                        onDAUpdate(response.analyzed_da_json as DAJSON);
+                    }
+                })());
+            }
+
+            // 3. Save Merged Prompts if available
+            if (hasMergedPrompts && generationId) {
+                savePromises.push((async () => {
+                    const promptsToSave = activeTab === 'merged' ? parsedJson : mergedPrompts;
+                    const { updateMergedPrompts } = await import('@/libs/server/HomePage/merging');
+                    const response = await updateMergedPrompts(generationId, { prompts: promptsToSave });
+                    console.log('✅ Merged prompts updated:', response);
+
+                    if (onPromptsUpdated && response.merged_prompts) {
+                        onPromptsUpdated(response.merged_prompts);
+                    }
+                })());
+            }
+
+            // Execute all saves in parallel
+            await Promise.all(savePromises);
 
             setSaveSuccess(true);
             setIsEditing(false);
