@@ -17,6 +17,7 @@ import {
   createGeneration,
   updateMergedPrompts as updatePromptsAPI,
   mergePrompts,
+  getGeneration,
 } from '@/libs/server/HomePage/merging';
 import { Generation } from '@/libs/types/homepage/generation';
 import {
@@ -114,6 +115,8 @@ function Home() {
   const [progress, setProgress] = useState(0);
   // NEW: Store the full generation response from API
   const [generationResponse, setGenerationResponse] = useState<Generation | null>(null);
+  // Library: selected generation to show its generated images in HomeMiddle
+  const [librarySelectedGeneration, setLibrarySelectedGeneration] = useState<Generation | null>(null);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -199,11 +202,23 @@ function Home() {
 
   const handleBrandSelect = useCallback((brand: Brand | null) => {
     setSelectedBrand(brand);
+    setSelectedCollection(null);
+    setLibrarySelectedGeneration(null);
   }, []);
 
   const handleCollectionSelect = useCallback((collection: Collection | null, brand: Brand | null) => {
     setSelectedCollection(collection);
     if (brand) setSelectedBrand(brand);
+    setLibrarySelectedGeneration(null);
+  }, []);
+
+  const handleLibrarySelect = useCallback(async (gen: Generation) => {
+    try {
+      const full = await getGeneration(gen.id);
+      setLibrarySelectedGeneration(full);
+    } catch (e) {
+      console.error('Failed to load generation for Library:', e);
+    }
   }, []);
 
   // Fetch DA when collection changes
@@ -638,6 +653,7 @@ function Home() {
             onBrandSelect={handleBrandSelect}
             onCollectionSelect={handleCollectionSelect}
             onBrandCreated={handleBrandCreated}
+            onLibrarySelect={handleLibrarySelect}
             isOpen={isMobileDrawerOpen}
             // NEW: Pass upload props
             frontImage={frontImage}
@@ -707,6 +723,7 @@ function Home() {
               isGeneratingVisuals={isGenerating}
               onReanalyze={() => handleAnalyze(true)}
               onSaveComplete={handleSaveComplete}
+              libraryGeneration={librarySelectedGeneration}
             />
           </div>
 

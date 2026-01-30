@@ -833,6 +833,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     isGeneratingVisuals = false,
     onReanalyze,
     onSaveComplete,
+    libraryGeneration,
 }) => {
     // Visuals State - use parent values if provided, otherwise local state
     const [localVisuals, setLocalVisuals] = useState<VisualOutput[]>([]);
@@ -841,8 +842,12 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     const [generationId, setGenerationId] = useState<string | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    // Use parent visuals/progress if provided
-    const visuals = parentVisuals || localVisuals;
+    // Library view: use visuals from libraryGeneration when viewing a Library item
+    const libraryVisuals = libraryGeneration?.visuals ?? libraryGeneration?.visual_outputs ?? [];
+    const isLibraryView = !!libraryGeneration && Array.isArray(libraryVisuals) && libraryVisuals.length > 0;
+
+    // Use parent visuals/progress if provided (or library visuals in library view)
+    const visuals = isLibraryView ? libraryVisuals : (parentVisuals || localVisuals);
     const progress = parentProgress ?? localProgress;
     const isGenerating = isGeneratingVisuals || localIsGenerating;
     const setVisuals = parentVisuals ? () => { } : setLocalVisuals;
@@ -939,7 +944,8 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
 
     // Calculate effective merged prompts: use generationResponse.merged_prompts if available, else locally merged prompts
     const effectiveMergedPrompts = generationResponse?.merged_prompts || mergedPrompts;
-    const effectiveGenerationId = generationResponse?.id || null;
+    // In library view use libraryGeneration.id for download; otherwise current generation
+    const effectiveGenerationId = isLibraryView ? (libraryGeneration?.id ?? null) : (generationResponse?.id || null);
 
     const handleDownloadAll = async () => {
         if (!effectiveGenerationId) return;
@@ -1044,7 +1050,8 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                                 />
                             ))}
                         </AnimatePresence>
-                    </div>
+                        </div>
+                    </>
                 )}
             </div>
 

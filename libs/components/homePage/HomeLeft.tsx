@@ -6,8 +6,10 @@ import styles from '@/scss/styles/HomePage/HomeLeft.module.scss';
 import { getUserInfo, logout, UserInfo } from '@/libs/server/HomePage/signup';
 import { getAllBrands, updateBrand, deleteBrand } from '@/libs/server/HomePage/brand';
 import { getCollectionsByBrand, updateCollection, deleteCollection } from '@/libs/server/HomePage/collection';
+import { getAllGenerations } from '@/libs/server/HomePage/merging';
 import { Brand, UpdateBrandData } from '@/libs/types/homepage/brand';
 import { Collection, UpdateCollectionData } from '@/libs/types/homepage/collection';
+import { Generation } from '@/libs/types/homepage/generation';
 import CreateCollectionWizard from '@/libs/components/modals/CreateCollectionWizard';
 import EditCollectionModal from '@/libs/components/modals/EditCollectionModal';
 import CreateBrandModal from '@/libs/components/modals/CreateBrandModal';
@@ -62,6 +64,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   daJSON = null,
   mergedPrompts = {},
   onPromptsChange,
+  onLibrarySelect,
 }) => {
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState('product-visuals');
@@ -94,6 +97,11 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   const [isDeletingCollection, setIsDeletingCollection] = useState(false);
   const [deleteConfirmCollection, setDeleteConfirmCollection] = useState<{ collection: Collection, brandId: string } | null>(null);
 
+  // Library: generations with completed images (product names)
+  const [libraryGenerations, setLibraryGenerations] = useState<Generation[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
+
   useEffect(() => {
     const info = getUserInfo();
     setUserInfo(info);
@@ -120,6 +128,24 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
 
     fetchBrands();
   }, [refreshTrigger]);
+
+  // Library: fetch generations that have completed images (for product names list)
+  useEffect(() => {
+    if (!onLibrarySelect) return;
+    const fetchLibrary = async () => {
+      try {
+        setLibraryLoading(true);
+        const res = await getAllGenerations(undefined, undefined, undefined, 'completed', 1, 50);
+        setLibraryGenerations(res.items || []);
+      } catch (error: any) {
+        if (error?.status !== 401) console.warn('Library fetch failed:', error);
+        setLibraryGenerations([]);
+      } finally {
+        setLibraryLoading(false);
+      }
+    };
+    fetchLibrary();
+  }, [refreshTrigger, onLibrarySelect]);
 
   const handleLogout = () => {
     logout();
@@ -530,6 +556,44 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
               </button>
             )}
           </div>
+
+          {/* Library Section: product names with generated images */}
+          {onLibrarySelect && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>Library</div>
+              {libraryLoading && (
+                <div className={styles.loadingItem}>
+                  <span className={styles.loadingText}>Loading...</span>
+                </div>
+              )}
+              {!libraryLoading && libraryGenerations.length === 0 && (
+                <div className={styles.emptyCollections}>No generated visuals yet</div>
+              )}
+              {!libraryLoading && libraryGenerations.map((gen) => {
+                const productName = gen.product?.name || 'Product';
+                const isActive = activeLibraryId === gen.id;
+                return (
+                  <button
+                    key={gen.id}
+                    className={`${styles.menuItem} ${isActive ? styles.active : ''}`}
+                    onClick={() => {
+                      setActiveLibraryId(gen.id);
+                      onLibrarySelect(gen);
+                    }}
+                  >
+                    <span className={styles.icon}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </span>
+                    <span className={styles.label} title={productName}>{productName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

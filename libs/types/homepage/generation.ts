@@ -26,11 +26,13 @@ export interface Generation {
     status: 'draft' | 'pending' | 'merged' | 'processing' | 'completed' | 'failed';
     merged_prompts?: MergedPrompts;
     visual_outputs?: VisualOutput[];
+    /** Backend returns visuals array (generated images per shot) */
+    visuals?: VisualOutput[];
     zip_url?: string;
     metadata?: Record<string, any>;
     created_at: string;
     updated_at: string;
-    product?: any;
+    product?: { id: string; name: string; [key: string]: any };
     collection?: any;
 }
 
