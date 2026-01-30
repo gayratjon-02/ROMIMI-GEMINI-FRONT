@@ -228,23 +228,8 @@ function Home() {
       // Save full response for display
       setFullAnalysisResponse(response);
 
-      // 6. Generate prompts locally (DA can be selected later)
-      const da = daJSON || mockDAAnalysis;
-      const basePrompt = `A ${mappedAnalysis.type} in ${mappedAnalysis.color} (${mappedAnalysis.color_hex}) ${mappedAnalysis.material}. Texture: ${mappedAnalysis.texture}. ${mappedAnalysis.details}. Shot in ${da.background.description} with ${da.lighting.type} (${da.lighting.temperature}) lighting. ${da.mood} aesthetic.`;
-
-      const prompts: Record<string, string> = {
-        duo: `Father & Son duo shot. ${basePrompt} Lifestyle setting.`,
-        solo: `Male Model solo shot. ${basePrompt} Professional pose.`,
-        flatlay_front: `Flatlay front view. ${basePrompt} Clean arrangement.`,
-        flatlay_back: `Flatlay angled back view. ${basePrompt} Detail focus.`,
-        closeup_front: `Close-up detail front. Focus on ${mappedAnalysis.material} texture and ${mappedAnalysis.logo_front}. ${da.background.description}.`,
-        closeup_back: `Close-up detail back. Focus on features and ${mappedAnalysis.logo_back}. ${da.background.description}.`,
-      };
-
-      setMergedPrompts(prompts);
-
-      // 7. Note: Generation ID will be created when user clicks Generate
-      // (DA preset must be selected first in the new flow)
+      // NOTE: Merged prompts will be generated when user clicks MERGE
+      // (DA must be selected first, then MERGE creates prompts from backend)
 
     } catch (error: any) {
       console.error('Analysis failed:', error);
@@ -311,43 +296,16 @@ function Home() {
       };
 
       setProductJSON(newProductJSON);
-
-      // Re-generate local prompts with updated data
-      const da = daJSON || mockDAAnalysis;
-      const basePrompt = `A ${newProductJSON.type} in ${newProductJSON.color} (${newProductJSON.color_hex}) ${newProductJSON.material}. Texture: ${newProductJSON.texture}. ${newProductJSON.details}. Shot in ${da.background.description} with ${da.lighting.type} (${da.lighting.temperature}) lighting. ${da.mood} aesthetic.`;
-
-      const prompts: Record<string, string> = {
-        duo: `Father & Son duo shot. ${basePrompt} Lifestyle setting.`,
-        solo: `Male Model solo shot. ${basePrompt} Professional pose.`,
-        flatlay_front: `Flatlay front view. ${basePrompt} Clean arrangement.`,
-        flatlay_back: `Flatlay angled back view. ${basePrompt} Detail focus.`,
-        closeup_front: `Close-up detail front. Focus on ${newProductJSON.material} texture and ${newProductJSON.logo_front}. ${da.background.description}.`,
-        closeup_back: `Close-up detail back. Focus on features and ${newProductJSON.logo_back}. ${da.background.description}.`,
-      };
-      setMergedPrompts(prompts);
+      // NOTE: Merged prompts are handled by backend via MERGE, not locally
     }
-  }, [daJSON]);
+  }, []);
 
   // Handle DA Update (from Edit Mode)
   const handleDAUpdate = useCallback((updatedDA: DAJSON) => {
     console.log('🔄 DA JSON Updated:', updatedDA);
     setDAJSON(updatedDA);
-
-    // Re-generate prompts with new DA
-    if (productJSON) {
-      const basePrompt = `A ${productJSON.type} in ${productJSON.color} (${productJSON.color_hex}) ${productJSON.material}. Texture: ${productJSON.texture}. ${productJSON.details}. Shot in ${updatedDA.background.description} with ${updatedDA.lighting.type} (${updatedDA.lighting.temperature}) lighting. ${updatedDA.mood} aesthetic.`;
-
-      const prompts: Record<string, string> = {
-        duo: `Father & Son duo shot. ${basePrompt} Lifestyle setting.`,
-        solo: `Male Model solo shot. ${basePrompt} Professional pose.`,
-        flatlay_front: `Flatlay front view. ${basePrompt} Clean arrangement.`,
-        flatlay_back: `Flatlay angled back view. ${basePrompt} Detail focus.`,
-        closeup_front: `Close-up detail front. Focus on ${productJSON.material} texture and ${productJSON.logo_front}. ${updatedDA.background.description}.`,
-        closeup_back: `Close-up detail back. Focus on features and ${productJSON.logo_back}. ${updatedDA.background.description}.`,
-      };
-      setMergedPrompts(prompts);
-    }
-  }, [productJSON]);
+    // NOTE: Merged prompts are handled by backend via MERGE, not locally
+  }, []);
 
   // Step 1: Merge button -> Create generation and merge prompts
   const handleMerge = useCallback(async (options: ShotOptions) => {
@@ -417,8 +375,22 @@ function Home() {
     }
 
     setIsGenerating(true);
-    setVisuals([]);
     setProgress(0);
+
+    // Create placeholder cards immediately based on merged_prompts
+    const mergedPromptsData = generationResponse?.merged_prompts || {};
+    const shotTypes = Object.keys(mergedPromptsData);
+
+    if (shotTypes.length > 0) {
+      const placeholderVisuals = shotTypes.map(type => ({
+        type,
+        status: 'pending' as const,
+        image_url: undefined,
+        error: undefined,
+      }));
+      setVisuals(placeholderVisuals);
+      console.log('📦 Placeholder cards created:', placeholderVisuals.length);
+    }
 
     try {
       // Execute generation (starts Gemini image generation)
@@ -427,12 +399,12 @@ function Home() {
       const result = await executeGeneration(generationId);
       console.log('✅ Generation started:', result);
 
-      // Update local visuals immediately
+      // Update visuals with backend response (may have 'processing' status now)
       if (result.generation && result.generation.visual_outputs) {
         setVisuals(result.generation.visual_outputs);
       }
 
-      // Poll for updates
+      // Poll for updates every 2 seconds for faster feedback
       console.log('📝 Polling for progress...');
       const pollInterval = setInterval(async () => {
         try {
@@ -448,7 +420,7 @@ function Home() {
         } catch (error) {
           console.error('Poll error:', error);
         }
-      }, 3000);
+      }, 2000); // Poll every 2 seconds for faster real-time updates
 
       // Safety timeout (10 minutes)
       setTimeout(() => {
@@ -462,7 +434,7 @@ function Home() {
       alert(`Execution failed: ${errorMsg}`);
       setIsGenerating(false);
     }
-  }, [generationId]);
+  }, [generationId, generationResponse]);
 
   // Handle prompts change
   const handlePromptsChange = useCallback((key: string, value: string) => {

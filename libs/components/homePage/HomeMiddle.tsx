@@ -301,6 +301,9 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
     onConfirmGeneration,
     onMerge
 }) => {
+    // Check if mergedPrompts has actual data (not empty object)
+    const hasMergedPrompts = mergedPrompts && Object.keys(mergedPrompts).length > 0;
+
     const [activeTab, setActiveTab] = useState<'analysis' | 'da' | 'merged'>('analysis');
     const [isEditing, setIsEditing] = useState(false);
     const [editedJson, setEditedJson] = useState<string>('');
@@ -326,11 +329,11 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
             return displayResponse.analysis;
         } else if (activeTab === 'da' && daJSON) {
             return daJSON;
-        } else if (activeTab === 'merged' && mergedPrompts) {
+        } else if (activeTab === 'merged' && hasMergedPrompts) {
             return mergedPrompts;
         }
         return displayResponse;
-    }, [activeTab, displayResponse, daJSON, mergedPrompts]);
+    }, [activeTab, displayResponse, daJSON, mergedPrompts, hasMergedPrompts]);
 
     // Update editedJson when tab or data changes
     useEffect(() => {
@@ -391,7 +394,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 if (onDAUpdate && response.analyzed_da_json) {
                     onDAUpdate(response.analyzed_da_json as DAJSON);
                 }
-            } else if (activeTab === 'merged' && generationId) {
+            } else if (activeTab === 'merged' && hasMergedPrompts && generationId) {
                 // Update Merged Prompts
                 const { updateMergedPrompts } = await import('@/libs/server/HomePage/merging');
                 const response = await updateMergedPrompts(generationId, { prompts: parsedJson });
@@ -465,7 +468,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
         >
             <div className={styles.analyzedHeader}>
                 <CheckCircle2 size={24} className={styles.successIcon} />
-                <h2>{mergedPrompts ? 'Generation Created Successfully' : 'Product Analyzed Successfully'}</h2>
+                <h2>{hasMergedPrompts ? 'Generation Created Successfully' : 'Product Analyzed Successfully'}</h2>
             </div>
 
             {/* Product Images Preview */}
@@ -521,12 +524,12 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                             DA JSON
                         </button>
                     )}
-                    {mergedPrompts && (
+                    {hasMergedPrompts && (
                         <button
                             className={`${styles.jsonTab} ${activeTab === 'merged' ? styles.active : ''}`}
                             onClick={() => { setActiveTab('merged'); setIsEditing(false); }}
                         >
-                            Merged Prompts (Editable)
+                            Merged Prompts
                         </button>
                     )}
                 </div>
@@ -579,7 +582,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
             </div>
 
             {/* Confirm Generation Button (Only when merged prompts exist) */}
-            {mergedPrompts && onConfirmGeneration && (
+            {hasMergedPrompts && onConfirmGeneration && (
                 <div className={styles.actionButtons}>
                     <button
                         className={styles.confirmBtn}
@@ -601,8 +604,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 </div>
             )}
 
-            {/* Merge Button (When NOT merged yet) */}
-            {!mergedPrompts && onMerge && (
+            {/* Merge Button (When DA selected but NOT merged yet) */}
+            {daJSON && !hasMergedPrompts && onMerge && (
                 <div className={styles.actionButtons}>
                     <button
                         className={styles.confirmBtn}
@@ -626,9 +629,11 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
             )}
 
             <div className={styles.nextStepHint}>
-                {mergedPrompts
+                {hasMergedPrompts
                     ? <p>✨ Edit the prompts above if needed. Click "Generate Images" to start creation with Gemini AI.</p>
-                    : <p>✨ Click "Merge Product & DA" to create prompts for generation</p>
+                    : daJSON
+                        ? <p>✨ Click "Merge Product & DA" to create prompts for generation</p>
+                        : <p>✨ Select a DA collection from the left sidebar to enable merging</p>
                 }
             </div>
         </motion.div>
