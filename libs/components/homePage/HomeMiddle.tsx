@@ -285,7 +285,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
     onAnalysisUpdate,
     onDAUpdate
 }) => {
-    const [activeTab, setActiveTab] = useState<'full' | 'analysis' | 'da'>('analysis');
+    const [activeTab, setActiveTab] = useState<'analysis' | 'da'>('analysis');
     const [isEditing, setIsEditing] = useState(false);
     const [editedJson, setEditedJson] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
@@ -477,33 +477,9 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 ))}
             </div>
 
-            {/* Product Info Summary */}
-            {fullAnalysisResponse && (
-                <div className={styles.productSummary}>
-                    <div className={styles.summaryItem}>
-                        <span className={styles.summaryLabel}>Name:</span>
-                        <span className={styles.summaryValue}>{fullAnalysisResponse.name}</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                        <span className={styles.summaryLabel}>Category:</span>
-                        <span className={styles.summaryValue}>{fullAnalysisResponse.category}</span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                        <span className={styles.summaryLabel}>Product ID:</span>
-                        <span className={styles.summaryValue}>{fullAnalysisResponse.product_id}</span>
-                    </div>
-                </div>
-            )}
-
             {/* Tabs and Edit Controls */}
             <div className={styles.jsonControls}>
                 <div className={styles.jsonTabs}>
-                    <button
-                        className={`${styles.jsonTab} ${activeTab === 'full' ? styles.active : ''}`}
-                        onClick={() => { setActiveTab('full'); setIsEditing(false); }}
-                    >
-                        Full Response
-                    </button>
                     <button
                         className={`${styles.jsonTab} ${activeTab === 'analysis' ? styles.active : ''}`}
                         onClick={() => { setActiveTab('analysis'); setIsEditing(false); }}
@@ -561,18 +537,12 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
 
             {/* JSON Display/Editor */}
             <div className={styles.jsonContainer}>
-                {(activeTab === 'analysis' || activeTab === 'da') ? (
-                    <textarea
-                        className={styles.jsonEditor}
-                        value={editedJson}
-                        onChange={handleJsonChange}
-                        spellCheck={false}
-                    />
-                ) : (
-                    <pre className={styles.jsonContent}>
-                        {activeTab === 'full' && formatJSON(displayResponse)}
-                    </pre>
-                )}
+                <textarea
+                    className={styles.jsonEditor}
+                    value={editedJson}
+                    onChange={handleJsonChange}
+                    spellCheck={false}
+                />
             </div>
 
             <div className={styles.nextStepHint}>
