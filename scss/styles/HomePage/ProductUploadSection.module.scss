@@ -172,6 +172,7 @@
 }
 
 .analyzeBtn {
+    margin-top: 12px;
     width: 100%;
     display: flex;
     align-items: center;
@@ -222,8 +223,8 @@
 
 // Reference Images Section
 .referenceSection {
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: 24px; // Increased from 12px to fix spacing
+    padding-top: 16px; // Slightly increased padding
     border-top: 1px solid;
 
     .dark & {

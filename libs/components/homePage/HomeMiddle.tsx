@@ -12,6 +12,7 @@ import {
     Sparkles,
     Plus,
     ZoomIn,
+    Eye,
     Play,
 } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeMiddle.module.scss';
@@ -471,9 +472,10 @@ interface VisualCardProps {
     index: number;
     isDarkMode: boolean;
     onRetry: (index: number) => void;
+    onDownload: (imageUrl: string, type: string) => void;
 }
 
-const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRetry }) => {
+const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRetry, onDownload }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
 
@@ -492,6 +494,13 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
             case 'failed': return <AlertCircle size={16} />;
             case 'processing': return <Loader2 size={16} className={styles.spin} />;
             default: return <ImageIcon size={16} />;
+        }
+    };
+
+    // Handle single image download
+    const handleDownload = () => {
+        if (visual.image_url) {
+            onDownload(visual.image_url, visual.type);
         }
     };
 
@@ -522,11 +531,29 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
                             />
                             {isHovered && (
                                 <div className={styles.visualOverlay}>
+                                    {/* View Button */}
                                     <button
-                                        className={styles.zoomBtn}
+                                        className={styles.actionBtn}
                                         onClick={() => setIsZoomed(true)}
+                                        title="View"
                                     >
-                                        <ZoomIn size={20} />
+                                        <Eye size={20} />
+                                    </button>
+                                    {/* Download Button */}
+                                    <button
+                                        className={styles.actionBtn}
+                                        onClick={handleDownload}
+                                        title="Download"
+                                    >
+                                        <Download size={20} />
+                                    </button>
+                                    {/* Refresh/Regenerate Button */}
+                                    <button
+                                        className={styles.actionBtn}
+                                        onClick={() => onRetry(index)}
+                                        title="Regenerate"
+                                    >
+                                        <RefreshCw size={20} />
                                     </button>
                                 </div>
                             )}
@@ -635,9 +662,9 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     const visuals = parentVisuals || localVisuals;
     const progress = parentProgress ?? localProgress;
     const isGenerating = isGeneratingVisuals || localIsGenerating;
-    const setVisuals = parentVisuals ? () => {} : setLocalVisuals;
-    const setProgress = parentProgress !== undefined ? () => {} : setLocalProgress;
-    const setIsGenerating = isGeneratingVisuals !== undefined ? () => {} : setLocalIsGenerating;
+    const setVisuals = parentVisuals ? () => { } : setLocalVisuals;
+    const setProgress = parentProgress !== undefined ? () => { } : setLocalProgress;
+    const setIsGenerating = isGeneratingVisuals !== undefined ? () => { } : setLocalIsGenerating;
 
     // DA Analysis from collection
     const [collectionDA, setCollectionDA] = useState<DAJSON | null>(null);
@@ -699,6 +726,28 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
             ));
         }
     }, [generationId]);
+
+    // Handle single image download
+    const handleSingleDownload = useCallback(async (imageUrl: string, type: string) => {
+        try {
+            // Fetch the image as blob
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+
+            // Create a temporary link and trigger download
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${type.replace(/_/g, '-')}-${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Single image download failed:', error);
+            alert('Failed to download image');
+        }
+    }, []);
 
     const handleDownloadAll = useCallback(async () => {
         if (!generationId) return;
@@ -852,6 +901,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                                     index={index}
                                     isDarkMode={isDarkMode}
                                     onRetry={handleRetry}
+                                    onDownload={handleSingleDownload}
                                 />
                             ))}
                         </AnimatePresence>

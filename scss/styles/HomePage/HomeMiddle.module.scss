@@ -849,8 +849,60 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+// Action buttons for hover overlay (Eye, Download, Refresh)
+.actionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(8px);
+
+    svg {
+        stroke-width: 2;
+    }
+
+    &:hover {
+        transform: scale(1.15);
+        background: rgba(255, 255, 255, 0.95);
+        color: #0f172a;
+        border-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active {
+        transform: scale(1.05);
+    }
+
+    // Specific button hover color variations
+    &:nth-child(1):hover {
+        // Eye - blue
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: #fff;
+    }
+
+    &:nth-child(2):hover {
+        // Download - green
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #fff;
+    }
+
+    &:nth-child(3):hover {
+        // Refresh - purple
+        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        color: #fff;
+    }
 }
 
 .zoomBtn {

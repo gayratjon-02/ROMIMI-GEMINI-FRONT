@@ -28,6 +28,10 @@ interface HomeBottomProps {
     onShotsChange: (shots: string[]) => void;
     ageMode: 'adult' | 'kid';
     onAgeModeChange: (mode: 'adult' | 'kid') => void;
+    resolution: '4k' | '2k';
+    onResolutionChange: (res: '4k' | '2k') => void;
+    aspectRatio: '4:5' | '1:1' | '9:16';
+    onAspectRatioChange: (ratio: '4:5' | '1:1' | '9:16') => void;
     onGenerate: (visualTypes: string[]) => void;
     isGenerating?: boolean;
     isAnalyzed?: boolean; // Product analyzed?
@@ -64,26 +68,29 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
     onShotsChange,
     ageMode,
     onAgeModeChange,
+    resolution,
+    onResolutionChange,
+    aspectRatio,
+    onAspectRatioChange,
     onGenerate,
     isGenerating = false,
     isAnalyzed = false,
     hasDA = false,
 }) => {
-    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    // Select all logic...
+    const handleSelectAll = useCallback(() => {
+        if (selectedShots.length === SHOT_TYPES.length) {
+            onShotsChange([]);
+        } else {
+            onShotsChange(SHOT_TYPES.map(s => s.id));
+        }
+    }, [selectedShots, onShotsChange]);
 
     const handleShotToggle = useCallback((shotId: string) => {
         if (selectedShots.includes(shotId)) {
             onShotsChange(selectedShots.filter(id => id !== shotId));
         } else {
             onShotsChange([...selectedShots, shotId]);
-        }
-    }, [selectedShots, onShotsChange]);
-
-    const handleSelectAll = useCallback(() => {
-        if (selectedShots.length === SHOT_TYPES.length) {
-            onShotsChange([]);
-        } else {
-            onShotsChange(SHOT_TYPES.map(s => s.id));
         }
     }, [selectedShots, onShotsChange]);
 
@@ -101,6 +108,8 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
             return shotId;
         });
 
+        // We assume resolution and aspect ratio are handled in global state or appended here if needed
+        // For now, simple console log or just passing visual types as before
         onGenerate(visualTypes);
     }, [selectedShots, ageMode, onGenerate]);
 
@@ -160,21 +169,23 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                 </div>
             </div>
 
-            {/* Center Section: Age Toggle */}
+            {/* Center Section: Options (Model, Resolution, Ratio) */}
             <div className={styles.centerSection}>
+
+                {/* Model / Age Toggle */}
                 {showAgeToggle && (
-                    <div className={styles.ageToggle}>
-                        <span className={styles.ageLabel}>Model:</span>
-                        <div className={styles.ageButtons}>
+                    <div className={styles.optionGroup}>
+                        <span className={styles.optionLabel}>Model:</span>
+                        <div className={styles.optionButtons}>
                             <button
-                                className={`${styles.ageBtn} ${ageMode === 'adult' ? styles.active : ''}`}
+                                className={`${styles.optionBtn} ${ageMode === 'adult' ? styles.active : ''}`}
                                 onClick={() => onAgeModeChange('adult')}
                             >
                                 <UserCheck size={16} />
                                 <span>Adult</span>
                             </button>
                             <button
-                                className={`${styles.ageBtn} ${ageMode === 'kid' ? styles.active : ''}`}
+                                className={`${styles.optionBtn} ${ageMode === 'kid' ? styles.active : ''}`}
                                 onClick={() => onAgeModeChange('kid')}
                             >
                                 <Baby size={16} />
@@ -183,6 +194,56 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                         </div>
                     </div>
                 )}
+
+                {/* Divider if Model toggle is shown */}
+                {showAgeToggle && <div className={styles.dividerSmall} />}
+
+                {/* Resolution Toggle */}
+                <div className={styles.optionGroup}>
+                    <span className={styles.optionLabel}>Res:</span>
+                    <div className={styles.optionButtons}>
+                        <button
+                            className={`${styles.optionBtn} ${resolution === '4k' ? styles.active : ''}`}
+                            onClick={() => onResolutionChange('4k')}
+                        >
+                            <span>4K</span>
+                        </button>
+                        <button
+                            className={`${styles.optionBtn} ${resolution === '2k' ? styles.active : ''}`}
+                            onClick={() => onResolutionChange('2k')}
+                        >
+                            <span>2K</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className={styles.dividerSmall} />
+
+                {/* Aspect Ratio Toggle */}
+                <div className={styles.optionGroup}>
+                    <span className={styles.optionLabel}>Ratio:</span>
+                    <div className={styles.optionButtons}>
+                        <button
+                            className={`${styles.optionBtn} ${aspectRatio === '4:5' ? styles.active : ''}`}
+                            onClick={() => onAspectRatioChange('4:5')}
+                        >
+                            <span>4:5</span>
+                        </button>
+                        <button
+                            className={`${styles.optionBtn} ${aspectRatio === '1:1' ? styles.active : ''}`}
+                            onClick={() => onAspectRatioChange('1:1')}
+                        >
+                            <span>1:1</span>
+                        </button>
+                        <button
+                            className={`${styles.optionBtn} ${aspectRatio === '9:16' ? styles.active : ''}`}
+                            onClick={() => onAspectRatioChange('9:16')}
+                        >
+                            <span>9:16</span>
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
             {/* Right Section: Generate Button */}

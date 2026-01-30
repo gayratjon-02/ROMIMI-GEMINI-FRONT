@@ -50,6 +50,8 @@ export interface GenerateData {
     prompts?: string[];
     visualTypes?: string[];
     model?: string;
+    resolution?: string;
+    aspect_ratio?: string;
 }
 
 export interface MergePromptsData {

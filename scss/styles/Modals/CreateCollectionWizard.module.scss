@@ -795,11 +795,59 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
+  gap: 16px; // Added gap for spacing between buttons
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 
   .light & {
     border-top-color: rgba(0, 0, 0, 0.06);
   }
+}
+
+// JSON Editor Styles
+.jsonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.jsonEditor {
+  width: 100%;
+  height: 400px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #a5a0ff; // Syntax highlight color // User wants ideal colors, maybe lighter for dark mode? nah contrast is good.
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #4f46e5;
+  }
+
+  .light & {
+    background: #ffffff; // Cleaner white for light mode
+    border-color: #e5e7eb;
+    color: #4338ca; // Darker indigo for better readability
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  }
+}
+
+.successMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  color: #10b981;
+  font-size: 14px;
 }
 
 .footerRight {
@@ -808,31 +856,86 @@
   margin-left: auto;
 }
 
-.backBtn {
-  display: flex;
+// Improved Cancel Button
+.cancelBtnStyled {  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 10px 18px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   .light & {
-    border-color: rgba(0, 0, 0, 0.12);
-    color: rgba(0, 0, 0, 0.7);
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #4b5563;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.03);
+      background: #e5e7eb;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+  }
+}
+
+// Improved Secondary Button (Close/Cancel)
+.secondaryBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px; // Slightly more rounded for modern look
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .light & {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.6);
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.08);
+      border-color: rgba(0, 0, 0, 0.15);
+      color: #1a1a1a;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
   }
 }
@@ -850,16 +953,66 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); // Premium shadow
 
   &:hover {
     background: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
   }
-
-  &.disabled {
-    opacity: 0.5;
+  
+  &:disabled {
+    opacity: 0.7;
     cursor: not-allowed;
+    transform: none;
   }
 }
+
+// Image Preview in Edit Modal
+.editImageSection {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+
+    .light & {
+        border-color: rgba(0,0,0,0.1);
+    }
+}
+
+.editImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.editImageOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.editImageLabel {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.9);
+    background: rgba(0,0,0,0.5);
+    padding: 4px 8px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+}
+
+
 
 .analyzeBtn {
   @extend .primaryBtn;

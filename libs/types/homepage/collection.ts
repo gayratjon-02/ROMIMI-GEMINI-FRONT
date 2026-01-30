@@ -24,6 +24,7 @@ export interface CreateCollectionData {
 
 export interface UpdateCollectionData {
     name?: string;
+    code?: string;
     description?: string;
     brand_id?: string;
     da_reference_image_url?: string;
