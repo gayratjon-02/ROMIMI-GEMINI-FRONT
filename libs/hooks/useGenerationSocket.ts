@@ -21,6 +21,7 @@ export const useGenerationSocket = (
         if (!generationId) return;
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5031';
+        console.log('🔌 Initializing socket connection to:', apiUrl);
         // Connect to /generations namespace
         // Note: socket.io client automatically handles the path /socket.io
         // We append /generations to the URL for the namespace
