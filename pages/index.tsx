@@ -4,9 +4,10 @@ import { useState, useCallback, useEffect } from "react";
 import HomeTop from "@/libs/components/homePage/HomeTop";
 import HomeLeft from "@/libs/components/homePage/HomeLeft";
 import HomeMiddle, { ProductJSON, DAJSON } from "@/libs/components/homePage/HomeMiddle";
-import HomeBottom from "@/libs/components/homePage/HomeButtom";
+import HomeBottom, { createDefaultShotOptions } from "@/libs/components/homePage/HomeButtom";
 import { Brand } from "@/libs/types/homepage/brand";
 import { Collection } from "@/libs/types/homepage/collection";
+import { ShotOptions, getEnabledShots } from "@/libs/types/homepage/shot-options";
 // Auth HOC import for protected routes
 import { withAuth } from "@/libs/components/auth/withAuth";
 // API imports
@@ -99,13 +100,12 @@ function Home() {
   const [resolution, setResolution] = useState<'4k' | '2k'>('4k');
   const [aspectRatio, setAspectRatio] = useState<'4:5' | '1:1' | '9:16'>('4:5');
 
-  // Shot Selection
-  const [selectedShots, setSelectedShots] = useState<string[]>([
-    'duo', 'solo', 'flatlay_front', 'flatlay_back', 'closeup_front', 'closeup_back'
-  ]);
+  // Shot Selection - NEW: Use ShotOptions instead of selectedShots + ageMode
+  const [shotOptions, setShotOptions] = useState<ShotOptions>(createDefaultShotOptions());
 
-
-  const [ageMode, setAgeMode] = useState<'adult' | 'kid'>('adult');
+  // Legacy derived values for compatibility
+  const selectedShots = getEnabledShots(shotOptions);
+  const ageMode = shotOptions.solo?.subject || 'adult';
 
   // Generation State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -350,8 +350,9 @@ function Home() {
   }, [productJSON]);
 
   // Step 1: Generate button → Create generation and show JSON response
-  const handleGenerate = useCallback(async (visualTypes: string[]) => {
-    console.log('🚀 Generate clicked with:', visualTypes);
+  const handleGenerate = useCallback(async (options: ShotOptions) => {
+    const enabledShots = getEnabledShots(options);
+    console.log('🚀 Generate clicked with shotOptions:', options, 'enabled:', enabledShots);
 
     if (!productId) {
       alert('Please analyze a product first.');
@@ -383,9 +384,9 @@ function Home() {
         generation_type: 'product_visuals'
       });
 
-      // Merge prompts immediately after creation
-      console.log('📝 Merging prompts...');
-      const mergedResult = await mergePrompts(generation.id);
+      // Merge prompts immediately after creation WITH shot_options
+      console.log('📝 Merging prompts with shot_options...');
+      const mergedResult = await mergePrompts(generation.id, { shot_options: options });
       console.log('✅ Prompts merged:', mergedResult);
 
       // Fetch updated generation with merged prompts
@@ -637,10 +638,8 @@ function Home() {
           {/* Bottom Bar */}
           <HomeBottom
             isDarkMode={isDarkMode}
-            selectedShots={selectedShots}
-            onShotsChange={setSelectedShots}
-            ageMode={ageMode}
-            onAgeModeChange={setAgeMode}
+            shotOptions={shotOptions}
+            onShotOptionsChange={setShotOptions}
             resolution={resolution}
             onResolutionChange={setResolution}
             aspectRatio={aspectRatio}
