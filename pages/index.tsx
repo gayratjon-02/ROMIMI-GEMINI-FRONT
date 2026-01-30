@@ -349,10 +349,10 @@ function Home() {
     }
   }, [productJSON]);
 
-  // Step 1: Generate button → Create generation and show JSON response
-  const handleGenerate = useCallback(async (options: ShotOptions) => {
+  // Step 1: Merge button -> Create generation and merge prompts
+  const handleMerge = useCallback(async (options: ShotOptions) => {
     const enabledShots = getEnabledShots(options);
-    console.log('🚀 Generate clicked with shotOptions:', options, 'enabled:', enabledShots);
+    console.log('🚀 Merge clicked with shotOptions:', options, 'enabled:', enabledShots);
 
     if (!productId) {
       alert('Please analyze a product first.');
@@ -378,16 +378,20 @@ function Home() {
 
       // Create generation
       console.log('📝 Creating generation...');
+
+      const { createGeneration } = await import('@/libs/server/HomePage/merging');
       const generation = await createGeneration({
         product_id: productId,
         collection_id: selectedCollection.id,
         generation_type: 'product_visuals'
       });
 
-      // Merge prompts immediately after creation WITH shot_options
+      console.log('✅ Generation created:', generation.id);
+
+      // Merge prompts immediately
       console.log('📝 Merging prompts with shot_options...');
-      const mergedResult = await mergePrompts(generation.id, { shot_options: options });
-      console.log('✅ Prompts merged:', mergedResult);
+      const { mergePrompts } = await import('@/libs/server/HomePage/merging');
+      await mergePrompts(generation.id, { shot_options: options });
 
       // Fetch updated generation with merged prompts
       const { getGeneration } = await import('@/libs/server/HomePage/merging');
@@ -398,18 +402,17 @@ function Home() {
       console.log('✅ Generation ready for review:', updatedGeneration.id);
 
     } catch (error: any) {
-      console.error('Generation creation failed:', error);
-      const errorMsg = error?.errors?.join(', ') || error?.message || 'Failed to create generation';
-      alert(`Generation failed: ${errorMsg}`);
+      console.error('Merge failed:', error);
+      alert(error.message || 'Failed to merge prompts');
     } finally {
       setIsGenerating(false);
     }
-  }, [productId, selectedCollection, daJSON]);
+  }, [productId, selectedCollection, daJSON, mockDAAnalysis]);
 
   // Step 2: Confirm button → Execute generation and start image creation
-  const handleConfirmGeneration = useCallback(async () => {
+  const handleGenerateImages = useCallback(async () => {
     if (!generationId) {
-      alert('No generation to confirm. Please click Generate first.');
+      alert('No generation to confirm. Please click Merge first.');
       return;
     }
 
@@ -420,11 +423,14 @@ function Home() {
     try {
       // Execute generation (starts Gemini image generation)
       console.log('📝 Executing generation...');
+      const { executeGeneration } = await import('@/libs/server/HomePage/generate');
       const result = await executeGeneration(generationId);
       console.log('✅ Generation started:', result);
 
-      // Clear generation response to show visuals grid
-      setGenerationResponse(null);
+      // Update local visuals immediately
+      if (result.generation && result.generation.visual_outputs) {
+        setVisuals(result.generation.visual_outputs);
+      }
 
       // Poll for updates
       console.log('📝 Polling for progress...');
@@ -628,7 +634,9 @@ function Home() {
               ageMode={ageMode}
               isAnalyzing={isAnalyzing}
               generationResponse={generationResponse}
-              onConfirmGeneration={handleConfirmGeneration}
+              onConfirmGeneration={handleGenerateImages}
+              onMerge={handleMerge}
+              shotOptions={shotOptions}
               parentVisuals={visuals}
               parentProgress={progress}
               isGeneratingVisuals={isGenerating}
@@ -644,7 +652,7 @@ function Home() {
             onResolutionChange={setResolution}
             aspectRatio={aspectRatio}
             onAspectRatioChange={setAspectRatio}
-            onGenerate={handleGenerate}
+            onGenerate={handleMerge}
             isGenerating={isGenerating}
             isAnalyzed={isAnalyzed}
             hasDA={hasDA}

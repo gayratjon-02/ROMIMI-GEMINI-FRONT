@@ -14,6 +14,7 @@ import {
     ZoomIn,
     Eye,
     Play,
+    Layers,
 } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeMiddle.module.scss';
 import { createProduct, analyzeProduct } from '@/libs/server/HomePage/product';
@@ -53,8 +54,9 @@ interface HomeMiddleProps {
     onAnalysisUpdate?: (updatedResponse: any) => void; // Callback for JSON updates
     onDAUpdate?: (updatedDA: DAJSON) => void; // Callback for DA JSON updates
     generationResponse?: Generation | null; // Response from createGeneration API
-    // NEW: Confirm generation callback and visuals from parent
     onConfirmGeneration?: () => void;
+    onMerge?: (options: any) => void;
+    shotOptions?: any;
     parentVisuals?: VisualOutput[];
     parentProgress?: number;
     isGeneratingVisuals?: boolean;
@@ -279,6 +281,7 @@ interface AnalyzedStateProps {
     onPromptsUpdated?: (updatedPrompts: any) => void;
     isGenerating?: boolean;
     onConfirmGeneration?: () => void;
+    onMerge?: () => void;
 }
 
 const AnalyzedState: React.FC<AnalyzedStateProps> = ({
@@ -295,7 +298,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
     generationId,
     onPromptsUpdated,
     isGenerating,
-    onConfirmGeneration
+    onConfirmGeneration,
+    onMerge
 }) => {
     const [activeTab, setActiveTab] = useState<'analysis' | 'da' | 'merged'>('analysis');
     const [isEditing, setIsEditing] = useState(false);
@@ -590,7 +594,31 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                         ) : (
                             <>
                                 <Play size={18} />
-                                <span>Confirm & Generate Images</span>
+                                <span>Generate Images</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
+
+            {/* Merge Button (When NOT merged yet) */}
+            {!mergedPrompts && onMerge && (
+                <div className={styles.actionButtons}>
+                    <button
+                        className={styles.confirmBtn}
+                        onClick={onMerge}
+                        disabled={isGenerating}
+                        style={{ background: '#4f46e5' }}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 size={18} className={styles.spin} />
+                                <span>Merging...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Layers size={18} />
+                                <span>Merge Product & DA</span>
                             </>
                         )}
                     </button>
@@ -599,8 +627,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
 
             <div className={styles.nextStepHint}>
                 {mergedPrompts
-                    ? <p>✨ Edit the JSON above if needed. Click "Confirm" to start image generation with Gemini AI.</p>
-                    : <p>✨ Select a DA Preset and click Generate to create visuals</p>
+                    ? <p>✨ Edit the prompts above if needed. Click "Generate Images" to start creation with Gemini AI.</p>
+                    : <p>✨ Click "Merge Product & DA" to create prompts for generation</p>
                 }
             </div>
         </motion.div>
@@ -771,6 +799,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     daJSON,
     mergedPrompts = {},
     selectedShots = [],
+    shotOptions,
     ageMode = 'adult',
     isAnalyzing = false,
     onProductAnalyzed,
@@ -780,6 +809,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     onDAUpdate,
     generationResponse,
     onConfirmGeneration,
+    onMerge,
     parentVisuals,
     parentProgress,
     isGeneratingVisuals = false,
@@ -960,6 +990,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             generationId={effectiveGenerationId}
                             onConfirmGeneration={onConfirmGeneration}
                             isGenerating={isGeneratingVisuals}
+                            onMerge={onMerge ? () => onMerge(shotOptions) : undefined}
                         />
                     ) : (
                         <EmptyState isDarkMode={isDarkMode} />
