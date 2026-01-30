@@ -40,6 +40,8 @@ interface HomeLeftProps {
   mergedPrompts?: Record<string, string>;
   onPromptsChange?: (key: string, value: string) => void;
   onLibrarySelect?: (generation: Generation) => void;
+  /** Increment when generation completes so Library refetches without page refresh */
+  libraryRefreshTrigger?: number;
 }
 
 const HomeLeft: React.FC<HomeLeftProps> = ({
@@ -66,6 +68,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   mergedPrompts = {},
   onPromptsChange,
   onLibrarySelect,
+  libraryRefreshTrigger = 0,
 }) => {
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState('product-visuals');
@@ -131,6 +134,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   }, [refreshTrigger]);
 
   // Library: fetch generations that have completed images (for product names list)
+  // Refetches when refreshTrigger or libraryRefreshTrigger changes (e.g. after new generation completes)
   useEffect(() => {
     if (!onLibrarySelect) return;
     const fetchLibrary = async () => {
@@ -146,7 +150,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
       }
     };
     fetchLibrary();
-  }, [refreshTrigger, onLibrarySelect]);
+  }, [refreshTrigger, libraryRefreshTrigger, onLibrarySelect]);
 
   const handleLogout = () => {
     logout();

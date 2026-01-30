@@ -117,6 +117,8 @@ function Home() {
   const [generationResponse, setGenerationResponse] = useState<Generation | null>(null);
   // Library: selected generation to show its generated images in HomeMiddle
   const [librarySelectedGeneration, setLibrarySelectedGeneration] = useState<Generation | null>(null);
+  // Increment when generation completes so HomeLeft Library refetches without page refresh
+  const [libraryRefreshTrigger, setLibraryRefreshTrigger] = useState(0);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -173,6 +175,8 @@ function Home() {
       }
       setIsGenerating(false);
       setProgress(100);
+      // Refresh Library so new product appears without page reload
+      setLibraryRefreshTrigger(prev => prev + 1);
     },
     onConnected: () => {
       console.log('🔌 [Index] Socket connected for generation:', generationResponse?.id);
@@ -654,6 +658,7 @@ function Home() {
             onCollectionSelect={handleCollectionSelect}
             onBrandCreated={handleBrandCreated}
             onLibrarySelect={handleLibrarySelect}
+            libraryRefreshTrigger={libraryRefreshTrigger}
             isOpen={isMobileDrawerOpen}
             // NEW: Pass upload props
             frontImage={frontImage}
