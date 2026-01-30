@@ -62,7 +62,7 @@ function TemplatesPage() {
 
     const handleCreateSubmit = async () => {
         if (!createFile) {
-            setCreateError('Rasm tanlang');
+            setCreateError('Please select an image');
             return;
         }
         setCreateSubmitting(true);
@@ -117,7 +117,7 @@ function TemplatesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Ushbu DA ni o‘chirishni xohlaysizmi?')) return;
+        if (!window.confirm('Do you want to delete this DA?')) return;
         setDeleteId(id);
         setDeleteSubmitting(true);
         try {
@@ -135,7 +135,7 @@ function TemplatesPage() {
         <div className={`${styles.container} ${isDarkMode ? styles.dark : ''}`}>
             <div className={styles.header}>
                 <Link href="/" className={styles.backBtn}>
-                    ← Bosh sahifa
+                    ← Home
                 </Link>
                 <h1 className={styles.title}>DA Templates</h1>
                 <button
@@ -150,9 +150,9 @@ function TemplatesPage() {
             </div>
 
             {error && <p className={styles.error}>{error}</p>}
-            {loading && <div className={styles.loading}>Yuklanmoqda...</div>}
+            {loading && <div className={styles.loading}>Loading...</div>}
             {!loading && presets.length === 0 && !error && (
-                <div className={styles.empty}>Hali DA template yo‘q. &quot;Create DA&quot; orqali qo‘shing.</div>
+                <div className={styles.empty}>No DA templates yet. Add one via &quot;Create DA&quot;.</div>
             )}
             {!loading && presets.length > 0 && (
                 <div className={styles.tableWrap}>
@@ -206,18 +206,18 @@ function TemplatesPage() {
                             <h2 className={styles.modalTitle}>Create DA</h2>
                         </div>
                         <div className={styles.modalBody}>
-                            <label className={styles.label}>Reference image (majburiy)</label>
+                            <label className={styles.label}>Reference image (required)</label>
                             <input
                                 type="file"
                                 accept="image/*"
                                 className={styles.input}
                                 onChange={(e) => setCreateFile(e.target.files?.[0] || null)}
                             />
-                            <label className={styles.label}>Preset name (ixtiyoriy)</label>
+                            <label className={styles.label}>Preset name (optional)</label>
                             <input
                                 type="text"
                                 className={styles.input}
-                                placeholder="Masalan: Nostalgic Playroom"
+                                placeholder="e.g. Nostalgic Playroom"
                                 value={createName}
                                 onChange={(e) => setCreateName(e.target.value)}
                             />
@@ -225,10 +225,10 @@ function TemplatesPage() {
                         </div>
                         <div className={styles.modalFooter}>
                             <button className={styles.actionBtn} onClick={() => setCreateOpen(false)} disabled={createSubmitting}>
-                                Bekor
+                                Cancel
                             </button>
                             <button className={styles.createBtn} onClick={handleCreateSubmit} disabled={createSubmitting}>
-                                {createSubmitting ? 'Yuklanmoqda...' : 'Create'}
+                                {createSubmitting ? 'Loading...' : 'Create'}
                             </button>
                         </div>
                     </div>
@@ -254,10 +254,10 @@ function TemplatesPage() {
                         </div>
                         <div className={styles.modalFooter}>
                             <button className={styles.actionBtn} onClick={() => setUpdatePreset(null)} disabled={updateSubmitting}>
-                                Bekor
+                                Cancel
                             </button>
                             <button className={styles.createBtn} onClick={handleUpdateSubmit} disabled={updateSubmitting}>
-                                {updateSubmitting ? 'Saqlanmoqda...' : 'Save'}
+                                {updateSubmitting ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>

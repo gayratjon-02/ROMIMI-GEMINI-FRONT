@@ -55,7 +55,7 @@ export interface GetPresetByIdResponse {
 }
 
 /**
- * GET /api/da/presets — barcha DA presetlar (system + user)
+ * GET /api/da/presets — all DA presets (system + user)
  */
 export async function getDAPresets(): Promise<GetPresetsResponse> {
     const response = await fetch(`${API_BASE}/da/presets`, {
@@ -71,7 +71,7 @@ export async function getDAPresets(): Promise<GetPresetsResponse> {
 }
 
 /**
- * GET /api/da/presets/:id — bitta preset + config
+ * GET /api/da/presets/:id — single preset + config
  */
 export async function getDAPresetById(id: string): Promise<GetPresetByIdResponse> {
     const response = await fetch(`${API_BASE}/da/presets/${id}`, {
@@ -87,7 +87,7 @@ export async function getDAPresetById(id: string): Promise<GetPresetByIdResponse
 }
 
 /**
- * POST /api/da/analyze — rasm yuklash + tahlil + DB ga saqlash (Create DA)
+ * POST /api/da/analyze — upload image + analyze + save to DB (Create DA)
  * FormData: image (file), preset_name (optional)
  */
 export async function createDAPresetFromImage(formData: FormData): Promise<{
@@ -112,7 +112,7 @@ export async function createDAPresetFromImage(formData: FormData): Promise<{
 }
 
 /**
- * PUT /api/da/presets/:id/analysis — preset analysis yangilash
+ * PUT /api/da/presets/:id/analysis — update preset analysis
  */
 export async function updateDAPresetAnalysis(
     id: string,
@@ -132,7 +132,7 @@ export async function updateDAPresetAnalysis(
 }
 
 /**
- * POST /api/da/presets/delete/:id — preset o‘chirish (faqat user yaratganlar)
+ * POST /api/da/presets/delete/:id — delete preset (only user created ones)
  */
 export async function deleteDAPreset(id: string): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE}/da/presets/delete/${id}`, {

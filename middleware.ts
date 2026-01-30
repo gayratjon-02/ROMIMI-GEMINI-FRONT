@@ -1,21 +1,21 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Public routes - authentication kerak emas
+// Public routes - authentication not required
 const PUBLIC_ROUTES = ['/signup', '/login'];
 
-// API routes - backend tomonidan protect qilinadi
+// API routes - protected by backend
 const API_ROUTES = ['/api'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // API routes uchun middleware skip
+  // Skip middleware for API routes
   if (API_ROUTES.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // Static files uchun middleware skip
+  // Skip middleware for Static files
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/static') ||
@@ -24,30 +24,30 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Public routes - authentication check kerak emas
+  // Public routes - no authentication check required
   if (PUBLIC_ROUTES.includes(pathname)) {
     return NextResponse.next();
   }
 
-  // 🔒 XAVFSIZLIK: Token check qilish
-  // Note: middleware da localStorage yo'q, shuning uchun cookie ishlatamiz
+  // 🔒 SECURITY: Check Token
+  // Note: middleware has no localStorage, so we use cookies
   const token = request.cookies.get('auth_token')?.value;
 
   if (!token) {
-    // Token yo'q - signup page ga redirect
+    // No token - redirect to signup page
     const signupUrl = new URL('/signup', request.url);
 
-    // Redirect qilganidan keyin qaytish uchun current URL ni saqlash
+    // Save current URL to redirect back after login
     signupUrl.searchParams.set('redirect', pathname);
 
     return NextResponse.redirect(signupUrl);
   }
 
-  // Token bor - davom ettirish
+  // Token exists - continue
   return NextResponse.next();
 }
 
-// Middleware qaysi routelarga apply qilinishi
+// Which routes middleware applies to
 export const config = {
   matcher: [
     /*

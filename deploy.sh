@@ -4,14 +4,14 @@
 
 # PRODUCTION
 git reset --hard
-git checkout master  # Agar branchingiz main bo'lsa
+git checkout master  # If branch is master
 git pull origin master
 
-# Konteynerni yangilash va qayta qurish
-# Bu buyruq eski konteynerni to'xtatadi, o'chiradi va yangisini build qiladi
+# Update and rebuild container
+# This command stops and removes the old container, then builds a new one
 docker stop romimi-frontend
 docker remove romimi-front
 docker compose up -d --build
 
-# Keraksiz eski image'larni tozalash
+# Clean up unused old images
 docker image prune -f

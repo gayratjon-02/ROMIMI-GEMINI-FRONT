@@ -4,7 +4,7 @@ import { isAuthenticated } from '@/libs/server/HomePage/signup';
 
 /**
  * 🔒 Higher-Order Component (HOC) for protecting pages
- * Agar user login qilmagan bo'lsa, signup page ga redirect qiladi
+ * If user is not logged in, redirects to signup page
  *
  * Usage:
  * export default withAuth(MyPage);
@@ -23,8 +23,8 @@ export function withAuth<P extends object>(
         const authed = isAuthenticated();
 
         if (!authed) {
-          // Token yo'q - signup page ga redirect
-          // Current path ni saqlash (login qilgandan keyin qaytish uchun)
+          // No Token - redirect to signup page
+          // Save current path (to return after login)
           router.replace({
             pathname: '/signup',
             query: { redirect: router.asPath },
@@ -39,7 +39,7 @@ export function withAuth<P extends object>(
       checkAuth();
     }, [router]);
 
-    // Loading state - authentication tekshirilayotgan vaqt
+    // Loading state - while authentication is being checked
     if (isChecking) {
       return (
         <div
@@ -78,7 +78,7 @@ export function withAuth<P extends object>(
 
     // Authenticated - render actual component
     if (!isAuthed) {
-      return null; // Redirect qilinmoqda
+      return null; // Redirecting
     }
 
     return <WrappedComponent {...props} />;

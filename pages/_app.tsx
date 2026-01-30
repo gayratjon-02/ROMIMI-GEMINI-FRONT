@@ -15,7 +15,7 @@ export default function App({ Component, pageProps }: AppProps) {
   const [mode, setMode] = useState<'light' | 'dark'>('dark');
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // localStorage-dan theme-ni o'qish (client-side only)
+  // Read theme from localStorage (client-side only)
   useEffect(() => {
     const savedMode = localStorage.getItem(THEME_STORAGE_KEY) as 'light' | 'dark' | null;
     if (savedMode) {
@@ -24,11 +24,11 @@ export default function App({ Component, pageProps }: AppProps) {
     setIsHydrated(true);
   }, []);
 
-  // Theme o'zgarganda localStorage-ga saqlash va body-ga class qo'shish
+  // Save to localStorage when theme changes and add class to body
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem(THEME_STORAGE_KEY, mode);
-      // Body-ga data-theme va class qo'shish
+      // Add data-theme and class to body
       document.body.setAttribute('data-theme', mode);
       document.body.classList.remove('light', 'dark');
       document.body.classList.add(mode);

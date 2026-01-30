@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Upload, Image as ImageIcon, X, Plus, CheckCircle } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeMiddle.module.scss';
 
-// Fayl hajmini formatlash uchun helper
+// Helper to format file size
 const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -14,7 +14,7 @@ const formatFileSize = (bytes: number): string => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-// Maksimal rasm hajmi (30MB)
+// Max image size (30MB)
 const MAX_FILE_SIZE = 30 * 1024 * 1024;
 
 interface ProductStep1Props {
@@ -44,7 +44,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
         refs: false,
     });
 
-    // Global drag holati - butun sahifaga rasm olib kelganda ko'rinadi
+    // Global drag state - visible when dragging image over the entire page
     const [isGlobalDragging, setIsGlobalDragging] = useState(false);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -52,7 +52,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
         e.stopPropagation();
     }, []);
 
-    // GLOBAL DROP - tashqaridan rasm olib kelganda tartib bilan joylaydi
+    // GLOBAL DROP - organizes images when dropped from outside
     const handleGlobalDrop = useCallback(
         (e: React.DragEvent) => {
             e.preventDefault();
@@ -68,19 +68,19 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
 
             let fileIndex = 0;
 
-            // 1. Front View - bo'sh bo'lsa birinchi rasmni joylaymiz
+            // 1. Front View - if empty, place first image
             if (!frontImage && files[fileIndex]) {
                 onFrontImageChange(files[fileIndex]);
                 fileIndex++;
             }
 
-            // 2. Back View - bo'sh bo'lsa keyingi rasmni joylaymiz
+            // 2. Back View - if empty, place next image
             if (!backImage && files[fileIndex]) {
                 onBackImageChange(files[fileIndex]);
                 fileIndex++;
             }
 
-            // 3. Qolgan rasmlar - Detail References-ga (max 4)
+            // 3. Remaining images - to Detail References (max 4)
             if (fileIndex < files.length) {
                 const remainingFiles = files.slice(fileIndex);
                 const newRefs = [...referenceImages, ...remainingFiles].slice(0, 4);
@@ -98,7 +98,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
 
     const handleGlobalDragLeave = useCallback((e: React.DragEvent) => {
         e.preventDefault();
-        // Faqat komponentdan chiqsa
+        // Only if leaving the component
         if (e.currentTarget === e.target) {
             setIsGlobalDragging(false);
         }
@@ -191,7 +191,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
                                     }}
                                 >
                                     <X size={14} />
-                                    O'chirish
+                                    Delete
                                 </button>
                             </div>
                         </>
@@ -246,7 +246,7 @@ const ProductStep1_Upload: React.FC<ProductStep1Props> = ({
                                     }}
                                 >
                                     <X size={14} />
-                                    O'chirish
+                                    Delete
                                 </button>
                             </div>
                         </>

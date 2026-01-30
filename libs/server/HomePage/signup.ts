@@ -104,16 +104,16 @@ export async function login(data: LoginData): Promise<AuthResponse> {
 
 /**
  * Save authentication token to localStorage AND cookie
- * Cookie kerak middleware uchun (server-side check)
+ * Cookie needed for middleware (server-side check)
  * @param token - JWT access token
  */
 export function saveAuthToken(token: string): void {
   if (typeof window !== "undefined") {
-    // LocalStorage ga saqlash (client-side)
+    // Save to LocalStorage (client-side)
     localStorage.setItem("auth_token", token);
 
-    // Cookie ga ham saqlash (middleware uchun)
-    // 30 kun muddatli, secure, httpOnly emas (JS access kerak)
+    // Save to Cookie (for middleware)
+    // 30 days duration, secure, not httpOnly (JS access needed)
     const maxAge = 30 * 24 * 60 * 60; // 30 days in seconds
     document.cookie = `auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
   }
@@ -135,10 +135,10 @@ export function getAuthToken(): string | null {
  */
 export function removeAuthToken(): void {
   if (typeof window !== "undefined") {
-    // LocalStorage dan o'chirish
+    // Remove from LocalStorage
     localStorage.removeItem("auth_token");
 
-    // Cookie dan ham o'chirish (max-age=0 bilan)
+    // Remove from Cookie (with max-age=0)
     document.cookie = "auth_token=; path=/; max-age=0; SameSite=Strict";
   }
 }
