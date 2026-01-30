@@ -444,235 +444,219 @@ function Home() {
         setVisuals(result.generation.visual_outputs);
       }
 
-      // Polling is disabled in favor of WebSocket real-time updates
-      // const pollInterval = setInterval(async () => { ... }, 2000);
       console.log('📝 WebSocket active - waiting for real-time updates...');
-      const status = await pollGenerationStatus(generationId);
-      setVisuals(status.visuals);
-      setProgress(status.progress);
 
-      if (status.isComplete || status.hasFailed) {
-        clearInterval(pollInterval);
+      // Safety timeout (10 minutes) to stop spinner if socket fails
+      setTimeout(() => {
         setIsGenerating(false);
-        console.log('✅ Generation complete!');
-      }
-    } catch (error) {
-      console.error('Poll error:', error);
+      }, 600000);
+
+    } catch (error: any) {
+      console.error('Generation execution failed:', error);
+      const errorMsg = error?.errors?.join(', ') || error?.message || 'Failed to execute generation';
+      alert(`Execution failed: ${errorMsg}`);
+      setIsGenerating(false);
     }
-  }, 2000); // Poll every 2 seconds for faster real-time updates
-
-  // Safety timeout (10 minutes)
-  setTimeout(() => {
-    clearInterval(pollInterval);
-    setIsGenerating(false);
-  }, 600000);
-
-} catch (error: any) {
-  console.error('Generation execution failed:', error);
-  const errorMsg = error?.errors?.join(', ') || error?.message || 'Failed to execute generation';
-  alert(`Execution failed: ${errorMsg}`);
-  setIsGenerating(false);
-}
   }, [generationId, generationResponse]);
 
-// Handle prompts change
-const handlePromptsChange = useCallback((key: string, value: string) => {
-  setMergedPrompts(prev => {
-    const updated = { ...prev, [key]: value };
-    // Sync to backend if we have generationId
-    if (generationId) {
-      updatePromptsAPI(generationId, { prompts: updated }).catch(console.error);
-    }
-    return updated;
-  });
-}, [generationId]);
+  // Handle prompts change
+  const handlePromptsChange = useCallback((key: string, value: string) => {
+    setMergedPrompts(prev => {
+      const updated = { ...prev, [key]: value };
+      // Sync to backend if we have generationId
+      if (generationId) {
+        updatePromptsAPI(generationId, { prompts: updated }).catch(console.error);
+      }
+      return updated;
+    });
+  }, [generationId]);
 
-const isAnalyzed = !!productJSON;
-const hasDA = !!daJSON;
+  const isAnalyzed = !!productJSON;
+  const hasDA = !!daJSON;
 
-return (
-  <div style={{
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100vh',
-    overflow: 'hidden',
-    background: isDarkMode ? '#0a0a0f' : '#f8fafc',
-    color: isDarkMode ? '#f8fafc' : '#0f172a',
-    position: 'relative'
-  }}>
-    {/* Mobile Hamburger Button */}
-    <button
-      onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
-      style={{
-        display: 'none',
-        position: 'fixed',
-        top: '80px',
-        left: '16px',
-        zIndex: 1100,
-        width: '44px',
-        height: '44px',
-        background: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-        border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-        borderRadius: '12px',
-        cursor: 'pointer',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '4px',
-        padding: 0,
-        transition: 'all 0.2s ease',
-        backdropFilter: 'blur(10px)',
-      }}
-      className="mobile-hamburger"
-    >
-      <span style={{
-        width: '20px',
-        height: '2px',
-        background: isDarkMode ? '#fff' : '#000',
-        borderRadius: '2px',
-        transition: 'all 0.3s ease',
-        transform: isMobileDrawerOpen ? 'rotate(45deg) translateY(6px)' : 'none'
-      }} />
-      <span style={{
-        width: '20px',
-        height: '2px',
-        background: isDarkMode ? '#fff' : '#000',
-        borderRadius: '2px',
-        transition: 'all 0.3s ease',
-        opacity: isMobileDrawerOpen ? 0 : 1
-      }} />
-      <span style={{
-        width: '20px',
-        height: '2px',
-        background: isDarkMode ? '#fff' : '#000',
-        borderRadius: '2px',
-        transition: 'all 0.3s ease',
-        transform: isMobileDrawerOpen ? 'rotate(-45deg) translateY(-6px)' : 'none'
-      }} />
-    </button>
-
-    {/* Mobile Overlay */}
-    {isMobileDrawerOpen && (
-      <div
-        onClick={() => setIsMobileDrawerOpen(false)}
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      overflow: 'hidden',
+      background: isDarkMode ? '#0a0a0f' : '#f8fafc',
+      color: isDarkMode ? '#f8fafc' : '#0f172a',
+      position: 'relative'
+    }}>
+      {/* Mobile Hamburger Button */}
+      <button
+        onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
         style={{
           display: 'none',
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 999,
-          backdropFilter: 'blur(4px)',
+          top: '80px',
+          left: '16px',
+          zIndex: 1100,
+          width: '44px',
+          height: '44px',
+          background: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+          border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          borderRadius: '12px',
+          cursor: 'pointer',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '4px',
+          padding: 0,
+          transition: 'all 0.2s ease',
+          backdropFilter: 'blur(10px)',
         }}
-        className="mobile-overlay"
-      />
-    )}
-
-    {/* Main Layout: Sidebar + Content */}
-    <div style={{
-      display: 'flex',
-      flex: 1,
-      overflow: 'hidden'
-    }}>
-      {/* Left Sidebar */}
-      <div className="home-left-container">
-        <HomeLeft
-          isDarkMode={isDarkMode}
-          refreshTrigger={brandRefreshTrigger}
-          onBrandSelect={handleBrandSelect}
-          onCollectionSelect={handleCollectionSelect}
-          onBrandCreated={handleBrandCreated}
-          isOpen={isMobileDrawerOpen}
-          // NEW: Pass upload props
-          frontImage={frontImage}
-          backImage={backImage}
-          referenceImages={referenceImages}
-          onFrontImageChange={setFrontImage}
-          onBackImageChange={setBackImage}
-          onReferenceImagesChange={setReferenceImages}
-          onAnalyze={handleAnalyze}
-          isAnalyzing={isAnalyzing}
-          isAnalyzed={isAnalyzed}
-          // JSON Panel props
-          productJSON={productJSON}
-          daJSON={daJSON}
-          mergedPrompts={mergedPrompts}
-          onPromptsChange={handlePromptsChange}
-        />
-      </div>
-
-      {/* Main Content Area */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        height: '100%'
-      }}
-        className="main-content-area"
+        className="mobile-hamburger"
       >
-        {/* Header */}
-        <HomeTop
-          selectedBrand={selectedBrand}
-          selectedCollection={selectedCollection}
-          onCollectionSelect={handleCollectionSelect}
-        />
+        <span style={{
+          width: '20px',
+          height: '2px',
+          background: isDarkMode ? '#fff' : '#000',
+          borderRadius: '2px',
+          transition: 'all 0.3s ease',
+          transform: isMobileDrawerOpen ? 'rotate(45deg) translateY(6px)' : 'none'
+        }} />
+        <span style={{
+          width: '20px',
+          height: '2px',
+          background: isDarkMode ? '#fff' : '#000',
+          borderRadius: '2px',
+          transition: 'all 0.3s ease',
+          opacity: isMobileDrawerOpen ? 0 : 1
+        }} />
+        <span style={{
+          width: '20px',
+          height: '2px',
+          background: isDarkMode ? '#fff' : '#000',
+          borderRadius: '2px',
+          transition: 'all 0.3s ease',
+          transform: isMobileDrawerOpen ? 'rotate(-45deg) translateY(-6px)' : 'none'
+        }} />
+      </button>
 
-        {/* Main Visuals Area */}
+      {/* Mobile Overlay */}
+      {isMobileDrawerOpen && (
+        <div
+          onClick={() => setIsMobileDrawerOpen(false)}
+          style={{
+            display: 'none',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 999,
+            backdropFilter: 'blur(4px)',
+          }}
+          className="mobile-overlay"
+        />
+      )}
+
+      {/* Main Layout: Sidebar + Content */}
+      <div style={{
+        display: 'flex',
+        flex: 1,
+        overflow: 'hidden'
+      }}>
+        {/* Left Sidebar */}
+        <div className="home-left-container">
+          <HomeLeft
+            isDarkMode={isDarkMode}
+            refreshTrigger={brandRefreshTrigger}
+            onBrandSelect={handleBrandSelect}
+            onCollectionSelect={handleCollectionSelect}
+            onBrandCreated={handleBrandCreated}
+            isOpen={isMobileDrawerOpen}
+            // NEW: Pass upload props
+            frontImage={frontImage}
+            backImage={backImage}
+            referenceImages={referenceImages}
+            onFrontImageChange={setFrontImage}
+            onBackImageChange={setBackImage}
+            onReferenceImagesChange={setReferenceImages}
+            onAnalyze={handleAnalyze}
+            isAnalyzing={isAnalyzing}
+            isAnalyzed={isAnalyzed}
+            // JSON Panel props
+            productJSON={productJSON}
+            daJSON={daJSON}
+            mergedPrompts={mergedPrompts}
+            onPromptsChange={handlePromptsChange}
+          />
+        </div>
+
+        {/* Main Content Area */}
         <div style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          background: isDarkMode ? '#0a0a0f' : '#ffffff'
-        }}>
-          <HomeMiddle
-            isDarkMode={isDarkMode}
-            selectedCollection={selectedCollection}
+          height: '100%'
+        }}
+          className="main-content-area"
+        >
+          {/* Header */}
+          <HomeTop
             selectedBrand={selectedBrand}
-            frontImage={frontImage}
-            backImage={backImage}
-            productJSON={productJSON}
-            fullAnalysisResponse={fullAnalysisResponse}
-            productId={productId}
-            onAnalysisUpdate={handleAnalysisUpdate}
-            onDAUpdate={handleDAUpdate}
-            daJSON={daJSON}
-            mergedPrompts={mergedPrompts}
-            selectedShots={selectedShots}
-            ageMode={ageMode}
-            isAnalyzing={isAnalyzing}
-            generationResponse={generationResponse}
-            onConfirmGeneration={handleGenerateImages}
-            onMerge={handleMerge}
+            selectedCollection={selectedCollection}
+            onCollectionSelect={handleCollectionSelect}
+          />
+
+          {/* Main Visuals Area */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            background: isDarkMode ? '#0a0a0f' : '#ffffff'
+          }}>
+            <HomeMiddle
+              isDarkMode={isDarkMode}
+              selectedCollection={selectedCollection}
+              selectedBrand={selectedBrand}
+              frontImage={frontImage}
+              backImage={backImage}
+              productJSON={productJSON}
+              fullAnalysisResponse={fullAnalysisResponse}
+              productId={productId}
+              onAnalysisUpdate={handleAnalysisUpdate}
+              onDAUpdate={handleDAUpdate}
+              daJSON={daJSON}
+              mergedPrompts={mergedPrompts}
+              selectedShots={selectedShots}
+              ageMode={ageMode}
+              isAnalyzing={isAnalyzing}
+              generationResponse={generationResponse}
+              onConfirmGeneration={handleGenerateImages}
+              onMerge={handleMerge}
+              shotOptions={shotOptions}
+              parentVisuals={visuals}
+              parentProgress={progress}
+              isGeneratingVisuals={isGenerating}
+            />
+          </div>
+
+          {/* Bottom Bar */}
+          <HomeBottom
+            isDarkMode={isDarkMode}
             shotOptions={shotOptions}
-            parentVisuals={visuals}
-            parentProgress={progress}
-            isGeneratingVisuals={isGenerating}
+            onShotOptionsChange={setShotOptions}
+            resolution={resolution}
+            onResolutionChange={setResolution}
+            aspectRatio={aspectRatio}
+            onAspectRatioChange={setAspectRatio}
+            onGenerate={handleMerge}
+            isGenerating={isGenerating}
+            isAnalyzed={isAnalyzed}
+            hasDA={hasDA}
           />
         </div>
-
-        {/* Bottom Bar */}
-        <HomeBottom
-          isDarkMode={isDarkMode}
-          shotOptions={shotOptions}
-          onShotOptionsChange={setShotOptions}
-          resolution={resolution}
-          onResolutionChange={setResolution}
-          aspectRatio={aspectRatio}
-          onAspectRatioChange={setAspectRatio}
-          onGenerate={handleMerge}
-          isGenerating={isGenerating}
-          isAnalyzed={isAnalyzed}
-          hasDA={hasDA}
-        />
       </div>
-    </div>
 
-    {/* Responsive CSS */}
-    <style jsx>{`
+      {/* Responsive CSS */}
+      <style jsx>{`
                 @media (max-width: 768px) {
                     .mobile-hamburger {
                         display: flex !important;
@@ -687,8 +671,8 @@ return (
                     }
                 }
             `}</style>
-  </div>
-);
+    </div>
+  );
 }
 
 // Wrap with auth HOC for route protection
