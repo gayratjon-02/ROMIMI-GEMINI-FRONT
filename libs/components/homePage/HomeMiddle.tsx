@@ -932,16 +932,6 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
         }
     }, []);
 
-    const handleDownloadAll = useCallback(async () => {
-        if (!generationId) return;
-
-        try {
-            await triggerDownload(generationId, `visuals-${Date.now()}.zip`);
-        } catch (error) {
-            console.error('Download failed:', error);
-        }
-    }, [generationId]);
-
     const isComplete = visuals.length > 0 &&
         visuals.every(v => v.status === 'completed' || v.status === 'failed');
 
