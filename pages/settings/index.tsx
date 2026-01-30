@@ -349,7 +349,9 @@ function Settings() {
                                             Save
                                         </button>
                                     </div>
-                                    <p className={styles.hint}>Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a></p>
+                                    <p className={styles.hint}>
+                                        Used for image generation. Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>
+                                    </p>
                                 </div>
 
                                 <div className={styles.securityNote}>

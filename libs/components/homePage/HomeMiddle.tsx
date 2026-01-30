@@ -285,6 +285,7 @@ interface AnalyzedStateProps {
     onConfirmGeneration?: () => void;
     onMerge?: () => void;
     onReanalyze?: () => void;
+    onSaveComplete?: () => void;
 }
 
 const AnalyzedState: React.FC<AnalyzedStateProps> = ({
@@ -303,7 +304,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
     isGenerating,
     onConfirmGeneration,
     onMerge,
-    onReanalyze
+    onReanalyze,
+    onSaveComplete
 }) => {
     // Check if mergedPrompts has actual data (not empty object)
     const hasMergedPrompts = mergedPrompts && Object.keys(mergedPrompts).length > 0;
@@ -1010,6 +1012,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             isGenerating={isGeneratingVisuals}
                             onMerge={onMerge ? () => onMerge(shotOptions) : undefined}
                             onReanalyze={onReanalyze}
+                            onSaveComplete={onSaveComplete}
                         />
                     ) : (
                         <EmptyState isDarkMode={isDarkMode} />
