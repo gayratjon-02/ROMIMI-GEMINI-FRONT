@@ -161,14 +161,11 @@ function Home() {
         return next;
       });
     },
-    onProgress: (data) => {
-      if (data.progress_percent !== undefined) {
-        setProgress(data.progress_percent);
-      }
-    },
+    // Removed onProgress - calculated locally
     onComplete: (data) => {
       console.log('🏁 [Index] Generation complete:', data.status, `${data.completed}/${data.total}`);
       if (data.visuals && data.visuals.length > 0) {
+        // Only replace if we have full visuals
         setVisuals(data.visuals);
       }
       setIsGenerating(false);
@@ -181,6 +178,18 @@ function Home() {
       console.error('❌ [Index] Socket error:', error.message);
     }
   });
+
+  // Local progress calculation (reliable for SSE)
+  useEffect(() => {
+    if (visuals.length > 0) {
+      const completed = visuals.filter(v => v.status === 'completed').length;
+      // If we are generating, show at least 5% progress
+      const percent = Math.max(isGenerating ? 5 : 0, Math.round((completed / visuals.length) * 100));
+      setProgress(percent);
+    } else if (isGenerating) {
+      setProgress(5); // Initial progress
+    }
+  }, [visuals, isGenerating]);
 
   // ==================== HANDLERS ====================
 
