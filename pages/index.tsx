@@ -349,11 +349,10 @@ function Home() {
     }
   }, [productJSON]);
 
-  // Handle Generation - Full flow: create → merge → execute → poll
+  // Step 1: Generate button → Create generation and show JSON response
   const handleGenerate = useCallback(async (visualTypes: string[]) => {
     console.log('🚀 Generate clicked with:', visualTypes);
 
-    // Validate required data
     if (!productId) {
       alert('Please analyze a product first.');
       return;
@@ -366,48 +365,71 @@ function Home() {
 
     setIsGenerating(true);
     setGenerationResponse(null);
-    setVisuals([]);
-    setProgress(0);
 
     try {
-      // 1. Create generation if not exists
-      let currentGenerationId = generationId;
-      if (!currentGenerationId) {
-        console.log('📝 Step 1: Creating generation...');
-        const generation = await createGeneration({
-          product_id: productId,
-          collection_id: selectedCollection.id,
-          generation_type: 'product_visuals'
-        });
-        currentGenerationId = generation.id;
-        setGenerationId(generation.id);
-        setGenerationResponse(generation);
-        console.log('✅ Generation created:', generation.id);
-      }
-
-      // 2. Ensure DA JSON exists on collection
+      // Ensure DA JSON exists
       if (!daJSON) {
-        console.log('📝 Step 2: Setting default DA JSON...');
+        console.log('📝 Setting default DA JSON...');
         await updateDAJSON(selectedCollection.id, {
           analyzed_da_json: mockDAAnalysis
         });
       }
 
-      // 3. Merge prompts (backend creates prompts from Product + DA)
-      console.log('📝 Step 3: Merging prompts...');
-      await mergePrompts(currentGenerationId);
-      console.log('✅ Prompts merged');
+      // Create generation
+      console.log('📝 Creating generation...');
+      const generation = await createGeneration({
+        product_id: productId,
+        collection_id: selectedCollection.id,
+        generation_type: 'product_visuals'
+      });
 
-      // 4. Execute generation (starts Gemini image generation)
-      console.log('📝 Step 4: Executing generation...');
-      const result = await executeGeneration(currentGenerationId);
+      // Merge prompts immediately after creation
+      console.log('📝 Merging prompts...');
+      const mergedResult = await mergePrompts(generation.id);
+      console.log('✅ Prompts merged:', mergedResult);
+
+      // Fetch updated generation with merged prompts
+      const { getGeneration } = await import('@/libs/server/HomePage/merging');
+      const updatedGeneration = await getGeneration(generation.id);
+
+      setGenerationId(generation.id);
+      setGenerationResponse(updatedGeneration);
+      console.log('✅ Generation ready for review:', updatedGeneration.id);
+
+    } catch (error: any) {
+      console.error('Generation creation failed:', error);
+      const errorMsg = error?.errors?.join(', ') || error?.message || 'Failed to create generation';
+      alert(`Generation failed: ${errorMsg}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [productId, selectedCollection, daJSON]);
+
+  // Step 2: Confirm button → Execute generation and start image creation
+  const handleConfirmGeneration = useCallback(async () => {
+    if (!generationId) {
+      alert('No generation to confirm. Please click Generate first.');
+      return;
+    }
+
+    setIsGenerating(true);
+    setVisuals([]);
+    setProgress(0);
+
+    try {
+      // Execute generation (starts Gemini image generation)
+      console.log('📝 Executing generation...');
+      const result = await executeGeneration(generationId);
       console.log('✅ Generation started:', result);
 
-      // 5. Poll for updates
-      console.log('📝 Step 5: Polling for progress...');
+      // Clear generation response to show visuals grid
+      setGenerationResponse(null);
+
+      // Poll for updates
+      console.log('📝 Polling for progress...');
       const pollInterval = setInterval(async () => {
         try {
-          const status = await pollGenerationStatus(currentGenerationId);
+          const status = await pollGenerationStatus(generationId);
           setVisuals(status.visuals);
           setProgress(status.progress);
 
@@ -424,19 +446,16 @@ function Home() {
       // Safety timeout (10 minutes)
       setTimeout(() => {
         clearInterval(pollInterval);
-        if (isGenerating) {
-          setIsGenerating(false);
-          console.log('⚠️ Generation timeout');
-        }
+        setIsGenerating(false);
       }, 600000);
 
     } catch (error: any) {
-      console.error('Generation failed:', error);
-      const errorMsg = error?.errors?.join(', ') || error?.message || 'Generation failed';
-      alert(`Generation failed: ${errorMsg}`);
+      console.error('Generation execution failed:', error);
+      const errorMsg = error?.errors?.join(', ') || error?.message || 'Failed to execute generation';
+      alert(`Execution failed: ${errorMsg}`);
       setIsGenerating(false);
     }
-  }, [productId, selectedCollection, generationId, daJSON, isGenerating]);
+  }, [generationId]);
 
   // Handle prompts change
   const handlePromptsChange = useCallback((key: string, value: string) => {
@@ -608,6 +627,10 @@ function Home() {
               ageMode={ageMode}
               isAnalyzing={isAnalyzing}
               generationResponse={generationResponse}
+              onConfirmGeneration={handleConfirmGeneration}
+              parentVisuals={visuals}
+              parentProgress={progress}
+              isGeneratingVisuals={isGenerating}
             />
           </div>
 

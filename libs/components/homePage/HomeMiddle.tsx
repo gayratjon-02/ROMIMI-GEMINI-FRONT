@@ -12,11 +12,13 @@ import {
     Sparkles,
     Plus,
     ZoomIn,
+    Play,
 } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeMiddle.module.scss';
 import { createProduct, analyzeProduct } from '@/libs/server/HomePage/product';
 import { AnalyzedProductJSON } from '@/libs/types/homepage/product';
 import { Brand } from '@/libs/types/homepage/brand';
+import { Generation } from '@/libs/types/homepage/generation';
 import {
     startGeneration,
     pollGenerationStatus,
@@ -48,6 +50,13 @@ interface HomeMiddleProps {
     onProductAnalyzed?: (json: ProductJSON, productId: string) => void;
     onGenerationIdCreated?: (id: string) => void;
     onAnalysisUpdate?: (updatedResponse: any) => void; // Callback for JSON updates
+    onDAUpdate?: (updatedDA: DAJSON) => void; // Callback for DA JSON updates
+    generationResponse?: Generation | null; // Response from createGeneration API
+    // NEW: Confirm generation callback and visuals from parent
+    onConfirmGeneration?: () => void;
+    parentVisuals?: VisualOutput[];
+    parentProgress?: number;
+    isGeneratingVisuals?: boolean;
 }
 
 export interface ProductJSON {
@@ -212,21 +221,22 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
             setSaveError(null);
 
             if (activeTab === 'analysis') {
-                // Save Product JSON
+                // Save Product JSON - Direct edit to analyzed_product_json (persistent)
                 if (!productId) {
                     setSaveError('Product ID not available');
                     setIsSaving(false);
                     return;
                 }
 
-                const { updateProductJsonNew } = await import('@/libs/server/HomePage/product');
-                const response = await updateProductJsonNew(productId, parsedJson);
-                console.log('✅ Product JSON updated:', response);
+                // Use updateProductAnalysis for persistent database save
+                const { updateProductAnalysis } = await import('@/libs/server/HomePage/product');
+                const response = await updateProductAnalysis(productId, parsedJson);
+                console.log('✅ Product Analysis JSON saved to database:', response);
 
-                if (onAnalysisUpdate && response.final_product_json) {
+                if (onAnalysisUpdate && response.analyzed_product_json) {
                     onAnalysisUpdate({
                         ...fullAnalysisResponse,
-                        analysis: response.final_product_json,
+                        analysis: response.analyzed_product_json,
                     });
                 }
             } else if (activeTab === 'da') {
@@ -608,12 +618,26 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     onGenerationIdCreated,
     productId,
     onAnalysisUpdate,
+    onDAUpdate,
+    generationResponse,
+    onConfirmGeneration,
+    parentVisuals,
+    parentProgress,
+    isGeneratingVisuals = false,
 }) => {
-    // Visuals State
-    const [visuals, setVisuals] = useState<VisualOutput[]>([]);
-    const [progress, setProgress] = useState(0);
-    const [isGenerating, setIsGenerating] = useState(false);
+    // Visuals State - use parent values if provided, otherwise local state
+    const [localVisuals, setLocalVisuals] = useState<VisualOutput[]>([]);
+    const [localProgress, setLocalProgress] = useState(0);
+    const [localIsGenerating, setLocalIsGenerating] = useState(false);
     const [generationId, setGenerationId] = useState<string | null>(null);
+
+    // Use parent visuals/progress if provided
+    const visuals = parentVisuals || localVisuals;
+    const progress = parentProgress ?? localProgress;
+    const isGenerating = isGeneratingVisuals || localIsGenerating;
+    const setVisuals = parentVisuals ? () => {} : setLocalVisuals;
+    const setProgress = parentProgress !== undefined ? () => {} : setLocalProgress;
+    const setIsGenerating = isGeneratingVisuals !== undefined ? () => {} : setLocalIsGenerating;
 
     // DA Analysis from collection
     const [collectionDA, setCollectionDA] = useState<DAJSON | null>(null);
@@ -734,7 +758,75 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
 
             {/* Main Content */}
             <div className={styles.content}>
-                {visuals.length === 0 ? (
+                {/* Show Generation Response when available */}
+                {generationResponse ? (
+                    <motion.div
+                        className={styles.analyzedState}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <div className={styles.analyzedHeader}>
+                            <CheckCircle2 size={24} className={styles.successIcon} />
+                            <h2>Generation Created Successfully</h2>
+                        </div>
+
+                        {/* Generation Info */}
+                        <div className={styles.infoBar}>
+                            <div className={styles.infoItem}>
+                                <span className={styles.label}>ID:</span>
+                                <span className={styles.value}>{generationResponse.id}</span>
+                            </div>
+                            <div className={styles.infoItem}>
+                                <span className={styles.label}>STATUS:</span>
+                                <span className={styles.value}>{generationResponse.status}</span>
+                            </div>
+                            <div className={styles.infoItem}>
+                                <span className={styles.label}>TYPE:</span>
+                                <span className={styles.value}>{generationResponse.generation_type}</span>
+                            </div>
+                        </div>
+
+                        {/* JSON Display */}
+                        <div className={styles.jsonControls}>
+                            <div className={styles.jsonTabs}>
+                                <button className={`${styles.jsonTab} ${styles.active}`}>
+                                    Generation Response
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className={styles.jsonContainer}>
+                            <pre className={styles.jsonContent}>
+                                {JSON.stringify(generationResponse, null, 2)}
+                            </pre>
+                        </div>
+
+                        {/* Confirm Button */}
+                        <div className={styles.actionButtons}>
+                            <button
+                                className={styles.confirmBtn}
+                                onClick={onConfirmGeneration}
+                                disabled={isGenerating || !onConfirmGeneration}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 size={18} className={styles.spin} />
+                                        <span>Generating Images...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play size={18} />
+                                        <span>Confirm & Generate Images</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        <div className={styles.nextStepHint}>
+                            <p>✨ Review the JSON above. Click "Confirm" to start image generation with Gemini AI.</p>
+                        </div>
+                    </motion.div>
+                ) : visuals.length === 0 ? (
                     // Show AnalyzedState if product has been analyzed, otherwise show EmptyState
                     productJSON ? (
                         <AnalyzedState
@@ -745,6 +837,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             productId={productId || undefined}
                             collectionId={selectedCollection?.id}
                             onAnalysisUpdate={onAnalysisUpdate}
+                            onDAUpdate={onDAUpdate}
                         />
                     ) : (
                         <EmptyState isDarkMode={isDarkMode} />
