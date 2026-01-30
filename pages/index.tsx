@@ -635,6 +635,7 @@ function Home() {
               parentVisuals={visuals}
               parentProgress={progress}
               isGeneratingVisuals={isGenerating}
+              onReanalyze={handleAnalyze}
             />
           </div>
 

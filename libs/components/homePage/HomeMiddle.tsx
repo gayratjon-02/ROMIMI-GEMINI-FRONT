@@ -60,6 +60,7 @@ interface HomeMiddleProps {
     parentVisuals?: VisualOutput[];
     parentProgress?: number;
     isGeneratingVisuals?: boolean;
+    onReanalyze?: () => void;
 }
 
 export interface ProductJSON {
@@ -282,6 +283,7 @@ interface AnalyzedStateProps {
     isGenerating?: boolean;
     onConfirmGeneration?: () => void;
     onMerge?: () => void;
+    onReanalyze?: () => void;
 }
 
 const AnalyzedState: React.FC<AnalyzedStateProps> = ({
@@ -299,7 +301,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
     onPromptsUpdated,
     isGenerating,
     onConfirmGeneration,
-    onMerge
+    onMerge,
+    onReanalyze
 }) => {
     // Check if mergedPrompts has actual data (not empty object)
     const hasMergedPrompts = mergedPrompts && Object.keys(mergedPrompts).length > 0;
@@ -572,10 +575,10 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                         )}
                         {isSaving ? 'Saving...' : 'Save'}
                     </button>
-                    {activeTab === 'analysis' && (
-                        <button className={styles.resetBtn} onClick={handleReset} disabled={isSaving}>
+                    {activeTab === 'analysis' && onReanalyze && (
+                        <button className={styles.resetBtn} onClick={onReanalyze} disabled={isSaving}>
                             <RefreshCw size={14} className={isSaving ? styles.spin : ''} />
-                            Reset
+                            Analyze Again
                         </button>
                     )}
                 </div>
@@ -812,6 +815,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     parentVisuals,
     parentProgress,
     isGeneratingVisuals = false,
+    onReanalyze,
 }) => {
     // Visuals State - use parent values if provided, otherwise local state
     const [localVisuals, setLocalVisuals] = useState<VisualOutput[]>([]);
@@ -993,6 +997,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             onConfirmGeneration={onConfirmGeneration}
                             isGenerating={isGeneratingVisuals}
                             onMerge={onMerge ? () => onMerge(shotOptions) : undefined}
+                            onReanalyze={onReanalyze}
                         />
                     ) : (
                         <EmptyState isDarkMode={isDarkMode} />
