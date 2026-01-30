@@ -144,7 +144,9 @@ interface AnalyzedStateProps {
     fullAnalysisResponse?: any;
     daJSON?: DAJSON | null;
     productId?: string;
+    collectionId?: string;
     onAnalysisUpdate?: (updatedResponse: any) => void;
+    onDAUpdate?: (updatedDA: DAJSON) => void;
 }
 
 const AnalyzedState: React.FC<AnalyzedStateProps> = ({
@@ -153,7 +155,9 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
     fullAnalysisResponse,
     daJSON,
     productId,
-    onAnalysisUpdate
+    collectionId,
+    onAnalysisUpdate,
+    onDAUpdate
 }) => {
     const [activeTab, setActiveTab] = useState<'full' | 'analysis' | 'da'>('analysis');
     const [isEditing, setIsEditing] = useState(false);
@@ -201,36 +205,51 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
 
     // Save changes
     const handleSave = async () => {
-        if (!productId) {
-            setSaveError('Product ID not available');
-            return;
-        }
-
         try {
-            // Validate JSON
+            // Validate JSON first
             const parsedJson = JSON.parse(editedJson);
-
             setIsSaving(true);
             setSaveError(null);
 
-            // Import and call API
-            const { updateProductJsonNew } = await import('@/libs/server/HomePage/product');
-            const response = await updateProductJsonNew(productId, parsedJson);
+            if (activeTab === 'analysis') {
+                // Save Product JSON
+                if (!productId) {
+                    setSaveError('Product ID not available');
+                    setIsSaving(false);
+                    return;
+                }
 
-            console.log('✅ Product JSON updated:', response);
+                const { updateProductJsonNew } = await import('@/libs/server/HomePage/product');
+                const response = await updateProductJsonNew(productId, parsedJson);
+                console.log('✅ Product JSON updated:', response);
 
-            // Update parent state
-            if (onAnalysisUpdate && response.final_product_json) {
-                onAnalysisUpdate({
-                    ...fullAnalysisResponse,
-                    analysis: response.final_product_json,
+                if (onAnalysisUpdate && response.final_product_json) {
+                    onAnalysisUpdate({
+                        ...fullAnalysisResponse,
+                        analysis: response.final_product_json,
+                    });
+                }
+            } else if (activeTab === 'da') {
+                // Save DA JSON
+                if (!collectionId) {
+                    setSaveError('Collection ID not available');
+                    setIsSaving(false);
+                    return;
+                }
+
+                const { updateDAJSON } = await import('@/libs/server/HomePage/collection');
+                const response = await updateDAJSON(collectionId, {
+                    analyzed_da_json: parsedJson
                 });
+                console.log('✅ DA JSON updated:', response);
+
+                if (onDAUpdate && response.analyzed_da_json) {
+                    onDAUpdate(response.analyzed_da_json as DAJSON);
+                }
             }
 
             setSaveSuccess(true);
-            setIsEditing(false); // Reset dirty state
-
-            // Clear success message after 3 seconds
+            setIsEditing(false);
             setTimeout(() => setSaveSuccess(false), 3000);
 
         } catch (error: any) {
@@ -374,8 +393,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                     )}
                 </div>
 
-                {/* Edit/Save/Reset Buttons */}
-                {activeTab === 'analysis' && productId && (
+                {/* Edit/Save/Reset Buttons - Show for both analysis and DA tabs */}
+                {((activeTab === 'analysis' && productId) || (activeTab === 'da' && collectionId)) && (
                     <div className={styles.editControls}>
                         <button
                             className={styles.saveBtn}
@@ -389,10 +408,12 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                             )}
                             {isSaving ? 'Saving...' : 'Save'}
                         </button>
-                        <button className={styles.resetBtn} onClick={handleReset} disabled={isSaving}>
-                            <RefreshCw size={14} className={isSaving ? styles.spin : ''} />
-                            Reset
-                        </button>
+                        {activeTab === 'analysis' && (
+                            <button className={styles.resetBtn} onClick={handleReset} disabled={isSaving}>
+                                <RefreshCw size={14} className={isSaving ? styles.spin : ''} />
+                                Reset
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -413,7 +434,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
 
             {/* JSON Display/Editor */}
             <div className={styles.jsonContainer}>
-                {activeTab === 'analysis' ? (
+                {(activeTab === 'analysis' || activeTab === 'da') ? (
                     <textarea
                         className={styles.jsonEditor}
                         value={editedJson}
@@ -423,7 +444,6 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 ) : (
                     <pre className={styles.jsonContent}>
                         {activeTab === 'full' && formatJSON(displayResponse)}
-                        {activeTab === 'da' && daJSON && formatJSON(daJSON)}
                     </pre>
                 )}
             </div>
@@ -723,6 +743,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             fullAnalysisResponse={fullAnalysisResponse}
                             daJSON={daJSON || collectionDA}
                             productId={productId || undefined}
+                            collectionId={selectedCollection?.id}
                             onAnalysisUpdate={onAnalysisUpdate}
                         />
                     ) : (
