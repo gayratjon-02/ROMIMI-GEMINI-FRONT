@@ -25,8 +25,6 @@ function Settings() {
     const [brandBrief, setBrandBrief] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [language, setLanguage] = useState('en');
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
     // API Key states
     const [apiKeyOpenai, setApiKeyOpenai] = useState('');
@@ -52,8 +50,6 @@ function Settings() {
             setBrandBrief(data.brand_brief || '');
             setName(data.name || '');
             setEmail(data.email || '');
-            setLanguage(data.language || 'en');
-            setNotificationsEnabled(data.notifications_enabled ?? true);
         } catch (err: any) {
             setError(err.message || 'Failed to load settings');
         } finally {
@@ -88,8 +84,6 @@ function Settings() {
             await updateSettings({
                 name,
                 email,
-                language,
-                notifications_enabled: notificationsEnabled,
             });
             showSuccess('Account settings saved successfully!');
         } catch (err: any) {
@@ -398,7 +392,7 @@ function Settings() {
                         <div className={styles.panel}>
                             <div className={styles.panelHeader}>
                                 <h2>Account Settings</h2>
-                                <p>Manage your personal information and preferences.</p>
+                                <p>Manage your personal information.</p>
                             </div>
                             <div className={styles.panelContent}>
                                 <div className={styles.formGroup}>
@@ -423,33 +417,6 @@ function Settings() {
                                         placeholder="your@email.com"
                                         className={styles.input}
                                     />
-                                </div>
-
-                                <div className={styles.formGroup}>
-                                    <label htmlFor="language">Language</label>
-                                    <select
-                                        id="language"
-                                        value={language}
-                                        onChange={(e) => setLanguage(e.target.value)}
-                                        className={styles.select}
-                                    >
-                                        <option value="en">English</option>
-                                        <option value="uz">O'zbekcha</option>
-                                        <option value="ru">Русский</option>
-                                    </select>
-                                </div>
-
-                                <div className={styles.formGroup}>
-                                    <label className={styles.checkboxLabel}>
-                                        <input
-                                            type="checkbox"
-                                            checked={notificationsEnabled}
-                                            onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                                            className={styles.checkbox}
-                                        />
-                                        <span>Enable email notifications</span>
-                                    </label>
-                                    <p className={styles.hint}>Receive updates about new features and important announcements.</p>
                                 </div>
 
                                 <div className={styles.formActions}>
