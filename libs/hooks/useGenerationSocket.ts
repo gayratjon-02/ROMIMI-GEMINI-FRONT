@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 
+interface VisualProcessingData {
+    type: string;
+    index: number;
+    status: 'processing';
+}
+
 interface VisualCompletedData {
     type: string;
     index: number;
@@ -27,6 +33,7 @@ interface CompleteData {
 }
 
 interface GenerationSocketCallbacks {
+    onVisualProcessing?: (data: VisualProcessingData) => void;
     onVisualCompleted?: (data: VisualCompletedData) => void;
     onProgress?: (data: ProgressData) => void;
     onComplete?: (data: CompleteData) => void;
@@ -93,6 +100,15 @@ export const useGenerationSocket = (
             console.error('❌ [WebSocket] Connection error:', err.message);
             setConnectionError(err.message);
             callbacksRef.current.onError?.(err);
+        });
+
+        // Visual processing event - Show "Generating..." state on card
+        socket.on('visual_processing', (data: VisualProcessingData) => {
+            console.log('⏳ [WebSocket] Visual processing:', {
+                type: data.type,
+                index: data.index,
+            });
+            callbacksRef.current.onVisualProcessing?.(data);
         });
 
         // Visual completed event - CRITICAL: This is where images appear on cards
