@@ -491,9 +491,8 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 <h2>{hasMergedPrompts ? 'Generation Created Successfully' : 'Product Analyzed Successfully'}</h2>
             </div>
 
-            {/* Product Images Preview */}
+            {/* Product Images Preview - HIDDEN for cleaner UI
             <div className={styles.previewContainer}>
-                {/* Main/Front Image */}
                 {(fullAnalysisResponse?.front_image_url || fullAnalysisResponse?.imageUrl) && (
                     <div className={styles.imageCard}>
                         <div className={styles.imageLabel}>Front</div>
@@ -504,7 +503,6 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                     </div>
                 )}
 
-                {/* Back Image */}
                 {fullAnalysisResponse?.back_image_url && (
                     <div className={styles.imageCard}>
                         <div className={styles.imageLabel}>Back</div>
@@ -515,7 +513,6 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                     </div>
                 )}
 
-                {/* Reference Images */}
                 {fullAnalysisResponse?.reference_images?.map((url: string, idx: number) => (
                     <div className={styles.imageCard} key={`ref-${idx}`}>
                         <div className={styles.imageLabel}>Ref {idx + 1}</div>
@@ -526,6 +523,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                     </div>
                 ))}
             </div>
+            */}
 
             {/* Error/Success Messages */}
             {saveError && (
