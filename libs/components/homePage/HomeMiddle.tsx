@@ -352,6 +352,13 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
         }
     }, [activeTab, fullAnalysisResponse, getCurrentJsonObj, isEditing]);
 
+    // Auto-switch to 'merged' tab when new merged prompts are available
+    useEffect(() => {
+        if (hasMergedPrompts) {
+            setActiveTab('merged');
+        }
+    }, [mergedPrompts, hasMergedPrompts]);
+
     // Handle text change
     const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setEditedJson(e.target.value);
