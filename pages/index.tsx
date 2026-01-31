@@ -465,7 +465,8 @@ function Home() {
       const { mergePrompts } = await import('@/libs/server/HomePage/merging');
       await mergePrompts(generation.id, {
         shot_options: options,
-        resolution: resolution === '4k' ? '4K' : '2K'
+        resolution: resolution === '4k' ? '4K' : '2K',
+        aspect_ratio: aspectRatio,
       });
 
       // Fetch updated generation with merged prompts

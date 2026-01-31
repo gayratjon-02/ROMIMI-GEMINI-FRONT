@@ -32,7 +32,7 @@ export interface Generation {
     metadata?: Record<string, any>;
     created_at: string;
     updated_at: string;
-    product?: { id: string; name: string; [key: string]: any };
+    product?: { id: string; name: string;[key: string]: any };
     collection?: any;
 }
 
@@ -66,7 +66,10 @@ export interface MergePromptsData {
     model_type?: 'adult' | 'kid';
     /** NEW: Per-shot control options */
     shot_options?: import('./shot-options').ShotOptions;
+    /** Resolution for prompt quality: "4K" | "2K" */
     resolution?: string;
+    /** Aspect ratio for output: "4:5" | "1:1" | "9:16" | "16:9" */
+    aspect_ratio?: string;
 }
 
 export interface UpdateMergedPromptsData {
