@@ -198,6 +198,22 @@ function Home() {
     }
   }, [visuals, isGenerating]);
 
+  // 🚀 CRITICAL: Initialize mergedPrompts state from generationResponse
+  // This enables shot toggle sync and save-before-generate to work properly
+  useEffect(() => {
+    const merged = generationResponse?.merged_prompts;
+    if (merged && Object.keys(merged).length > 0) {
+      // Only initialize if mergedPrompts is empty (don't overwrite user edits)
+      setMergedPrompts(prev => {
+        if (Object.keys(prev).length === 0) {
+          console.log('📦 Initializing mergedPrompts from generationResponse:', Object.keys(merged));
+          return merged as Record<string, any>;
+        }
+        return prev;
+      });
+    }
+  }, [generationResponse?.merged_prompts]);
+
   // ==================== HANDLERS ====================
 
   const handleBrandCreated = useCallback(() => {
@@ -246,6 +262,49 @@ function Home() {
       }
     })();
   }, [selectedCollection?.id]);
+
+  // 🚀 CRITICAL: Sync shotOptions changes to mergedPrompts.model_type
+  // When user toggles Kid/Adult in bottom bar, update the model_type in prompts
+  useEffect(() => {
+    if (Object.keys(mergedPrompts).length === 0) return;
+
+    setMergedPrompts(prev => {
+      const updated = { ...prev } as Record<string, any>;
+      let hasChanges = false;
+
+      // Sync SOLO subject (kid/adult)
+      if (updated.solo && shotOptions.solo) {
+        const newModelType = (shotOptions.solo as any).subject || 'adult';
+        if (updated.solo.model_type !== newModelType) {
+          updated.solo = { ...updated.solo, model_type: newModelType };
+          hasChanges = true;
+          console.log('🔄 Synced solo.model_type to:', newModelType);
+        }
+      }
+
+      // Sync flatlay_front size (kid/adult)
+      if (updated.flatlay_front && shotOptions.flatlay_front) {
+        const newModelType = (shotOptions.flatlay_front as any).garmentSize === 'kid' ? 'kid' : 'adult';
+        if (updated.flatlay_front.model_type !== newModelType) {
+          updated.flatlay_front = { ...updated.flatlay_front, model_type: newModelType };
+          hasChanges = true;
+          console.log('🔄 Synced flatlay_front.model_type to:', newModelType);
+        }
+      }
+
+      // Sync flatlay_back size (kid/adult)
+      if (updated.flatlay_back && shotOptions.flatlay_back) {
+        const newModelType = (shotOptions.flatlay_back as any).garmentSize === 'kid' ? 'kid' : 'adult';
+        if (updated.flatlay_back.model_type !== newModelType) {
+          updated.flatlay_back = { ...updated.flatlay_back, model_type: newModelType };
+          hasChanges = true;
+          console.log('🔄 Synced flatlay_back.model_type to:', newModelType);
+        }
+      }
+
+      return hasChanges ? updated : prev;
+    });
+  }, [shotOptions.solo, shotOptions.flatlay_front, shotOptions.flatlay_back]);
 
   // Handle Product Analysis - Uses analyzeProductDirect API (NO collection needed!)
   const handleAnalyze = useCallback(async (forceReanalyze = false) => {
@@ -515,6 +574,14 @@ function Home() {
     }
 
     try {
+      // 🚀 CRITICAL: Save current mergedPrompts state to backend BEFORE generation
+      // This ensures any UI changes (like model_type kid/adult) are persisted
+      if (Object.keys(mergedPrompts).length > 0) {
+        console.log('💾 Saving updated prompts before generation...', Object.keys(mergedPrompts));
+        await updatePromptsAPI(generationId, { prompts: mergedPrompts });
+        console.log('✅ Prompts saved successfully');
+      }
+
       // Execute generation (starts Gemini image generation)
       console.log('📝 Executing generation...');
       const { executeGeneration } = await import('@/libs/server/HomePage/generate');
@@ -539,7 +606,7 @@ function Home() {
       alert(`Execution failed: ${errorMsg}`);
       setIsGenerating(false);
     }
-  }, [generationId, generationResponse]);
+  }, [generationId, generationResponse, mergedPrompts]);
 
   // Handle prompts change
   const handlePromptsChange = useCallback((key: string, value: string) => {
