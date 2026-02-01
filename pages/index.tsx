@@ -284,7 +284,7 @@ function Home() {
 
       // Sync flatlay_front size (kid/adult)
       if (updated.flatlay_front && shotOptions.flatlay_front) {
-        const newModelType = (shotOptions.flatlay_front as any).garmentSize === 'kid' ? 'kid' : 'adult';
+        const newModelType = (shotOptions.flatlay_front as any).size === 'kid' ? 'kid' : 'adult';
         if (updated.flatlay_front.model_type !== newModelType) {
           updated.flatlay_front = { ...updated.flatlay_front, model_type: newModelType };
           hasChanges = true;
@@ -294,7 +294,7 @@ function Home() {
 
       // Sync flatlay_back size (kid/adult)
       if (updated.flatlay_back && shotOptions.flatlay_back) {
-        const newModelType = (shotOptions.flatlay_back as any).garmentSize === 'kid' ? 'kid' : 'adult';
+        const newModelType = (shotOptions.flatlay_back as any).size === 'kid' ? 'kid' : 'adult';
         if (updated.flatlay_back.model_type !== newModelType) {
           updated.flatlay_back = { ...updated.flatlay_back, model_type: newModelType };
           hasChanges = true;
@@ -574,13 +574,15 @@ function Home() {
     }
 
     try {
-      // 🚀 CRITICAL: Save current mergedPrompts state to backend BEFORE generation
-      // This ensures any UI changes (like model_type kid/adult) are persisted
-      if (Object.keys(mergedPrompts).length > 0) {
-        console.log('💾 Saving updated prompts before generation...', Object.keys(mergedPrompts));
-        await updatePromptsAPI(generationId, { prompts: mergedPrompts });
-        console.log('✅ Prompts saved successfully');
-      }
+      // 🚀 CRITICAL: Re-merge with current shotOptions BEFORE generation
+      // This ensures Kid/Adult selection is applied to prompt text (not just model_type field)
+      const { mergePrompts } = await import('@/libs/server/HomePage/merging');
+      await mergePrompts(generationId, {
+        shot_options: shotOptions,
+        resolution: resolution === '4k' ? '4K' : '2K',
+        aspect_ratio: aspectRatio,
+      });
+      console.log('✅ Re-merged with shot_options, resolution, aspect_ratio before generation');
 
       // Execute generation (starts Gemini image generation)
       console.log('📝 Executing generation...');
@@ -606,7 +608,7 @@ function Home() {
       alert(`Execution failed: ${errorMsg}`);
       setIsGenerating(false);
     }
-  }, [generationId, generationResponse, mergedPrompts]);
+  }, [generationId, generationResponse, shotOptions, resolution, aspectRatio]);
 
   // Handle prompts change
   const handlePromptsChange = useCallback((key: string, value: string) => {
