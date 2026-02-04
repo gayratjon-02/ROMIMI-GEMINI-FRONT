@@ -575,13 +575,16 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
             {/* Tabs and Edit Controls - at bottom */}
             <div className={styles.jsonControls}>
                 <div className={styles.jsonTabs}>
-                    <button
-                        className={`${styles.jsonTab} ${activeTab === 'analysis' ? styles.active : ''}`}
-                        onClick={() => { setActiveTab('analysis'); setIsEditing(false); }}
-                    >
-                        Analysis Details
-                    </button>
-                    {daJSON && (
+                    {/* Hide Analysis Details and DA JSON tabs when merged prompts exist */}
+                    {!hasMergedPrompts && (
+                        <button
+                            className={`${styles.jsonTab} ${activeTab === 'analysis' ? styles.active : ''}`}
+                            onClick={() => { setActiveTab('analysis'); setIsEditing(false); }}
+                        >
+                            Analysis Details
+                        </button>
+                    )}
+                    {!hasMergedPrompts && daJSON && (
                         <button
                             className={`${styles.jsonTab} ${activeTab === 'da' ? styles.active : ''}`}
                             onClick={() => { setActiveTab('da'); setIsEditing(false); }}

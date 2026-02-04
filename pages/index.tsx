@@ -478,7 +478,7 @@ function Home() {
     // NOTE: Merged prompts are handled by backend via MERGE, not locally
   }, []);
 
-  // Step 1: Merge button -> Create generation and merge prompts
+  // Step 1: Merge button -> Save JSONs first, then create generation and merge prompts
   const handleMerge = useCallback(async (options: ShotOptions) => {
     const enabledShots = getEnabledShots(options);
     console.log('🚀 Merge clicked with shotOptions:', options, 'enabled:', enabledShots);
@@ -497,6 +497,34 @@ function Home() {
     setGenerationResponse(null);
 
     try {
+      // ==================== STEP 0: Save JSONs First ====================
+      // Save Product JSON and DA JSON to database before merging
+      console.log('💾 Saving Product JSON and DA JSON before merge...');
+
+      // Save Product Analysis if we have product data
+      if (productId && fullAnalysisResponse?.analysis) {
+        try {
+          const { updateProductAnalysis } = await import('@/libs/server/HomePage/product');
+          await updateProductAnalysis(productId, fullAnalysisResponse.analysis);
+          console.log('✅ Product JSON saved to database');
+        } catch (err) {
+          console.warn('⚠️ Could not save Product JSON (continuing with merge):', err);
+        }
+      }
+
+      // Save DA JSON if we have collection and DA data
+      if (selectedCollection?.id && daJSON) {
+        try {
+          await updateDAJSON(selectedCollection.id, {
+            analyzed_da_json: daJSON
+          });
+          console.log('✅ DA JSON saved to database');
+        } catch (err) {
+          console.warn('⚠️ Could not save DA JSON (continuing with merge):', err);
+        }
+      }
+
+      // ==================== STEP 1: Create Generation ====================
       // Ensure DA JSON exists
       if (!daJSON) {
         console.log('📝 Setting default DA JSON...');
@@ -519,7 +547,7 @@ function Home() {
 
       console.log('✅ Generation created:', generation.id);
 
-      // Merge prompts immediately
+      // ==================== STEP 2: Merge Prompts ====================
       console.log('📝 Merging prompts with shot_options...');
       console.log('🔍 DEBUG FRONTEND - options being sent:', JSON.stringify(options));
       console.log('🔍 DEBUG FRONTEND - solo option:', JSON.stringify(options.solo));
@@ -538,6 +566,12 @@ function Home() {
 
       setGenerationId(generation.id);
       setGenerationResponse(updatedGeneration);
+
+      // Set merged prompts to show in UI (this will trigger tab switch)
+      if (updatedGeneration.merged_prompts) {
+        setMergedPrompts(updatedGeneration.merged_prompts as Record<string, any>);
+      }
+
       console.log('✅ Generation ready for review:', updatedGeneration.id);
 
     } catch (error: any) {
@@ -546,7 +580,7 @@ function Home() {
     } finally {
       setIsGenerating(false);
     }
-  }, [productId, selectedCollection, daJSON, mockDAAnalysis, resolution, aspectRatio]);
+  }, [productId, selectedCollection, daJSON, fullAnalysisResponse, mockDAAnalysis, resolution, aspectRatio]);
 
   // Step 2: Confirm button → Execute generation and start image creation
   const handleGenerateImages = useCallback(async () => {
