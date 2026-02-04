@@ -367,6 +367,34 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
         setSaveError(null);
     };
 
+    // Update only merged prompts (when user edits on Merged Prompts tab) – calls API and updates DB
+    const handleUpdateMergedPrompt = async () => {
+        if (!generationId || activeTab !== 'merged') return;
+        try {
+            const parsedJson = JSON.parse(editedJson);
+            setIsSaving(true);
+            setSaveError(null);
+            const response = await updatePromptsAPI(generationId, { prompts: parsedJson });
+            console.log('✅ Merged prompts updated (DB):', response);
+            if (onPromptsUpdated && response.merged_prompts) {
+                onPromptsUpdated(response.merged_prompts);
+            }
+            setSaveSuccess(true);
+            setIsEditing(false);
+            setTimeout(() => setSaveSuccess(false), 3000);
+            if (onSaveComplete) onSaveComplete();
+        } catch (error: any) {
+            console.error('Update merged prompt failed:', error);
+            if (error instanceof SyntaxError) {
+                setSaveError('Invalid JSON format. Please check your syntax.');
+            } else {
+                setSaveError(error?.messages?.join(', ') || error?.message || 'Failed to update merged prompt');
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     // Save changes - Saves all JSONs (Analysis Details, DA JSON, Merged Prompts)
     const handleSave = async () => {
         try {
@@ -585,18 +613,35 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
 
                 {/* Edit/Save/Reset Buttons */}
                 <div className={styles.editControls}>
-                    <button
-                        className={styles.saveBtn}
-                        onClick={handleSave}
-                        disabled={isSaving}
-                    >
-                        {isSaving ? (
-                            <Loader2 size={14} className={styles.spin} />
-                        ) : (
-                            <CheckCircle2 size={14} />
-                        )}
-                        {isSaving ? 'Saving...' : 'Save'}
-                    </button>
+                    {/* Merged Prompts tab: always show "Update Merged Prompt"; enable only when user edited */}
+                    {activeTab === 'merged' && hasMergedPrompts && generationId ? (
+                        <button
+                            className={styles.saveBtn}
+                            onClick={handleUpdateMergedPrompt}
+                            disabled={isSaving || !isEditing}
+                            title={!isEditing ? 'Edit the JSON above, then click to save' : undefined}
+                        >
+                            {isSaving ? (
+                                <Loader2 size={14} className={styles.spin} />
+                            ) : (
+                                <CheckCircle2 size={14} />
+                            )}
+                            {isSaving ? 'Updating...' : 'Update Merged Prompt'}
+                        </button>
+                    ) : (
+                        <button
+                            className={styles.saveBtn}
+                            onClick={handleSave}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <Loader2 size={14} className={styles.spin} />
+                            ) : (
+                                <CheckCircle2 size={14} />
+                            )}
+                            {isSaving ? 'Saving...' : 'Save'}
+                        </button>
+                    )}
                     {activeTab === 'analysis' && onReanalyze && (
                         <button className={styles.resetBtn} onClick={onReanalyze} disabled={isSaving}>
                             <RefreshCw size={14} className={isSaving ? styles.spin : ''} />
@@ -750,6 +795,17 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
                                 <div className={styles.failedState}>
                                     <AlertCircle size={32} className={styles.errorIcon} />
                                     <p>Generation Failed</p>
+                                    {visual.error && (
+                                        <>
+                                            <p className={styles.failedErrorText}>{visual.error}</p>
+                                            {/child|children|blocked|filtered/i.test(visual.error) && (
+                                                <p className={styles.failedErrorHint}>Vertex AI does not support generating images of children. Use Adult mode for image generation.</p>
+                                            )}
+                                            {/quota|429|RESOURCE_EXHAUSTED/i.test(visual.error) && (
+                                                <p className={styles.failedErrorHint}>Vertex AI quota exceeded. Try again in a few minutes or request a quota increase in Google Cloud.</p>
+                                            )}
+                                        </>
+                                    )}
                                     <button className={styles.retryBtn} onClick={() => onRetry(index)}>
                                         <RefreshCw size={14} /> Retry
                                     </button>
