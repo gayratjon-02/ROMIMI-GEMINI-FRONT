@@ -1,26 +1,18 @@
 services:
   romimi-frontend:
     container_name: romimi-frontend
+    build: .
     restart: always
-    image: node:24.13.0
     ports:
-      - 5030:3011
+      - "4000:5000"               # SERVER:CONTAINER - Frontend runs on 5000 inside, exposed on 4000
     environment:
-      - PORT=3011
-    volumes:
-      - ./:/usr/src/romimi-frontend
-    working_dir: /usr/src/romimi-frontend
-
+      PORT: 5000
+      NODE_ENV: production
+      # Backend API URL - Backend runs on port 4001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://167.172.90.235:4001}
     networks:
       - client-network
-
-    # FOR PRODUCTION
-    command: bash -c "yarn && yarn build && yarn start"
 
 networks:
   client-network:
     driver: bridge
- 
-
-
-
