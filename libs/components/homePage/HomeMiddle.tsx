@@ -799,10 +799,10 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
                                         <>
                                             <p className={styles.failedErrorText}>{visual.error}</p>
                                             {/child|children|blocked|filtered/i.test(visual.error) && (
-                                                <p className={styles.failedErrorHint}>Vertex AI does not support generating images of children. Use Adult mode for image generation.</p>
+                                                <p className={styles.failedErrorHint}>Gemini API does not support generating images of children. Use Adult mode for image generation.</p>
                                             )}
                                             {/quota|429|RESOURCE_EXHAUSTED/i.test(visual.error) && (
-                                                <p className={styles.failedErrorHint}>Vertex AI quota exceeded. Try again in a few minutes or request a quota increase in Google Cloud.</p>
+                                                <p className={styles.failedErrorHint}>Gemini API quota exceeded. Try again in a few minutes.</p>
                                             )}
                                         </>
                                     )}
