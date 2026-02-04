@@ -354,7 +354,7 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                         className={`${styles.generateBtn} ${styles.ready}`}
                         onClick={onGenerateImages}
                         disabled={isGeneratingImages}
-                        style={{ marginRight: '12px', background: '#8b5cf6' }} // Distinct color
+                        style={{ background: '#8b5cf6' }} // Distinct purple color
                     >
                         {isGeneratingImages ? (
                             <>
@@ -370,14 +370,17 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                     </button>
                 )}
 
-                <button
-                    className={`${styles.generateBtn} ${canGenerate ? styles.ready : styles.disabled}`}
-                    onClick={handleGenerate}
-                    disabled={!canGenerate}
-                >
-                    <Sparkles size={16} />
-                    <span>{generateButtonText}</span>
-                </button>
+                {/* Merge Prompts Button (Only when NO merged prompts) */}
+                {!hasMergedPrompts && (
+                    <button
+                        className={`${styles.generateBtn} ${canGenerate ? styles.ready : styles.disabled}`}
+                        onClick={handleGenerate}
+                        disabled={!canGenerate}
+                    >
+                        <Sparkles size={16} />
+                        <span>{generateButtonText}</span>
+                    </button>
+                )}
             </div>
         </div>
     );
