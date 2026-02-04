@@ -438,19 +438,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 })());
             }
 
-            // 3. Save Merged Prompts if available
-            if (hasMergedPrompts && generationId) {
-                savePromises.push((async () => {
-                    const promptsToSave = activeTab === 'merged' ? parsedJson : mergedPrompts;
-                    const { updateMergedPrompts } = await import('@/libs/server/HomePage/merging');
-                    const response = await updateMergedPrompts(generationId, { prompts: promptsToSave });
-                    console.log('✅ Merged prompts updated:', response);
-
-                    if (onPromptsUpdated && response.merged_prompts) {
-                        onPromptsUpdated(response.merged_prompts);
-                    }
-                })());
-            }
+            // NOTE: Merged Prompts are NOT saved here - use "Update Merged Prompt" button instead
 
             // Execute all saves in parallel
             await Promise.all(savePromises);
