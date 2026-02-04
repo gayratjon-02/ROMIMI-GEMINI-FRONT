@@ -1,6 +1,6 @@
 services:
   romimi-frontend:
-    container_name: romimi-frontend
+    container_name: romimi-frontend-gemini-api
     build: .
     restart: always
     ports:
