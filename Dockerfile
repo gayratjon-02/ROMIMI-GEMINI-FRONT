@@ -21,8 +21,8 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package.json yarn.lock* ./
 
-# Install only production dependencies
-RUN yarn install --production --frozen-lockfile
+# Install production dependencies + TypeScript (needed for next.config.ts)
+RUN yarn install --production --frozen-lockfile && yarn add typescript
 
 # Copy built application from builder stage
 COPY --from=builder /usr/src/app/.next ./.next
