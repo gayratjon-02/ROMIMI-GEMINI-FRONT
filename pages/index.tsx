@@ -182,7 +182,13 @@ function Home() {
         setVisuals(data.visuals);
       }
       setIsGenerating(false);
+      setIsGeneratingImages(false); // 🆕 Reset generating images state
       setProgress(100);
+      // 🆕 Set previousCollectionId so "Generate with New DA" works for fresh generations
+      if (selectedCollection?.id) {
+        setPreviousCollectionId(selectedCollection.id);
+        console.log('📌 Set previousCollectionId for regeneration:', selectedCollection.id);
+      }
       // Refresh Library so new product appears without page reload
       setLibraryRefreshTrigger(prev => prev + 1);
     },
