@@ -63,6 +63,7 @@ interface HomeMiddleProps {
     onReanalyze?: () => void;
     onSaveComplete?: () => void; // Called after save to trigger re-merge flow
     libraryGeneration?: Generation | null;
+    isLibraryLoading?: boolean;
 }
 
 export interface ProductJSON {
@@ -889,6 +890,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     onReanalyze,
     onSaveComplete,
     libraryGeneration,
+    isLibraryLoading = false,
 }) => {
     // Visuals State - use parent values if provided, otherwise local state
     const [localVisuals, setLocalVisuals] = useState<VisualOutput[]>([]);
@@ -901,8 +903,9 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     const isLibraryView = !!libraryGeneration;
     const libraryVisuals = (libraryGeneration?.visuals ?? libraryGeneration?.visual_outputs ?? []) as VisualOutput[];
 
-    // CRITICAL: In library view use library visuals first; otherwise parent (current generation) or local
-    const visuals = isLibraryView ? libraryVisuals : (parentVisuals || localVisuals);
+    // 🔧 FIXED: parentVisuals (placeholder cards or real-time updates) takes precedence over library visuals
+    // This allows placeholder cards to display during regeneration
+    const visuals = (parentVisuals && parentVisuals.length > 0) ? parentVisuals : (isLibraryView ? libraryVisuals : localVisuals);
 
     // Progress follows similar pattern
     const progress = parentProgress ?? localProgress;
@@ -1159,6 +1162,24 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             <Loader2 size={48} className={styles.spin} />
                             <h3>Analyzing Product...</h3>
                             <p>This may take a moment</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Library Loading Overlay */}
+            <AnimatePresence>
+                {isLibraryLoading && (
+                    <motion.div
+                        className={styles.analyzingOverlay}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{ zIndex: 50 }}
+                    >
+                        <div className={styles.analyzingContent}>
+                            <Loader2 size={48} className={styles.spin} />
+                            <h3>Loading Visuals...</h3>
                         </div>
                     </motion.div>
                 )}

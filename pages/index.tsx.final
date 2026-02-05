@@ -113,20 +113,15 @@ function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [visuals, setVisuals] = useState<any[]>([]);
   const [progress, setProgress] = useState(0);
-
-  // 🆕 NEW: State for regeneration with new DA
-  const [previousCollectionId, setPreviousCollectionId] = useState<string | null>(null);
-  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
-  const [generatingProgress, setGeneratingProgress] = useState(0);
-
   // NEW: Store the full generation response from API
   const [generationResponse, setGenerationResponse] = useState<Generation | null>(null);
   // Library: selected generation to show its generated images in HomeMiddle
   const [librarySelectedGeneration, setLibrarySelectedGeneration] = useState<Generation | null>(null);
   // Increment when generation completes so HomeLeft Library refetches without page refresh
   const [libraryRefreshTrigger, setLibraryRefreshTrigger] = useState(0);
-  // NEW: Loading state for Library selection
-  const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+
+  // 🆕 Track previous collection ID to detect DA changes after generation
+  const [previousCollectionId, setPreviousCollectionId] = useState<string | null>(null);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -231,18 +226,17 @@ function Home() {
   const handleBrandSelect = useCallback((brand: Brand | null) => {
     setSelectedBrand(brand);
     setSelectedCollection(null);
-    // 🔧 REMOVED: setLibrarySelectedGeneration(null) - allows Library + DA selection workflow
+    setLibrarySelectedGeneration(null);
   }, []);
 
   const handleCollectionSelect = useCallback((collection: Collection | null, brand: Brand | null) => {
     setSelectedCollection(collection);
     if (brand) setSelectedBrand(brand);
-    // 🔧 REMOVED: setLibrarySelectedGeneration(null) - allows Library + DA selection workflow
+    setLibrarySelectedGeneration(null);
   }, []);
 
   const handleLibrarySelect = useCallback(async (gen: Generation) => {
     try {
-      setIsLibraryLoading(true); // Start loading
       const full = await getGeneration(gen.id);
       setLibrarySelectedGeneration(full);
 
@@ -250,27 +244,9 @@ function Home() {
       setProductId(full.product_id);
       setPreviousCollectionId(full.collection_id);
 
-      // 🆕 Display Library generation's visuals immediately
-      if (full.visual_outputs && full.visual_outputs.length > 0) {
-        setVisuals(full.visual_outputs);
-        console.log(`📸 Displaying ${full.visual_outputs.length} visuals from Library generation`);
-
-        // 🚀 Wait for all images to load before hiding spinner
-        const imagePromises = full.visual_outputs
-          .filter((v: any) => v.status === 'completed' && v.image_url)
-          .map((v: any) => {
-            return new Promise<void>((resolve) => {
-              const img = new Image();
-              img.src = v.image_url;
-              img.onload = () => resolve();
-              img.onerror = () => resolve(); // Resolve even on error to avoid stuck spinner
-            });
-          });
-
-        if (imagePromises.length > 0) {
-          await Promise.all(imagePromises);
-          console.log('✅ All library images preloaded');
-        }
+      // Load product JSON for display
+      if (full.product) {
+        setAnalysisResult(full.product.analyzed_product_json || null);
       }
 
       console.log('📚 Library generation loaded:', full.id);
@@ -278,8 +254,6 @@ function Home() {
       console.log('   Original DA:', full.collection_id);
     } catch (e) {
       console.error('Failed to load generation for Library:', e);
-    } finally {
-      setIsLibraryLoading(false); // Stop loading
     }
   }, []);
 
@@ -616,6 +590,9 @@ function Home() {
 
       console.log('✅ Generation ready for review:', updatedGeneration.id);
 
+      // 🆕 Track this collection as the previous one for DA change detection
+      setPreviousCollectionId(selectedCollection.id);
+
     } catch (error: any) {
       console.error('Merge failed:', error);
       alert(error.message || 'Failed to merge prompts');
@@ -710,10 +687,100 @@ function Home() {
     setProgress(0);
   }, []);
 
+  // 🆕 NEW: Handle Regenerate with New DA
+  const handleRegenerateWithNewDA = useCallback(async () => {
+    if (!productId || !selectedCollection) {
+      alert('Cannot regenerate: missing product or collection');
+      return;
+    }
+
+    console.log('🎨 Regenerating with NEW DA:', selectedCollection.id);
+    setIsGenerating(true);
+    setVisuals([]);
+    setProgress(0);
+
+    try {
+      // 1. Fetch existing product JSON from DB (not needed - backend will fetch automatically)
+      console.log('📦 Using existing product JSON from database:', productId);
+
+      // 2. Create new generation with new collection/DA
+      console.log('📝 Creating new generation with new DA...');
+      const generation = await createGeneration({
+        product_id: productId,
+        collection_id: selectedCollection.id, // 🎯 NEW DA
+        generation_type: 'product_visuals',
+        resolution: resolution === '4k' ? '4K' : '2K',
+        aspect_ratio: aspectRatio,
+      });
+
+      console.log('✅ New generation created:', generation.id);
+
+      // 3. Merge prompts with new DA
+      console.log('🔄 Merging prompts with new DA and shot options...');
+      await mergePrompts(generation.id, {
+        shot_options: shotOptions,
+        resolution: resolution === '4k' ? '4K' : '2K',
+        aspect_ratio: aspectRatio,
+      });
+
+      // Fetch updated generation with merged prompts
+      const updatedGeneration = await getGeneration(generation.id);
+
+      setGenerationId(generation.id);
+      setGenerationResponse(updatedGeneration);
+      setPreviousCollectionId(selectedCollection.id);
+
+      // Set merged prompts to show in UI
+      if (updatedGeneration.merged_prompts) {
+        setMergedPrompts(updatedGeneration.merged_prompts as Record<string, any>);
+      }
+
+      console.log('✅ New generation ready for execution:', updatedGeneration.id);
+
+      // 4. Create placeholder cards
+      const mergedPromptsData = updatedGeneration.merged_prompts || {};
+      const shotTypes = Object.keys(mergedPromptsData);
+
+      if (shotTypes.length > 0) {
+        const placeholderVisuals = shotTypes.map(type => ({
+          type,
+          status: 'pending' as const,
+          image_url: undefined,
+          error: undefined,
+        }));
+        setVisuals(placeholderVisuals);
+        console.log('📦 Placeholder cards created:', placeholderVisuals.length);
+      }
+
+      // 5. Execute generation immediately
+      console.log('🚀 Executing generation with new DA...');
+      const result = await executeGeneration(generation.id);
+      console.log('✅ Generation started:', result);
+
+      // Update visuals with backend response
+      if (result.generation && result.generation.visual_outputs) {
+        setVisuals(result.generation.visual_outputs);
+      }
+
+      console.log('📝 WebSocket active - waiting for real-time updates...');
+
+      // Safety timeout (10 minutes)
+      setTimeout(() => {
+        setIsGenerating(false);
+      }, 600000);
+
+    } catch (error: any) {
+      console.error('❌ Regeneration with new DA failed:', error);
+      const errorMsg = error?.errors?.join(', ') || error?.message || 'Failed to regenerate with new DA';
+      alert(`Regeneration failed: ${errorMsg}`);
+      setIsGenerating(false);
+    }
+  }, [productId, selectedCollection, shotOptions, resolution, aspectRatio]);
+
   const isAnalyzed = !!productJSON;
   const hasDA = !!daJSON;
 
-  // 🆕 NEW: Detect if regeneration with new DA is available (current generation)
+  // 🆕 NEW: Detect if regeneration with new DA is available
   const isRegenerationAvailable = Boolean(
     productId && // Product exists
     generationResponse && // Previous generation exists
@@ -740,7 +807,7 @@ function Home() {
     const opts: any = {};
     ['duo', 'solo', 'flatlay_front', 'flatlay_back', 'closeup_front', 'closeup_back'].forEach(type => {
       if (merged[type]) {
-        opts[type] = {
+        opts[type] = { 
           enabled: true,
           subject: merged[type].subject || 'adult'
         };
@@ -750,51 +817,81 @@ function Home() {
   }, []);
 
   /**
-   * 🆕 Regenerate current generation with new DA
+   * 🆕 Regenerate Library generation with new DA
    */
-  const handleRegenerateWithNewDA = useCallback(async () => {
-    if (!productId || !selectedCollection) {
-      alert('❌ Please select a product and a different DA');
+  const handleRegenerateLibraryWithNewDA = useCallback(async () => {
+    if (!librarySelectedGeneration || !selectedCollection) {
+      alert('❌ Please select a Library generation and a different DA');
       return;
     }
-
+    
+    if (selectedCollection.id === librarySelectedGeneration.collection_id) {
+      alert('⚠️ Please select a different DA to regenerate');
+      return;
+    }
+    
     setIsGeneratingImages(true);
     setGeneratingProgress(0);
-
+    
     try {
-      console.log('🎨 Regenerating with new DA...');
-
+      console.log('🎨 Regenerating Library generation with new DA...');
+      console.log('   Library Generation:', librarySelectedGeneration.id);
+      console.log('   Product:', librarySelectedGeneration.product_id);
+      console.log('   Old DA:', librarySelectedGeneration.collection_id);
+      console.log('   New DA:', selectedCollection.id);
+      
+      // 1. Create new generation with NEW DA
       const generation = await createGeneration({
-        product_id: productId,
+        product_id: librarySelectedGeneration.product_id,
         collection_id: selectedCollection.id,
         generation_type: 'product_visuals',
-        resolution: (generationResponse as any)?.resolution || '4K',
-        aspect_ratio: (generationResponse as any)?.aspect_ratio || '4:5',
+        resolution: librarySelectedGeneration.resolution || '4K',
+        aspect_ratio: librarySelectedGeneration.aspect_ratio || '4:5',
       });
-
+      
+      console.log('✅ New generation created:', generation.id);
       setGenerationId(generation.id);
       setGenerationResponse(generation);
-
+      
+      // 2. Merge with new DA
+      const shotOpts = librarySelectedGeneration.merged_prompts 
+        ? extractShotOptionsFromMergedPrompts(librarySelectedGeneration.merged_prompts)
+        : shotOptions;
+      
       const merged = await mergePrompts(generation.id, {
-        shot_options: shotOptions,
-        resolution: (generationResponse as any)?.resolution || '4K',
-        aspect_ratio: (generationResponse as any)?.aspect_ratio || '4:5',
+        shot_options: shotOpts,
+        resolution: librarySelectedGeneration.resolution || '4K',
+        aspect_ratio: librarySelectedGeneration.aspect_ratio || '4:5',
       });
-
+      
+      console.log('✅ Prompts merged with new DA');
       setMergedPrompts(merged as any);
       setPreviousCollectionId(selectedCollection.id);
-
+      
+      // 3. Execute generation
       await executeGeneration(generation.id);
-
-      // Note: WebSocket will be handled by useWebSocket hook automatically
-
-
+      console.log('🚀 Generation started');
+      
+      // 4. Connect WebSocket
+      connectSocket(generation.id, (data) => {
+        if (data.type === 'generation_progress') {
+          setGeneratingProgress(data.progress || 0);
+        } else if (data.type === 'visual_completed') {
+          setVisuals(prev => [...prev, data.visual]);
+        } else if (data.type === 'generation_done') {
+          setIsGeneratingImages(false);
+          setGeneratingProgress(100);
+          alert('✅ Regeneration complete!');
+        }
+      });
+      
     } catch (error: any) {
-      console.error('❌ Regeneration failed:', error);
+      console.error('❌ Library regeneration failed:', error);
       setIsGeneratingImages(false);
       alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
     }
-  }, [productId, selectedCollection, generationResponse, shotOptions]);
+  }, [librarySelectedGeneration, selectedCollection, shotOptions, extractShotOptionsFromMergedPrompts]);
+
 
   /**
    * 🆕 Regenerate Library generation with new DA
@@ -804,96 +901,71 @@ function Home() {
       alert('❌ Please select a Library generation and a different DA');
       return;
     }
-
+    
     if (selectedCollection.id === librarySelectedGeneration.collection_id) {
       alert('⚠️ Please select a different DA to regenerate');
       return;
     }
-
+    
     setIsGeneratingImages(true);
     setGeneratingProgress(0);
-
-    console.log('🔍 [DEBUG] Starting regeneration...');
-    console.log('🔍 [DEBUG] Library merged_prompts:', librarySelectedGeneration.merged_prompts);
-
-    // 🆕 Extract shot options FIRST (before async operations)
-    const shotOpts = librarySelectedGeneration.merged_prompts
-      ? extractShotOptionsFromMergedPrompts(librarySelectedGeneration.merged_prompts)
-      : shotOptions;
-
-    console.log('🔍 [DEBUG] Extracted shotOpts:', shotOpts);
-
-    // 🆕 Create placeholder cards from shot options
-    const enabledShots = Object.keys(shotOpts).filter(key => shotOpts[key]?.enabled);
-
-    console.log('🔍 [DEBUG] Enabled shots:', enabledShots);
-
-    if (enabledShots.length === 0) {
-      alert('⚠️ No shots enabled in Library generation. Cannot regenerate.');
-      setIsGeneratingImages(false);
-      return;
-    }
-
-    const placeholderVisuals = enabledShots.map((shotType) => ({
-      id: `placeholder-${shotType}`,
-      type: shotType,
-      shot_type: shotType,
-      status: 'pending',
-      image_url: null,
-    }));
-
-    console.log('🔍 [DEBUG] Created placeholder visuals:', placeholderVisuals);
-
-    // 🔥 IMMEDIATELY replace old visuals with empty placeholders
-    setVisuals(placeholderVisuals);
-    console.log(`🎴 CLEARED old visuals and created ${placeholderVisuals.length} placeholder cards for: ${enabledShots.join(', ')}`);
-
+    
     try {
       console.log('🎨 Regenerating Library generation with new DA...');
       console.log('   Library Generation:', librarySelectedGeneration.id);
       console.log('   Product:', librarySelectedGeneration.product_id);
       console.log('   Old DA:', librarySelectedGeneration.collection_id);
       console.log('   New DA:', selectedCollection.id);
-
+      
       // 1. Create new generation with NEW DA
       const generation = await createGeneration({
         product_id: librarySelectedGeneration.product_id,
-        collection_id: selectedCollection.id,
+        collection_id: selectedCollection.id, // 🎯 NEW DA
         generation_type: 'product_visuals',
-        resolution: (librarySelectedGeneration as any).resolution || '4K',
-        aspect_ratio: (librarySelectedGeneration as any).aspect_ratio || '4:5',
+        resolution: librarySelectedGeneration.resolution || '4K',
+        aspect_ratio: librarySelectedGeneration.aspect_ratio || '4:5',
       });
-
+      
       console.log('✅ New generation created:', generation.id);
-
-      // 🆕 CRITICAL: Set generation state FIRST to trigger WebSocket
       setGenerationId(generation.id);
       setGenerationResponse(generation);
-      setIsGenerating(true); // Trigger useWebSocket hook
-
-      // 2. Merge with new DA (shotOpts already extracted above for placeholders)
+      
+      // 2. Merge with new DA (reuse shot options if available)
+      const shotOpts = librarySelectedGeneration.merged_prompts 
+        ? extractShotOptionsFromMergedPrompts(librarySelectedGeneration.merged_prompts)
+        : shotOptions;
+      
       const merged = await mergePrompts(generation.id, {
         shot_options: shotOpts,
-        resolution: (librarySelectedGeneration as any).resolution || '4K',
-        aspect_ratio: (librarySelectedGeneration as any).aspect_ratio || '4:5',
+        resolution: librarySelectedGeneration.resolution || '4K',
+        aspect_ratio: librarySelectedGeneration.aspect_ratio || '4:5',
       });
-
+      
       console.log('✅ Prompts merged with new DA');
       setMergedPrompts(merged as any);
       setPreviousCollectionId(selectedCollection.id);
-
+      
       // 3. Execute generation
       await executeGeneration(generation.id);
-      console.log('🚀 Generation started - WebSocket will provide real-time updates');
-
-      // 4. WebSocket connection handled automatically by useWebSocket hook
-
-
-
+      console.log('🚀 Generation started');
+      
+      // 4. Connect WebSocket
+      connectSocket(generation.id, (data) => {
+        if (data.type === 'generation_progress') {
+          setGeneratingProgress(data.progress || 0);
+        } else if (data.type === 'visual_completed') {
+          setVisuals(prev => [...prev, data.visual]);
+        } else if (data.type === 'generation_done') {
+          setIsGeneratingImages(false);
+          setGeneratingProgress(100);
+          alert('✅ Regeneration complete!');
+        }
+      });
+      
     } catch (error: any) {
       console.error('❌ Library regeneration failed:', error);
       setIsGeneratingImages(false);
-      alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
+      alert(\`Failed to regenerate: \${error.message || 'Unknown error'}\`);
     }
   }, [librarySelectedGeneration, selectedCollection, shotOptions, extractShotOptionsFromMergedPrompts]);
 
@@ -1063,7 +1135,6 @@ function Home() {
               onReanalyze={() => handleAnalyze(true)}
               onSaveComplete={handleSaveComplete}
               libraryGeneration={librarySelectedGeneration}
-              isLibraryLoading={isLibraryLoading}
             />
           </div>
 
@@ -1085,18 +1156,9 @@ function Home() {
             onGenerateImages={handleGenerateImages}
             isGeneratingImages={isGenerating && !!generationResponse?.merged_prompts} // Only spin if we have prompts
             generatingProgress={progress}
-            // 🆕 NEW: Regenerate with New DA props (Library or current)
-            onRegenerateWithNewDA={
-              isLibraryRegenerationAvailable
-                ? handleRegenerateLibraryWithNewDA
-                : handleRegenerateWithNewDA
-            }
-            isRegenerationAvailable={
-              isRegenerationAvailable || isLibraryRegenerationAvailable
-            }
-            regenerationContext={
-              isLibraryRegenerationAvailable ? 'library' : 'current'
-            }
+            // 🆕 NEW: Regenerate with New DA props
+            onRegenerateWithNewDA={handleRegenerateWithNewDA}
+            isRegenerationAvailable={isRegenerationAvailable}
           />
         </div>
       </div>

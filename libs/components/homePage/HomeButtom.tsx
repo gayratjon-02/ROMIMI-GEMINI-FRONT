@@ -49,6 +49,10 @@ interface HomeBottomProps {
     onGenerateImages?: () => void;
     isGeneratingImages?: boolean;
     generatingProgress?: number;
+    // 🆕 NEW: Props for Regenerate with New DA
+    onRegenerateWithNewDA?: () => void;
+    isRegenerationAvailable?: boolean;
+    regenerationContext?: 'current' | 'library'; // 🆕 NEW
 }
 
 const SHOT_TYPE_CONFIGS: ShotTypeConfig[] = [
@@ -111,6 +115,10 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
     onGenerateImages,
     isGeneratingImages = false,
     generatingProgress = 0,
+    // 🆕 NEW: Regenerate with New DA props
+    onRegenerateWithNewDA,
+    isRegenerationAvailable = false,
+    regenerationContext = 'current', // 🆕 NEW with default
 }) => {
     // Count enabled shots
     const enabledCount = useMemo(() => {
@@ -348,8 +356,37 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
 
             {/* Right Section: Generate Button */}
             <div className={styles.rightSection}>
-                {/* Generate Images Button (Only when merged prompts exist) */}
-                {hasMergedPrompts && onGenerateImages && (
+                {/* 🆕 NEW: Regenerate with New DA Button (Show when DA changed after generation) */}
+                {isRegenerationAvailable && onRegenerateWithNewDA && (
+                    <button
+                        className={`${styles.generateBtn} ${styles.ready}`}
+                        onClick={onRegenerateWithNewDA}
+                        disabled={isGeneratingImages}
+                        style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            boxShadow: '0 4px 8px rgba(102, 126, 234, 0.3)',
+                        }}
+                    >
+                        {isGeneratingImages ? (
+                            <>
+                                <Loader2 size={16} className={styles.spin} />
+                                <span>Regenerating... {Math.round(generatingProgress)}%</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={16} />
+                                <span>
+                                    🎨 {regenerationContext === 'library'
+                                        ? 'Regenerate Library with New DA'
+                                        : 'Generate with New DA'}
+                                </span>
+                            </>
+                        )}
+                    </button>
+                )}
+
+                {/* Generate Images Button (Only when merged prompts exist and NO regeneration) */}
+                {hasMergedPrompts && onGenerateImages && !isRegenerationAvailable && (
                     <button
                         className={`${styles.generateBtn} ${styles.ready}`}
                         onClick={onGenerateImages}
@@ -370,8 +407,8 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                     </button>
                 )}
 
-                {/* Merge Prompts Button (Only when NO merged prompts) */}
-                {!hasMergedPrompts && (
+                {/* Merge Prompts Button (Only when NO merged prompts and NO regeneration) */}
+                {!hasMergedPrompts && !isRegenerationAvailable && (
                     <button
                         className={`${styles.generateBtn} ${canGenerate ? styles.ready : styles.disabled}`}
                         onClick={handleGenerate}
