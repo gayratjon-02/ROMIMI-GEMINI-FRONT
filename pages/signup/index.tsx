@@ -121,10 +121,10 @@ const SignupPage = () => {
     message: string;
   } | null>(null);
 
-  // 🔒 XAVFSIZLIK: Agar user allaqachon login qilgan bo'lsa, home ga redirect
+  // Security: If user is already logged in, redirect to home
   useEffect(() => {
     if (isAuthenticated()) {
-      // Token bor - home page ga o'tish
+      // Token exists - redirect to home page
       const redirectPath = (router.query.redirect as string) || '/';
       router.replace(redirectPath);
     }

@@ -120,9 +120,9 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
         const fetchedBrands = await getAllBrands();
         setBrands(fetchedBrands);
       } catch (error: any) {
-        // 401 Unauthorized - foydalanuvchi login qilmagan yoki token yaroqsiz
+        // 401 Unauthorized - User not logged in or token expired
         if (error?.status === 401) {
-          console.warn('Unauthorized: Token yaroqsiz yoki foydalanuvchi login qilmagan');
+          console.warn('Unauthorized: Token expired or user not logged in');
         } else {
           console.error('Error fetching brands:', error);
         }
