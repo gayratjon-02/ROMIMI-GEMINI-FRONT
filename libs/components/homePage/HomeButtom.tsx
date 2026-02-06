@@ -49,10 +49,14 @@ interface HomeBottomProps {
     onGenerateImages?: () => void;
     isGeneratingImages?: boolean;
     generatingProgress?: number;
-    // 🆕 NEW: Props for Regenerate with New DA
+    // Props for Generate with New DA
     onRegenerateWithNewDA?: () => void;
     isRegenerationAvailable?: boolean;
-    regenerationContext?: 'current' | 'library'; // 🆕 NEW
+    regenerationContext?: 'current' | 'library';
+    // Props for hiding buttons after generation completes
+    hasCompletedGeneration?: boolean;
+    isMerging?: boolean;
+    isNewDAFlow?: boolean;
 }
 
 const SHOT_TYPE_CONFIGS: ShotTypeConfig[] = [
@@ -115,10 +119,14 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
     onGenerateImages,
     isGeneratingImages = false,
     generatingProgress = 0,
-    // 🆕 NEW: Regenerate with New DA props
+    // Generate with New DA props
     onRegenerateWithNewDA,
     isRegenerationAvailable = false,
-    regenerationContext = 'current', // 🆕 NEW with default
+    regenerationContext = 'current',
+    // Hide buttons after generation completes
+    hasCompletedGeneration = false,
+    isMerging = false,
+    isNewDAFlow = false,
 }) => {
     // Count enabled shots
     const enabledCount = useMemo(() => {
@@ -356,42 +364,28 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
 
             {/* Right Section: Generate Button */}
             <div className={styles.rightSection}>
-                {/* 🆕 NEW: Regenerate with New DA Button (Show when DA changed after generation) */}
-                {isRegenerationAvailable && onRegenerateWithNewDA && (
+                {/* Generate Images with New DA - only when DA changed, hides on click */}
+                {isRegenerationAvailable && !isMerging && onRegenerateWithNewDA && (
                     <button
                         className={`${styles.generateBtn} ${styles.ready}`}
                         onClick={onRegenerateWithNewDA}
-                        disabled={isGeneratingImages}
                         style={{
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             boxShadow: '0 4px 8px rgba(102, 126, 234, 0.3)',
                         }}
                     >
-                        {isGeneratingImages ? (
-                            <>
-                                <Loader2 size={16} className={styles.spin} />
-                                <span>Regenerating... {Math.round(generatingProgress)}%</span>
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles size={16} />
-                                <span>
-                                    🎨 {regenerationContext === 'library'
-                                        ? 'Regenerate Library with New DA'
-                                        : 'Generate with New DA'}
-                                </span>
-                            </>
-                        )}
+                        <Sparkles size={16} />
+                        <span>Generate Images with New DA</span>
                     </button>
                 )}
 
-                {/* Generate Images Button (Only when merged prompts exist and NO regeneration) */}
-                {hasMergedPrompts && onGenerateImages && !isRegenerationAvailable && (
+                {/* Generate Images Button (only before generation completes, not during new DA flow) */}
+                {!isNewDAFlow && !hasCompletedGeneration && hasMergedPrompts && onGenerateImages && !isRegenerationAvailable && (
                     <button
                         className={`${styles.generateBtn} ${styles.ready}`}
                         onClick={onGenerateImages}
                         disabled={isGeneratingImages}
-                        style={{ background: '#8b5cf6' }} // Distinct purple color
+                        style={{ background: '#8b5cf6' }}
                     >
                         {isGeneratingImages ? (
                             <>
@@ -407,8 +401,8 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                     </button>
                 )}
 
-                {/* Merge Prompts Button (Only when NO merged prompts and NO regeneration) */}
-                {!hasMergedPrompts && !isRegenerationAvailable && (
+                {/* Merge Prompts Button (only before generation completes, not during new DA flow) */}
+                {!isNewDAFlow && !hasCompletedGeneration && !hasMergedPrompts && !isRegenerationAvailable && (
                     <button
                         className={`${styles.generateBtn} ${canGenerate ? styles.ready : styles.disabled}`}
                         onClick={handleGenerate}
