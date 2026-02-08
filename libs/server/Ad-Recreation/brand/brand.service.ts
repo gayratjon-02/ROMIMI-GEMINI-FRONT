@@ -132,11 +132,19 @@ export interface CreateBrandData {
 export async function createBrand(data: CreateBrandData): Promise<AdBrand> {
     const headers = getAuthHeaders();
 
+    // Transform data: map website_url -> website and inject P0 defaults
+    const payload = {
+        name: data.name,
+        website: data.website_url, // API expects 'website' not 'website_url'
+        description: data.description || '',
+        industry: 'General', // P0 default - skipable advanced field
+    };
+
     const response = await fetch(`${API_BASE_URL}/api/ad-brands`, {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
     });
 
     if (response.status === 401) {
