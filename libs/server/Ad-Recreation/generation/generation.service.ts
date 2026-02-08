@@ -3,7 +3,7 @@
 import axiosClient from '@/libs/server/axios-client';
 
 // ============================================
-// TYPES
+// TYPES (Frontend-facing, can use snake_case for convenience)
 // ============================================
 
 export interface GenerationPayload {
@@ -32,24 +32,58 @@ export interface GenerationResponse {
 
 /**
  * Triggers ad variation generation.
- * @param payload - Generation configuration
+ * Transforms payload to match backend DTO (camelCase).
+ * 
+ * @param payload - Generation configuration (snake_case from UI)
  * @returns Promise<GenerationResult>
  * @throws Error if generation fails
  */
 export async function generateAdVariations(payload: GenerationPayload): Promise<GenerationResult> {
-    console.log('Generating ad variations with payload:', payload);
+    console.log('📤 Generating ad variations with payload:', payload);
 
-    const response = await axiosClient.post<GenerationResponse>(
-        '/api/ad-generations/generate',
-        payload
-    );
+    // ============================================
+    // TRANSFORM: snake_case → camelCase for Backend DTO
+    // Backend expects: brandId, conceptId, productDescription, marketingAngle, aspectRatio
+    // ============================================
+    const backendPayload = {
+        brandId: payload.brand_id,
+        conceptId: payload.concept_id,
+        productDescription: payload.product_description,
+        marketingAngle: payload.marketing_angle,
+        aspectRatio: payload.aspect_ratio,
+    };
 
-    if (!response.data.success) {
-        throw new Error(response.data.message || 'Generation failed');
+    console.log('📦 Backend payload (camelCase):', backendPayload);
+
+    try {
+        const response = await axiosClient.post<GenerationResponse>(
+            '/api/ad-generations/generate',
+            backendPayload
+        );
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Generation failed');
+        }
+
+        console.log('✅ Generation started:', response.data.generation.id);
+        return response.data.generation;
+    } catch (error: any) {
+        // ============================================
+        // ENHANCED ERROR LOGGING
+        // Show exact validation errors from NestJS
+        // ============================================
+        console.error('❌ Generation API Error:');
+        console.error('Status:', error.response?.status);
+        console.error('Message:', error.response?.data?.message);
+        console.error('Full error data:', error.response?.data);
+
+        // Re-throw with detailed message
+        const errorMessage = Array.isArray(error.response?.data?.message)
+            ? error.response.data.message.join(', ')
+            : error.response?.data?.message || error.message || 'Generation failed';
+
+        throw new Error(errorMessage);
     }
-
-    console.log('Generation started:', response.data.generation.id);
-    return response.data.generation;
 }
 
 /**
