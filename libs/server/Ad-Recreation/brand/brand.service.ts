@@ -65,6 +65,16 @@ export interface CreateBrandData {
 }
 
 /**
+ * Interface for analyze and create brand request
+ */
+export interface AnalyzeBrandData {
+    name: string;
+    website: string;
+    text_content?: string;
+    file?: File;
+}
+
+/**
  * Creates a new brand.
  * @param data - Brand creation data
  * @returns Promise<AdBrand> - The created brand
@@ -83,6 +93,85 @@ export async function createBrand(data: CreateBrandData): Promise<AdBrand> {
 
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to create brand');
+    }
+
+    return response.data.brand;
+}
+
+/**
+ * Brand Playbook JSON structure
+ */
+export interface BrandPlaybookJson {
+    brand_name: string;
+    website: string;
+    brand_colors: {
+        primary: string;
+        secondary: string;
+        background: string;
+        text_dark: string;
+    };
+    typography: {
+        headline: string;
+        body: string;
+    };
+    tone_of_voice: string;
+    target_audience: {
+        gender: string;
+        age_range: string;
+    };
+}
+
+/**
+ * Response from analyze endpoint
+ */
+interface AnalyzeBrandResponse {
+    success: boolean;
+    message: string;
+    brand_id: string;
+    brand_name: string;
+    playbook: BrandPlaybookJson;
+}
+
+/**
+ * Analyzes brand assets and creates a brand in one step.
+ * @param data - Brand data with either file or text_content
+ * @returns Promise with brand_id and playbook JSON
+ */
+export async function analyzeAndCreateBrand(data: AnalyzeBrandData): Promise<AnalyzeBrandResponse> {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('website', data.website);
+
+    if (data.file) {
+        formData.append('file', data.file);
+    }
+    if (data.text_content) {
+        formData.append('text_content', data.text_content);
+    }
+
+    const response = await axiosClient.post<AnalyzeBrandResponse>('/api/ad-brands/analyze', formData);
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to analyze brand');
+    }
+
+    return response.data;
+}
+
+/**
+ * Updates the brand playbook JSON.
+ * @param brandId - The brand ID
+ * @param playbook - The edited playbook JSON
+ * @returns Promise with updated brand
+ */
+export async function updateBrandPlaybook(brandId: string, playbook: any): Promise<AdBrand> {
+    const response = await axiosClient.patch<{ success: boolean; message: string; brand: AdBrand }>(
+        `/api/ad-brands/${brandId}/playbook`,
+        { playbook }
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to update playbook');
     }
 
     return response.data.brand;

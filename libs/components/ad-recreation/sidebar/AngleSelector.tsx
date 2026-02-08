@@ -17,37 +17,37 @@ export interface Angle {
 }
 
 export const MARKETING_ANGLES: Angle[] = [
-    // PAIN POINTS (4)
-    { id: 'back_pain', label: 'Back Pain', desc: 'Relief from chronic back issues', icon: '🩹', category: 'Pain Points' },
-    { id: 'low_energy', label: 'Low Energy', desc: 'Boost daily energy levels', icon: '⚡', category: 'Pain Points' },
-    { id: 'poor_posture', label: 'Poor Posture', desc: 'Fix posture problems', icon: '🧘', category: 'Pain Points' },
-    { id: 'exercise_guilt', label: 'Exercise Guilt', desc: 'End workout shame', icon: '😔', category: 'Pain Points' },
+    // PROBLEM-FOCUSED (4)
+    { id: 'problem_solution', label: 'Problem / Solution', desc: 'Present pain point, position as solution', icon: '🩹', category: 'Problem-Focused' },
+    { id: 'before_after', label: 'Before & After', desc: 'Show dramatic transformation', icon: '🦋', category: 'Problem-Focused' },
+    { id: 'myth_buster', label: 'Myth Buster', desc: 'Debunk common misconception', icon: '💡', category: 'Problem-Focused' },
+    { id: 'contrast', label: 'Contrast', desc: 'Juxtapose opposing scenarios', icon: '⚖️', category: 'Problem-Focused' },
 
-    // OBJECTIONS (5)
-    { id: 'no_time', label: 'No Time', desc: 'Quick & efficient workouts', icon: '⏰', category: 'Objections' },
-    { id: 'beginner_fear', label: 'Beginner Fear', desc: 'Easy for beginners', icon: '👶', category: 'Objections' },
-    { id: 'skeptic_partner', label: 'Skeptic Partner', desc: 'Convince the skeptics', icon: '🤔', category: 'Objections' },
-    { id: 'too_expensive', label: 'Too Expensive', desc: 'Worth every penny', icon: '💰', category: 'Objections' },
-    { id: 'no_space', label: 'No Space', desc: 'Compact & portable', icon: '📦', category: 'Objections' },
+    // TRUST & PROOF (5)
+    { id: 'social_proof', label: 'Social Proof', desc: 'Testimonials & ratings', icon: '⭐', category: 'Trust & Proof' },
+    { id: 'expert_endorsement', label: 'Expert Endorsement', desc: 'Authority figures vouch', icon: '🎓', category: 'Trust & Proof' },
+    { id: 'user_generated', label: 'User Generated', desc: 'Real customer content', icon: '📸', category: 'Trust & Proof' },
+    { id: 'guarantee', label: 'Guarantee', desc: 'Money-back or satisfaction', icon: '🛡️', category: 'Trust & Proof' },
+    { id: 'fomo', label: 'Urgency / FOMO', desc: 'Limited-time or scarcity', icon: '⏰', category: 'Trust & Proof' },
 
-    // VALUE (4)
-    { id: 'cost_savings', label: 'Cost Savings', desc: 'Save money long-term', icon: '💵', category: 'Value' },
-    { id: 'convenience', label: 'Convenience', desc: 'Use anywhere, anytime', icon: '🏠', category: 'Value' },
-    { id: 'bundle_value', label: 'Bundle Value', desc: 'Get more for less', icon: '🎁', category: 'Value' },
-    { id: 'fast_delivery', label: 'Fast Delivery', desc: 'Quick shipping', icon: '🚚', category: 'Value' },
+    // VALUE & FEATURES (4)
+    { id: 'cost_savings', label: 'Cost Savings', desc: 'ROI & value-for-money', icon: '💵', category: 'Value & Features' },
+    { id: 'feature_highlight', label: 'Feature Highlight', desc: 'Spotlight key feature', icon: '✨', category: 'Value & Features' },
+    { id: 'benefit_stacking', label: 'Benefit Stacking', desc: 'List multiple benefits', icon: '📋', category: 'Value & Features' },
+    { id: 'us_vs_them', label: 'Us vs. Competitors', desc: 'Compare advantages', icon: '🥊', category: 'Value & Features' },
 
-    // SOCIAL PROOF (4)
-    { id: 'statistics', label: 'Statistics', desc: 'Data-backed results', icon: '📊', category: 'Social Proof' },
-    { id: 'reviews', label: 'Reviews', desc: 'Customer testimonials', icon: '⭐', category: 'Social Proof' },
-    { id: 'community', label: 'Community', desc: 'Join thousands of users', icon: '👥', category: 'Social Proof' },
-    { id: 'word_of_mouth', label: 'Word of Mouth', desc: 'Recommended by friends', icon: '🗣️', category: 'Social Proof' },
+    // ENGAGEMENT (4)
+    { id: 'storytelling', label: 'Storytelling', desc: 'Emotional narrative arc', icon: '📖', category: 'Engagement' },
+    { id: 'educational', label: 'Educational', desc: 'Teach while introducing product', icon: '🎓', category: 'Engagement' },
+    { id: 'how_to', label: 'How To', desc: 'Step-by-step process', icon: '📝', category: 'Engagement' },
+    { id: 'curiosity_gap', label: 'Curiosity Gap', desc: 'Tease intriguing result', icon: '🔮', category: 'Engagement' },
+    { id: 'question', label: 'Question', desc: 'Hook with provocative question', icon: '❓', category: 'Engagement' },
 
-    // EMOTIONAL (5)
-    { id: 'strength', label: 'Strength', desc: 'Feel powerful & capable', icon: '💪', category: 'Emotional' },
-    { id: 'self_care', label: 'Self-Care', desc: 'Invest in yourself', icon: '🧖', category: 'Emotional' },
-    { id: 'family', label: 'Family', desc: 'Be there for loved ones', icon: '👨‍👩‍👧', category: 'Emotional' },
-    { id: 'confidence', label: 'Confidence', desc: 'Boost self-esteem', icon: '✨', category: 'Emotional' },
-    { id: 'transformation', label: 'Transformation', desc: 'Before & after journey', icon: '🦋', category: 'Emotional' },
+    // LIFESTYLE & BRAND (5)
+    { id: 'lifestyle', label: 'Lifestyle', desc: 'Associate with aspirational identity', icon: '🌴', category: 'Lifestyle & Brand' },
+    { id: 'luxury', label: 'Luxury', desc: 'Premium quality & elegance', icon: '💎', category: 'Lifestyle & Brand' },
+    { id: 'minimalist', label: 'Minimalist', desc: 'Clean design, product speaks', icon: '⬜', category: 'Lifestyle & Brand' },
+    { id: 'urgent', label: 'Urgent', desc: 'Countdown & deadline messaging', icon: '🔥', category: 'Lifestyle & Brand' },
 ];
 
 const MAX_ANGLES = 6;
@@ -95,14 +95,16 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
     };
 
     return (
-        <div className={styles.section}>
+        <div
+            className={styles.section}
+            onMouseEnter={() => setIsExpanded(true)}
+            onMouseLeave={() => setIsExpanded(false)}
+            style={{ position: 'relative' }}
+        >
             <label className={styles.sectionLabel}>Marketing Angles</label>
 
-            {/* Dropdown Header */}
-            <button
-                type="button"
-                className={`${styles.dropdownHeader} ${isExpanded ? styles.expanded : ''}`}
-                onClick={() => setIsExpanded(!isExpanded)}
+            {/* Dropdown Header - Shows summary */}
+            <div
                 style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -115,13 +117,14 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
                     cursor: 'pointer',
                     color: isDarkMode ? '#fff' : '#1a1a2e',
                     fontSize: '14px',
+                    transition: 'border-color 0.2s',
                 }}
             >
                 <span>
                     <strong>{selected.length}/{MAX_ANGLES}</strong> selected: {getSelectedLabels()}
                 </span>
                 {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </button>
+            </div>
 
             {/* Dropdown Content */}
             {isExpanded && (

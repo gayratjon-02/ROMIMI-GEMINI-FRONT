@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useTheme } from "@mui/material";
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, Download, X } from 'lucide-react';
 import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
 import { logout, getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
@@ -72,6 +72,9 @@ const AdRecreationPage: React.FC = () => {
 
     // Polling ref
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Lightbox state for full-size image preview
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
     // Load user info on mount
     useEffect(() => {
@@ -152,6 +155,26 @@ const AdRecreationPage: React.FC = () => {
             case '4:5': return 'portrait';
             case '16:9': return 'landscape';
             default: return selectedFormats[0];
+        }
+    };
+
+    // Download image handler
+    const handleDownloadImage = async (imageUrl: string, fileName: string) => {
+        try {
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            console.log(`✅ Downloaded: ${fileName}`);
+        } catch (error) {
+            console.error('❌ Download failed:', error);
+            alert('Download failed. Please try again.');
         }
     };
 
@@ -399,14 +422,287 @@ const AdRecreationPage: React.FC = () => {
                         )}
 
                         {/* Content */}
-                        {showResults ? (
-                            <ResultsGrid
-                                results={generatedResults.filter(r => !r.isLoading)}
-                                angles={MARKETING_ANGLES}
-                                selectedAngles={selectedAngles}
-                                selectedFormats={selectedFormats}
-                                isDarkMode={isDarkMode}
-                            />
+                        {(showResults || isGenerating) ? (
+                            <div>
+                                {/* Header */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <h2 style={{
+                                        fontSize: '20px',
+                                        fontWeight: 600,
+                                        marginBottom: '4px',
+                                        color: isDarkMode ? '#fff' : '#1a1a2e'
+                                    }}>
+                                        Generated Ads
+                                    </h2>
+                                    <p style={{
+                                        fontSize: '13px',
+                                        opacity: 0.6,
+                                        color: isDarkMode ? '#fff' : '#1a1a2e'
+                                    }}>
+                                        {generatedResults.filter(r => !r.isLoading).length} of {generatedResults.length} completed
+                                    </p>
+                                </div>
+
+                                {/* Horizontal Flex-Wrap Grid with All Cards - Sorted by Format */}
+                                <style>{`
+                                    @keyframes spin {
+                                        from { transform: rotate(0deg); }
+                                        to { transform: rotate(360deg); }
+                                    }
+                                    .spinner-icon {
+                                        animation: spin 1s linear infinite;
+                                    }
+                                    .card-image-wrapper:hover .card-hover-overlay {
+                                        opacity: 1 !important;
+                                    }
+                                `}</style>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: '16px',
+                                        alignItems: 'flex-start',
+                                    }}
+                                >
+                                    {/* Sort by format: story first, then square, portrait, landscape */}
+                                    {[...generatedResults]
+                                        .sort((a, b) => {
+                                            const formatOrder: Record<string, number> = {
+                                                'story': 0,
+                                                'square': 1,
+                                                'portrait': 2,
+                                                'landscape': 3,
+                                            };
+                                            return (formatOrder[a.format] ?? 99) - (formatOrder[b.format] ?? 99);
+                                        })
+                                        .map(result => {
+                                            const getCardWidth = (format: string) => {
+                                                switch (format) {
+                                                    case 'story': return '200px';
+                                                    case 'square': return '250px';
+                                                    case 'portrait': return '220px';
+                                                    case 'landscape': return '320px';
+                                                    default: return '250px';
+                                                }
+                                            };
+                                            const getAspectRatio = (format: string) => {
+                                                switch (format) {
+                                                    case 'story': return '9/16';
+                                                    case 'square': return '1/1';
+                                                    case 'portrait': return '4/5';
+                                                    case 'landscape': return '16/9';
+                                                    default: return '1/1';
+                                                }
+                                            };
+                                            const getAngleLabel = (angleId: string) => {
+                                                const angle = MARKETING_ANGLES.find(a => a.id === angleId);
+                                                return angle ? `${angle.icon} ${angle.label}` : angleId;
+                                            };
+
+                                            return (
+                                                <div
+                                                    key={result.id}
+                                                    style={{
+                                                        width: getCardWidth(result.format),
+                                                        background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#fff',
+                                                        borderRadius: '12px',
+                                                        overflow: 'hidden',
+                                                        border: '1px solid rgba(124, 77, 255, 0.2)',
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {/* Image Container */}
+                                                    <div
+                                                        style={{
+                                                            position: 'relative',
+                                                            aspectRatio: getAspectRatio(result.format),
+                                                            overflow: 'hidden',
+                                                            background: result.isLoading
+                                                                ? 'linear-gradient(135deg, rgba(124, 77, 255, 0.2) 0%, rgba(68, 138, 255, 0.2) 100%)'
+                                                                : '#1a1a2e',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        {result.isLoading ? (
+                                                            <div style={{ textAlign: 'center' }}>
+                                                                <Loader2
+                                                                    size={32}
+                                                                    className="spinner-icon"
+                                                                    style={{ color: '#7c4dff', marginBottom: '8px' }}
+                                                                />
+                                                                <div style={{
+                                                                    fontSize: '12px',
+                                                                    color: isDarkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
+                                                                }}>
+                                                                    Generating...
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="card-image-wrapper" style={{ position: 'relative', width: '100%', height: '100%' }}>
+                                                                <img
+                                                                    src={result.imageUrl}
+                                                                    alt={result.headline}
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        objectFit: 'cover',
+                                                                    }}
+                                                                />
+                                                                {/* Bottom text overlay with hover icons */}
+                                                                <div
+                                                                    style={{
+                                                                        position: 'absolute',
+                                                                        bottom: 0,
+                                                                        left: 0,
+                                                                        right: 0,
+                                                                        padding: '12px',
+                                                                        background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+                                                                    }}
+                                                                >
+                                                                    {/* Text content */}
+                                                                    <div style={{
+                                                                        fontSize: '14px',
+                                                                        fontWeight: 600,
+                                                                        color: '#fff',
+                                                                        marginBottom: '4px'
+                                                                    }}>
+                                                                        {result.headline}
+                                                                    </div>
+                                                                    <div style={{
+                                                                        fontSize: '11px',
+                                                                        color: 'rgba(255,255,255,0.7)',
+                                                                        marginBottom: '6px'
+                                                                    }}>
+                                                                        {result.subtext}
+                                                                    </div>
+
+                                                                    {/* CTA and Hover Icons Row */}
+                                                                    <div style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'space-between',
+                                                                    }}>
+                                                                        <div style={{
+                                                                            display: 'inline-block',
+                                                                            padding: '4px 10px',
+                                                                            background: '#7c4dff',
+                                                                            borderRadius: '4px',
+                                                                            fontSize: '10px',
+                                                                            fontWeight: 600,
+                                                                            color: '#fff',
+                                                                        }}>
+                                                                            {result.cta}
+                                                                        </div>
+
+                                                                        {/* Hover Icons - appear on hover */}
+                                                                        <div
+                                                                            className="card-hover-overlay"
+                                                                            style={{
+                                                                                display: 'flex',
+                                                                                gap: '8px',
+                                                                                opacity: 0,
+                                                                                transition: 'opacity 0.2s ease',
+                                                                            }}
+                                                                        >
+                                                                            {/* Eye Button - Preview */}
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setLightboxImage(result.imageUrl)}
+                                                                                style={{
+                                                                                    width: '32px',
+                                                                                    height: '32px',
+                                                                                    borderRadius: '50%',
+                                                                                    background: 'rgba(255, 255, 255, 0.2)',
+                                                                                    border: '1.5px solid rgba(255, 255, 255, 0.5)',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    justifyContent: 'center',
+                                                                                    cursor: 'pointer',
+                                                                                    transition: 'all 0.2s ease',
+                                                                                }}
+                                                                                onMouseEnter={(e) => {
+                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)';
+                                                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                                                }}
+                                                                                onMouseLeave={(e) => {
+                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                                                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                                                }}
+                                                                            >
+                                                                                <Eye size={16} color="#fff" />
+                                                                            </button>
+
+                                                                            {/* Download Button */}
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleDownloadImage(
+                                                                                    result.imageUrl,
+                                                                                    `${result.headline.replace(/[^a-zA-Z0-9]/g, '_')}_${result.id}.png`
+                                                                                )}
+                                                                                style={{
+                                                                                    width: '32px',
+                                                                                    height: '32px',
+                                                                                    borderRadius: '50%',
+                                                                                    background: 'rgba(255, 255, 255, 0.2)',
+                                                                                    border: '1.5px solid rgba(255, 255, 255, 0.5)',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    justifyContent: 'center',
+                                                                                    cursor: 'pointer',
+                                                                                    transition: 'all 0.2s ease',
+                                                                                }}
+                                                                                onMouseEnter={(e) => {
+                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)';
+                                                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                                                }}
+                                                                                onMouseLeave={(e) => {
+                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                                                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                                                }}
+                                                                            >
+                                                                                <Download size={16} color="#fff" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Angle Badge + Format */}
+                                                    <div
+                                                        style={{
+                                                            padding: '10px 12px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            borderTop: '1px solid rgba(124, 77, 255, 0.1)',
+                                                        }}
+                                                    >
+                                                        <span style={{
+                                                            fontSize: '11px',
+                                                            opacity: 0.7,
+                                                            color: isDarkMode ? '#fff' : '#1a1a2e'
+                                                        }}>
+                                                            {getAngleLabel(result.angle)}
+                                                        </span>
+                                                        <span style={{
+                                                            fontSize: '10px',
+                                                            padding: '2px 6px',
+                                                            background: 'rgba(124, 77, 255, 0.15)',
+                                                            borderRadius: '4px',
+                                                            color: '#7c4dff',
+                                                        }}>
+                                                            {result.format.toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            </div>
                         ) : analysisJson ? (
                             <AnalysisStage
                                 data={analysisJson}
@@ -419,10 +715,10 @@ const AdRecreationPage: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </div>
+            </div >
 
-            {/* BOTTOM BAR - Formats + Generate Button */}
-            <div
+            {/* BOTTOM BAR - User Info + Formats + Generate Button */}
+            < div
                 style={{
                     position: 'fixed',
                     bottom: 0,
@@ -439,35 +735,85 @@ const AdRecreationPage: React.FC = () => {
                     padding: '0 24px',
                     zIndex: 100,
                     backdropFilter: 'blur(10px)',
-                }}
+                }
+                }
             >
-                {/* Left: Format Selector */}
-                <FormatSelector
-                    selected={selectedFormats}
-                    onChange={handleFormatToggle}
-                    isDarkMode={isDarkMode}
-                    compact
-                />
+                {/* Left: User Info */}
+                < div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '200px' }}>
+                    {/* Avatar */}
+                    < div
+                        style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #7c4dff 0%, #448aff 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            color: '#fff',
+                        }}
+                    >
+                        {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div >
+                    {/* Name & Plan */}
+                    < div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                            {user?.name || user?.email?.split('@')[0] || 'User'}
+                        </span>
+                        <span style={{ fontSize: '11px', opacity: 0.6, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            👑 Pro Plan
+                        </span>
+                    </div >
+                    {/* Logout */}
+                    < button
+                        onClick={handleLogout}
+                        style={{
+                            marginLeft: '8px',
+                            padding: '6px 12px',
+                            background: 'rgba(255, 59, 48, 0.1)',
+                            border: '1px solid rgba(255, 59, 48, 0.3)',
+                            borderRadius: '6px',
+                            color: '#ff3b30',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Logout
+                    </button >
+                </div >
+
+                {/* Center-Right: Format Selector (shifted right with marginLeft) */}
+                < div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: '40px' }}>
+                    <FormatSelector
+                        selected={selectedFormats}
+                        onChange={handleFormatToggle}
+                        isDarkMode={isDarkMode}
+                        compact
+                    />
+                </div >
 
                 {/* Center: Status */}
-                <div style={{ flex: 1, textAlign: 'center' }}>
-                    {isGenerating ? (
-                        <span style={{ color: '#7c4dff', fontSize: '14px' }}>
-                            Generating {completedCount}/{totalExpected}...
-                        </span>
-                    ) : showResults ? (
-                        <span style={{ color: '#4caf50', fontSize: '14px' }}>
-                            Generation Complete
-                        </span>
-                    ) : (
-                        <span style={{ opacity: 0.6, fontSize: '14px' }}>
-                            {canGenerate ? 'Ready to generate' : 'Complete setup to generate'}
-                        </span>
-                    )}
-                </div>
+                < div style={{ flex: 1, textAlign: 'center' }}>
+                    {
+                        isGenerating ? (
+                            <span style={{ color: '#7c4dff', fontSize: '14px' }} >
+                                Generating {completedCount}/{totalExpected}...
+                            </span >
+                        ) : showResults ? (
+                            <span style={{ color: '#4caf50', fontSize: '14px' }}>
+                                Generation Complete
+                            </span>
+                        ) : (
+                            <span style={{ opacity: 0.6, fontSize: '14px' }}>
+                                {canGenerate ? 'Ready to generate' : 'Complete setup to generate'}
+                            </span>
+                        )}
+                </div >
 
                 {/* Right: Generate Button */}
-                <button
+                < button
                     onClick={handleGenerate}
                     disabled={!canGenerate || isGenerating}
                     style={{
@@ -488,18 +834,116 @@ const AdRecreationPage: React.FC = () => {
                         transition: 'all 0.2s ease',
                     }}
                 >
-                    {isGenerating ? (
-                        <>
-                            <Loader2 size={16} className="animate-spin" />
-                            Generating...
-                        </>
-                    ) : (
-                        <>
-                            ✨ Generate Ad
-                        </>
-                    )}
-                </button>
-            </div>
+                    {
+                        isGenerating ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                ✨ Generate Ad
+                            </>
+                        )}
+                </button >
+            </div >
+
+            {/* Lightbox Modal for Full-Size Image Preview */}
+            {
+                lightboxImage && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(0, 0, 0, 0.9)',
+                            zIndex: 1000,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '40px',
+                        }}
+                        onClick={() => setLightboxImage(null)}
+                    >
+                        {/* Close Button */}
+                        <button
+                            type="button"
+                            onClick={() => setLightboxImage(null)}
+                            style={{
+                                position: 'absolute',
+                                top: '20px',
+                                right: '20px',
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '50%',
+                                background: 'rgba(255, 255, 255, 0.15)',
+                                border: '2px solid rgba(255, 255, 255, 0.4)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                            }}
+                        >
+                            <X size={24} color="#fff" />
+                        </button>
+
+                        {/* Download Button in Lightbox */}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadImage(lightboxImage, `ad_image_${Date.now()}.png`);
+                            }}
+                            style={{
+                                position: 'absolute',
+                                top: '20px',
+                                right: '80px',
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '50%',
+                                background: 'rgba(255, 255, 255, 0.15)',
+                                border: '2px solid rgba(255, 255, 255, 0.4)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                            }}
+                        >
+                            <Download size={22} color="#fff" />
+                        </button>
+
+                        {/* Lightbox Image */}
+                        <img
+                            src={lightboxImage}
+                            alt="Full size preview"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                maxWidth: '90%',
+                                maxHeight: '90%',
+                                objectFit: 'contain',
+                                borderRadius: '12px',
+                                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+                            }}
+                        />
+                    </div>
+                )
+            }
         </>
     );
 };

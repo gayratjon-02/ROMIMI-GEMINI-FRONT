@@ -29,25 +29,12 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({
     selectedFormats,
     isDarkMode,
 }) => {
-    // Group results by angle
-    const getResultsByAngle = () => {
-        const grouped: Record<string, MockResult[]> = {};
-        const filteredResults = results.filter(
-            r => selectedAngles.includes(r.angle) && selectedFormats.includes(r.format)
-        );
+    // Filter results based on selected angles and formats
+    const filteredResults = results.filter(
+        r => selectedAngles.includes(r.angle) && selectedFormats.includes(r.format)
+    );
 
-        const resultsToShow = filteredResults.length > 0
-            ? filteredResults
-            : results.filter(r => selectedAngles.includes(r.angle));
-
-        resultsToShow.forEach(result => {
-            if (!grouped[result.angle]) {
-                grouped[result.angle] = [];
-            }
-            grouped[result.angle].push(result);
-        });
-        return grouped;
-    };
+    const resultsToShow = filteredResults.length > 0 ? filteredResults : results;
 
     const getAngleLabel = (angleId: string) => {
         const angle = angles.find(a => a.id === angleId);
@@ -64,6 +51,16 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({
         }
     };
 
+    const getCardWidth = (format: string) => {
+        switch (format) {
+            case 'story': return '200px';
+            case 'square': return '250px';
+            case 'portrait': return '220px';
+            case 'landscape': return '320px';
+            default: return '250px';
+        }
+    };
+
     // Download image function
     const handleDownload = async (result: MockResult) => {
         try {
@@ -71,16 +68,13 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({
             const fileName = `${result.headline.replace(/[^a-zA-Z0-9]/g, '_')}_${result.id}.png`;
 
             if (result.imageUrl.startsWith('data:')) {
-                // Base64 data URI - convert to blob
                 const response = await fetch(result.imageUrl);
                 blob = await response.blob();
             } else {
-                // Regular URL - fetch and convert to blob
                 const response = await fetch(result.imageUrl);
                 blob = await response.blob();
             }
 
-            // Create download link
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -108,59 +102,165 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({
         });
     };
 
-    const groupedResults = getResultsByAngle();
-
     return (
-        <div className={styles.resultsGallery}>
-            <div className={styles.resultsHeader}>
-                <h2 className={styles.resultsTitle}>Generated Ads</h2>
-                <p className={styles.resultsSubtitle}>
-                    {Object.keys(groupedResults).length} angles • {selectedFormats.length} formats
+        <div style={{ padding: '0' }}>
+            {/* Header */}
+            <div style={{ marginBottom: '20px' }}>
+                <h2 style={{
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    marginBottom: '4px',
+                    color: isDarkMode ? '#fff' : '#1a1a2e'
+                }}>
+                    Generated Ads
+                </h2>
+                <p style={{
+                    fontSize: '13px',
+                    opacity: 0.6,
+                    color: isDarkMode ? '#fff' : '#1a1a2e'
+                }}>
+                    {resultsToShow.length} variations • {selectedAngles.length} angles • {selectedFormats.length} formats
                 </p>
             </div>
 
-            {Object.entries(groupedResults).map(([angleId, angleResults]) => (
-                <div key={angleId} className={styles.angleGroup}>
-                    <h3 className={styles.angleGroupTitle}>
-                        {getAngleLabel(angleId)}
-                    </h3>
-                    <div className={styles.resultsGrid}>
-                        {angleResults.map(result => (
-                            <div key={result.id} className={styles.resultCard}>
-                                <div
-                                    className={styles.cardImage}
-                                    style={{ aspectRatio: getAspectRatio(result.format) }}
-                                >
-                                    <img src={result.imageUrl} alt={result.headline} />
-                                    <div className={styles.cardOverlay}>
-                                        <div className={styles.cardHeadline}>{result.headline}</div>
-                                        <div className={styles.cardSubtext}>{result.subtext}</div>
-                                        <div className={styles.cardCta}>{result.cta}</div>
-                                    </div>
+            {/* Horizontal Flex-Wrap Grid */}
+            <div
+                style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    alignItems: 'flex-start',
+                }}
+            >
+                {resultsToShow.map(result => (
+                    <div
+                        key={result.id}
+                        style={{
+                            width: getCardWidth(result.format),
+                            background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#fff',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1px solid rgba(124, 77, 255, 0.2)',
+                            flexShrink: 0,
+                        }}
+                    >
+                        {/* Image Container */}
+                        <div
+                            style={{
+                                position: 'relative',
+                                aspectRatio: getAspectRatio(result.format),
+                                overflow: 'hidden',
+                                background: '#1a1a2e',
+                            }}
+                        >
+                            <img
+                                src={result.imageUrl}
+                                alt={result.headline}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                }}
+                            />
+                            {/* Overlay with text */}
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    padding: '12px',
+                                    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
+                                }}
+                            >
+                                <div style={{
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    color: '#fff',
+                                    marginBottom: '4px'
+                                }}>
+                                    {result.headline}
                                 </div>
-                                <div className={styles.cardActions}>
-                                    <button
-                                        className={styles.actionButton}
-                                        type="button"
-                                        onClick={() => handleDownload(result)}
-                                    >
-                                        <Download size={14} />
-                                        Download
-                                    </button>
-                                    <button
-                                        className={styles.actionButton}
-                                        type="button"
-                                        onClick={() => handleCopyText(result)}
-                                    >
-                                        <Copy size={14} />
-                                        Copy Text
-                                    </button>
+                                <div style={{
+                                    fontSize: '11px',
+                                    color: 'rgba(255,255,255,0.7)',
+                                    marginBottom: '6px'
+                                }}>
+                                    {result.subtext}
+                                </div>
+                                <div style={{
+                                    display: 'inline-block',
+                                    padding: '4px 10px',
+                                    background: '#7c4dff',
+                                    borderRadius: '4px',
+                                    fontSize: '10px',
+                                    fontWeight: 600,
+                                    color: '#fff',
+                                }}>
+                                    {result.cta}
                                 </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Angle Badge + Actions */}
+                        <div
+                            style={{
+                                padding: '10px 12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderTop: '1px solid rgba(124, 77, 255, 0.1)',
+                            }}
+                        >
+                            <span style={{
+                                fontSize: '11px',
+                                opacity: 0.7,
+                                color: isDarkMode ? '#fff' : '#1a1a2e'
+                            }}>
+                                {getAngleLabel(result.angle)}
+                            </span>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => handleDownload(result)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '4px 8px',
+                                        background: 'rgba(124, 77, 255, 0.1)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        color: '#7c4dff',
+                                        fontSize: '11px',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <Download size={12} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleCopyText(result)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '4px 8px',
+                                        background: 'rgba(124, 77, 255, 0.1)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        color: '#7c4dff',
+                                        fontSize: '11px',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <Copy size={12} />
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
     );
 };
