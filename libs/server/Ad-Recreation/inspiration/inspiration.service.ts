@@ -38,7 +38,7 @@ export interface UploadResult {
  */
 export async function uploadInspirationImage(file: File): Promise<UploadResult> {
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file); // Backend FileInterceptor expects 'file', not 'image'
 
     // Note: axios automatically sets Content-Type with boundary for FormData
     const response = await axiosClient.post<AdConceptResponse>('/api/ad-concepts/analyze', formData);
