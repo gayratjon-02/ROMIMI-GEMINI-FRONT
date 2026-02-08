@@ -185,23 +185,48 @@ const AdRecreationPage: React.FC = () => {
             console.log('🖼️ Result Images:', resultImages);
             console.log('📝 Generated Copy:', generatedCopy);
 
+            // Map aspect ratio to format ID
+            const aspectRatioToFormat = (ratio: string): string => {
+                switch (ratio) {
+                    case '9:16': return 'story';
+                    case '1:1': return 'square';
+                    case '4:5': return 'portrait';
+                    case '16:9': return 'landscape';
+                    default: return selectedFormats[0];
+                }
+            };
+
             // Build results for display
             const newResults: MockResult[] = resultImages.map((img: any, index: number) => {
                 // Determine image source: URL, base64, or placeholder
                 let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
 
-                if (img.url) {
-                    imageUrl = img.url;
-                } else if (img.base64) {
-                    // Use base64 data URI
+                console.log(`🖼️ Processing image ${index}:`, {
+                    hasUrl: !!img.url,
+                    hasBase64: !!img.base64,
+                    base64Length: img.base64?.length || 0,
+                    url: img.url,
+                });
+
+                if (img.base64 && img.base64.length > 0) {
+                    // Prefer base64 data URI (more reliable)
                     const mimeType = img.mimeType || 'image/png';
                     imageUrl = `data:${mimeType};base64,${img.base64}`;
+                    console.log(`✅ Using base64 image (${(img.base64.length / 1024).toFixed(1)} KB)`);
+                } else if (img.url) {
+                    imageUrl = img.url;
+                    console.log(`✅ Using URL: ${img.url}`);
+                } else {
+                    console.warn(`⚠️ No image data for index ${index}, using placeholder`);
                 }
+
+                // Convert aspect ratio format to format ID
+                const formatId = aspectRatioToFormat(img.format) || selectedFormats[0];
 
                 return {
                     id: img.id || `gen-${index}`,
                     angle: img.angle || selectedAngles[0],
-                    format: img.format || selectedFormats[0],
+                    format: formatId,
                     imageUrl: imageUrl,
                     headline: generatedCopy.headline || 'Your Ad Headline',
                     cta: generatedCopy.cta || 'Shop Now',
