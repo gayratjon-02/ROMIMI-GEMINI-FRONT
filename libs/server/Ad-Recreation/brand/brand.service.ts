@@ -133,10 +133,10 @@ export async function createBrand(data: CreateBrandData): Promise<AdBrand> {
     const headers = getAuthHeaders();
 
     // Transform data: map website_url -> website and inject P0 defaults
+    // NOTE: Backend DTO does NOT accept 'description' - stripped out
     const payload = {
         name: data.name,
         website: data.website_url, // API expects 'website' not 'website_url'
-        description: data.description || '',
         industry: 'General', // P0 default - skipable advanced field
     };
 
