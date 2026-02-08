@@ -64,6 +64,50 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({
         }
     };
 
+    // Download image function
+    const handleDownload = async (result: MockResult) => {
+        try {
+            let blob: Blob;
+            const fileName = `${result.headline.replace(/[^a-zA-Z0-9]/g, '_')}_${result.id}.png`;
+
+            if (result.imageUrl.startsWith('data:')) {
+                // Base64 data URI - convert to blob
+                const response = await fetch(result.imageUrl);
+                blob = await response.blob();
+            } else {
+                // Regular URL - fetch and convert to blob
+                const response = await fetch(result.imageUrl);
+                blob = await response.blob();
+            }
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            console.log(`✅ Downloaded: ${fileName}`);
+        } catch (error) {
+            console.error('❌ Download failed:', error);
+            alert('Download failed. Please try again.');
+        }
+    };
+
+    // Copy text function
+    const handleCopyText = (result: MockResult) => {
+        const text = `${result.headline}\n${result.subtext}\n${result.cta}`;
+        navigator.clipboard.writeText(text).then(() => {
+            console.log('✅ Text copied to clipboard');
+            alert('Ad copy copied to clipboard!');
+        }).catch(err => {
+            console.error('❌ Copy failed:', err);
+        });
+    };
+
     const groupedResults = getResultsByAngle();
 
     return (
@@ -95,11 +139,19 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({
                                     </div>
                                 </div>
                                 <div className={styles.cardActions}>
-                                    <button className={styles.actionButton} type="button">
+                                    <button
+                                        className={styles.actionButton}
+                                        type="button"
+                                        onClick={() => handleDownload(result)}
+                                    >
                                         <Download size={14} />
                                         Download
                                     </button>
-                                    <button className={styles.actionButton} type="button">
+                                    <button
+                                        className={styles.actionButton}
+                                        type="button"
+                                        onClick={() => handleCopyText(result)}
+                                    >
                                         <Copy size={14} />
                                         Copy Text
                                     </button>
