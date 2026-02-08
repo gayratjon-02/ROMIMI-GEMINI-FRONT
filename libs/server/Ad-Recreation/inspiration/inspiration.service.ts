@@ -1,7 +1,6 @@
 // libs/server/Ad-Recreation/inspiration/inspiration.service.ts
 // Service layer for Ad Recreation Inspiration Upload API
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
+import axiosClient from '@/libs/server/axios-client';
 
 export interface AdConceptAnalysis {
     id: string;
@@ -38,38 +37,21 @@ export interface UploadResult {
  * @throws Error if upload fails
  */
 export async function uploadInspirationImage(file: File): Promise<UploadResult> {
-    try {
-        const formData = new FormData();
-        formData.append('image', file);
+    const formData = new FormData();
+    formData.append('image', file);
 
-        const response = await fetch(`${API_BASE_URL}/api/ad-concepts/analyze`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include', // Include cookies for auth if needed
-            // Note: Don't set Content-Type header - browser will set it with boundary for FormData
-        });
+    // Note: axios automatically sets Content-Type with boundary for FormData
+    const response = await axiosClient.post<AdConceptResponse>('/api/ad-concepts/analyze', formData);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Upload failed: ${response.status} ${response.statusText}`, errorText);
-            throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
-        }
-
-        const data: AdConceptResponse = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.message || 'Analysis failed');
-        }
-
-        return {
-            conceptId: data.data.id,
-            analysisJson: data.data.analysis_json,
-            imageUrl: data.data.image_url,
-        };
-    } catch (error) {
-        console.error('Error uploading inspiration image:', error);
-        throw error;
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Analysis failed');
     }
+
+    return {
+        conceptId: response.data.data.id,
+        analysisJson: response.data.data.analysis_json,
+        imageUrl: response.data.data.image_url,
+    };
 }
 
 /**
@@ -79,21 +61,8 @@ export async function uploadInspirationImage(file: File): Promise<UploadResult> 
  */
 export async function fetchConceptById(conceptId: string): Promise<AdConceptAnalysis | null> {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/ad-concepts/${conceptId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-        });
-
-        if (!response.ok) {
-            console.error(`Failed to fetch concept ${conceptId}: ${response.status}`);
-            return null;
-        }
-
-        const data = await response.json();
-        return data.data || null;
+        const response = await axiosClient.get<{ data: AdConceptAnalysis }>(`/api/ad-concepts/${conceptId}`);
+        return response.data.data || null;
     } catch (error) {
         console.error(`Error fetching concept ${conceptId}:`, error);
         return null;
