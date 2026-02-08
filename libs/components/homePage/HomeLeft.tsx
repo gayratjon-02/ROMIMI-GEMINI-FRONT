@@ -113,6 +113,15 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
     setUserInfo(info);
   }, []);
 
+  // Sync activeMenu with current pathname
+  useEffect(() => {
+    if (router.pathname.startsWith('/ad-recreation')) {
+      setActiveMenu('ad-recreation');
+    } else if (router.pathname === '/' || router.pathname.startsWith('/product')) {
+      setActiveMenu('product-visuals');
+    }
+  }, [router.pathname]);
+
   useEffect(() => {
     const fetchBrands = async () => {
       try {

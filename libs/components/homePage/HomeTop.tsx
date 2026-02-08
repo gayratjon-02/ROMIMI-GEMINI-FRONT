@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { useTheme } from "@mui/material";
 import FolderIcon from '@mui/icons-material/Folder';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -22,12 +23,17 @@ interface HomeTopProps {
 }
 
 const HomeTop: React.FC<HomeTopProps> = ({ selectedBrand, selectedCollection, onCollectionSelect }) => {
+    const router = useRouter();
     const theme = useTheme();
     const colorMode = useContext(ColorModeContext);
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [collections, setCollections] = useState<Collection[]>([]);
     const [isLoadingCollections, setIsLoadingCollections] = useState(false);
+
+    // Determine active tab based on current path
+    const isAdRecreationActive = router.pathname.startsWith('/ad-recreation');
+    const isProductVisualsActive = !isAdRecreationActive;
 
     // Fetch collections when brand changes
     useEffect(() => {
@@ -64,8 +70,18 @@ const HomeTop: React.FC<HomeTopProps> = ({ selectedBrand, selectedCollection, on
             <div className={styles.leftSection}>
                 {/* Tab Group */}
                 <div className={styles.tabGroup}>
-                    <button className={`${styles.tab} ${styles.active}`}>Product Visuals</button>
-                    <button className={styles.tab}>Ad Recreation</button>
+                    <button
+                        className={`${styles.tab} ${isProductVisualsActive ? styles.active : ''}`}
+                        onClick={() => router.push('/')}
+                    >
+                        Product Visuals
+                    </button>
+                    <button
+                        className={`${styles.tab} ${isAdRecreationActive ? styles.active : ''}`}
+                        onClick={() => router.push('/ad-recreation')}
+                    >
+                        Ad Recreation
+                    </button>
                 </div>
 
                 {/* Selected Collection Display - Only show if collection is selected */}
