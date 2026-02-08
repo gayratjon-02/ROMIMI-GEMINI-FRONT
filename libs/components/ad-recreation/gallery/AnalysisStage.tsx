@@ -33,6 +33,8 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({
     // Extract key info for summary cards
     const layout = data?.layout || {};
     const visualStyle = data?.visual_style || {};
+    const contentPattern = data?.content_pattern || {};
+    const background = visualStyle.background || {};
 
     const handleSave = async () => {
         // Validate JSON before saving
@@ -85,7 +87,7 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({
 
             {/* Full width content */}
             <div className={styles.analysisContentFull}>
-                {/* Quick Summary Cards */}
+                {/* Quick Summary Cards - Row 1: Layout & Visual */}
                 <div className={styles.summaryCards}>
                     <div className={styles.summaryCard}>
                         <span className={styles.cardLabel}>Layout</span>
@@ -102,11 +104,39 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({
                     <div className={styles.summaryCard}>
                         <span className={styles.cardLabel}>Background</span>
                         <span className={styles.cardValue}>
-                            <span
-                                className={styles.colorSwatch}
-                                style={{ backgroundColor: visualStyle.background_hex || '#000' }}
-                            />
-                            {visualStyle.background_hex || '—'}
+                            {background.hex && (
+                                <span
+                                    className={styles.colorSwatch}
+                                    style={{ backgroundColor: background.hex }}
+                                />
+                            )}
+                            {background.type || '—'}
+                        </span>
+                    </div>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Overlay</span>
+                        <span className={styles.cardValue}>{visualStyle.overlay || 'none'}</span>
+                    </div>
+                </div>
+
+                {/* Quick Summary Cards - Row 2: Content Pattern */}
+                <div className={styles.summaryCards}>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Hook</span>
+                        <span className={styles.cardValue}>{contentPattern.hook_type || '—'}</span>
+                    </div>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Narrative</span>
+                        <span className={styles.cardValue}>{contentPattern.narrative_structure || '—'}</span>
+                    </div>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>CTA Style</span>
+                        <span className={styles.cardValue}>{contentPattern.cta_style || '—'}</span>
+                    </div>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Product Image</span>
+                        <span className={styles.cardValue}>
+                            {contentPattern.requires_product_image ? 'Yes' : 'No'}
                         </span>
                     </div>
                 </div>

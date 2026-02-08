@@ -2,19 +2,45 @@
 // Service layer for Ad Recreation Inspiration Upload API
 import axiosClient from '@/libs/server/axios-client';
 
+export interface ConceptZone {
+    id: string;
+    y_start: number;
+    y_end: number;
+    content_type: 'headline' | 'body' | 'cta_button' | 'image' | 'logo' | 'ui_element';
+    typography_style: string;
+    description: string;
+}
+
+export interface VisualBackground {
+    type: 'solid_color' | 'image' | 'gradient';
+    hex: string | null;
+}
+
+export interface ContentPattern {
+    hook_type: string;
+    narrative_structure: string;
+    cta_style: string;
+    requires_product_image: boolean;
+}
+
+export interface AnalysisJson {
+    layout: {
+        type: string;
+        format: string;
+        zones: ConceptZone[];
+    };
+    visual_style: {
+        mood: string;
+        background: VisualBackground;
+        overlay: string;
+    };
+    content_pattern: ContentPattern;
+    [key: string]: any;
+}
+
 export interface AdConceptAnalysis {
     id: string;
-    analysis_json: {
-        layout?: {
-            headline?: { position: string; text?: string; style?: string };
-            image?: { position: string; type?: string; description?: string };
-            cta?: { position: string; text?: string; style?: string };
-        };
-        colors?: string[];
-        mood?: string;
-        style?: string;
-        [key: string]: any;
-    };
+    analysis_json: AnalysisJson;
     image_url: string;
     original_image_url?: string;
 }
@@ -27,7 +53,7 @@ export interface AdConceptResponse {
 
 export interface UploadResult {
     conceptId: string;
-    analysisJson: any;
+    analysisJson: AnalysisJson;
     imageUrl: string;
 }
 
