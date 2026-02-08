@@ -985,11 +985,27 @@
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 16px;
   }
+
+  .bottomActionBar {
+    padding: 12px 20px;
+    height: 72px;
+
+    .userSection {
+      .userInfo {
+        display: none;
+      }
+    }
+
+    .statusSection {
+      flex: 1;
+    }
+  }
 }
 
 @media (max-width: 768px) {
   .pageWrapper {
     flex-direction: column;
+    padding-bottom: 72px;
   }
 
   .sidebar {
@@ -1006,6 +1022,7 @@
 
   .contentArea {
     padding: 16px;
+    padding-bottom: 88px;
   }
 
   .angleGrid {
@@ -1014,5 +1031,235 @@
 
   .resultsGrid {
     grid-template-columns: 1fr;
+  }
+
+  .bottomActionBar {
+    height: 64px;
+    padding: 10px 16px;
+
+    .userSection {
+      display: none;
+    }
+
+    .statusSection {
+      display: none;
+    }
+
+    .generateButtonLarge {
+      padding: 12px 24px;
+      font-size: 14px;
+    }
+  }
+}
+
+// ============================================
+// BOTTOM ACTION BAR
+// ============================================
+.bottomActionBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  z-index: 50;
+  gap: 24px;
+
+  &.light {
+    background: rgba(255, 255, 255, 0.9);
+    border-top: 1px solid #e5e7eb;
+  }
+}
+
+// User Profile Section
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+}
+
+.userAvatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+
+  .light & {
+    color: #111827;
+  }
+}
+
+.userPlan {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  svg {
+    color: #f59e0b;
+  }
+
+  .light & {
+    color: #6b7280;
+  }
+}
+
+// Status Section
+.statusSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0.8;
+}
+
+.statusText {
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinnerSmall {
+  animation: spin 1s linear infinite;
+}
+
+.progressBar {
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+
+  .light & {
+    background: #e5e7eb;
+  }
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+// Action Section
+.actionSection {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 180px;
+}
+
+.generateButtonLarge {
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.5);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  &.loading {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    cursor: wait;
+  }
+}
+
+// ============================================
+// SIDEBAR LOGOUT BUTTON
+// ============================================
+.logoutButton {
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  margin-top: auto;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  .light & {
+    border-color: #e5e7eb;
+    color: #6b7280;
+
+    &:hover {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #dc2626;
+    }
   }
 }
