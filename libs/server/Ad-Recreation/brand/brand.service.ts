@@ -78,3 +78,42 @@ export async function fetchAdBrandById(brandId: string): Promise<AdBrand | null>
         return null;
     }
 }
+
+/**
+ * Interface for creating a new brand
+ */
+export interface CreateBrandData {
+    name: string;
+    website_url: string;
+    description?: string;
+}
+
+/**
+ * Creates a new brand.
+ * @param data - Brand creation data
+ * @returns Promise<AdBrand> - The created brand
+ * @throws Error if creation fails
+ */
+export async function createBrand(data: CreateBrandData): Promise<AdBrand> {
+    const response = await fetch(`${API_BASE_URL}/api/ad-brands`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to create brand: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+        throw new Error(result.message || 'Failed to create brand');
+    }
+
+    return result.brand;
+}

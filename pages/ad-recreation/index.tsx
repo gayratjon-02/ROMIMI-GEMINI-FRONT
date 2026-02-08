@@ -161,7 +161,6 @@ const AdRecreationPage: React.FC = () => {
                         <BrandSelect
                             selectedBrandId={selectedBrandId}
                             onSelect={setSelectedBrandId}
-                            onCreateBrand={() => router.push('/ad-recreation/brand/create')}
                             isDarkMode={isDarkMode}
                         />
 
