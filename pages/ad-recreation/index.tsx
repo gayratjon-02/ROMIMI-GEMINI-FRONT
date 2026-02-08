@@ -9,6 +9,7 @@ import { LogOut } from 'lucide-react';
 import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
 import { logout, getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
+import { generateAdVariations } from '@/libs/server/Ad-Recreation/generation/generation.service';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 // Sidebar Components
@@ -78,6 +79,7 @@ const AdRecreationPage: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Load user info on mount
     useEffect(() => {
@@ -114,10 +116,44 @@ const AdRecreationPage: React.FC = () => {
     };
 
     const handleGenerate = async () => {
+        setErrorMessage(null);
+
+        // ============================================
+        // VALIDATION
+        // ============================================
+        if (!selectedBrandId) {
+            setErrorMessage('Please select a brand first');
+            console.warn('⚠️ Please select a brand first');
+            return;
+        }
+        if (!conceptId) {
+            setErrorMessage('Please upload and analyze an inspiration image');
+            console.warn('⚠️ Please upload and analyze an inspiration image');
+            return;
+        }
+        if (!productDetails.trim()) {
+            setErrorMessage('Please enter product details');
+            console.warn('⚠️ Please enter product details');
+            return;
+        }
+        if (selectedAngles.length === 0) {
+            setErrorMessage('Please select at least one marketing angle');
+            console.warn('⚠️ Please select at least one marketing angle');
+            return;
+        }
+        if (selectedFormats.length === 0) {
+            setErrorMessage('Please select at least one format');
+            console.warn('⚠️ Please select at least one format');
+            return;
+        }
+
+        // ============================================
+        // EXECUTION
+        // ============================================
         setIsGenerating(true);
         setGenerationProgress(0);
 
-        // Simulate progress
+        // Simulate progress while waiting
         const progressInterval = setInterval(() => {
             setGenerationProgress(prev => {
                 if (prev >= 90) return prev;
@@ -125,13 +161,33 @@ const AdRecreationPage: React.FC = () => {
             });
         }, 400);
 
-        // TODO: Call real API
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        try {
+            // Get format label (aspect ratio)
+            const selectedFormat = MOCK_FORMATS.find(f => selectedFormats.includes(f.id));
+            const aspectRatio = selectedFormat?.label || '9:16';
 
-        clearInterval(progressInterval);
-        setGenerationProgress(100);
-        setIsGenerating(false);
-        setShowResults(true);
+            // Call real API
+            const result = await generateAdVariations({
+                brand_id: selectedBrandId,
+                concept_id: conceptId,
+                product_description: productDetails,
+                marketing_angle: selectedAngles[0], // Primary angle
+                aspect_ratio: aspectRatio,
+            });
+
+            console.log('✅ Generation started:', result);
+
+            clearInterval(progressInterval);
+            setGenerationProgress(100);
+            setShowResults(true);
+        } catch (error: any) {
+            console.error('❌ Generation failed:', error);
+            setErrorMessage(error.message || 'Generation failed. Please try again.');
+            clearInterval(progressInterval);
+            setGenerationProgress(0);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const handleLogout = () => {
