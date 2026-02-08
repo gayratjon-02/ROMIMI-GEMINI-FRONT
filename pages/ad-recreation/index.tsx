@@ -9,7 +9,7 @@ import { withAuth } from "@/libs/components/auth/withAuth";
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 // Sidebar Components
-import BrandSelect, { Brand } from '@/libs/components/ad-recreation/sidebar/BrandSelect';
+import BrandSelect from '@/libs/components/ad-recreation/sidebar/BrandSelect';
 import ModeToggle from '@/libs/components/ad-recreation/sidebar/ModeToggle';
 import AdUploader from '@/libs/components/ad-recreation/sidebar/AdUploader';
 import ConceptJson from '@/libs/components/ad-recreation/sidebar/ConceptJson';
@@ -25,12 +25,6 @@ import ResultsGrid, { MockResult } from '@/libs/components/ad-recreation/gallery
 // ============================================
 // MOCK DATA CONSTANTS
 // ============================================
-const MOCK_BRANDS: Brand[] = [
-    { id: 'nike', name: 'Nike', logo: '🏃' },
-    { id: 'adidas', name: 'Adidas', logo: '⚽' },
-    { id: 'puma', name: 'Puma', logo: '🐆' },
-    { id: 'apple', name: 'Apple', logo: '🍎' },
-];
 
 const MOCK_ANGLES: Angle[] = [
     { id: 'problem_solution', label: 'Problem / Solution', desc: 'Solve a pain point', icon: '💡' },
@@ -72,7 +66,7 @@ const AdRecreationPage: React.FC = () => {
     // ============================================
     // STATE (The Controller's Responsibility)
     // ============================================
-    const [selectedBrand, setSelectedBrand] = useState<Brand>(MOCK_BRANDS[0]);
+    const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
     const [activeMode, setActiveMode] = useState<'single' | 'batch'>('single');
     const [uploadedFile, setUploadedFile] = useState<string | null>(null);
     const [productDetails, setProductDetails] = useState('');
@@ -125,9 +119,8 @@ const AdRecreationPage: React.FC = () => {
             <div className={`${styles.sidebar} ${lightClass}`}>
                 <div className={styles.sidebarContent}>
                     <BrandSelect
-                        brands={MOCK_BRANDS}
-                        selectedBrand={selectedBrand}
-                        onSelect={setSelectedBrand}
+                        selectedBrandId={selectedBrandId}
+                        onSelect={setSelectedBrandId}
                         isDarkMode={isDarkMode}
                     />
 
