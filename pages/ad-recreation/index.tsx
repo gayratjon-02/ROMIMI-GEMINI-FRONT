@@ -20,7 +20,6 @@ import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 import BrandSelect from '@/libs/components/ad-recreation/sidebar/BrandSelect';
 import ModeToggle from '@/libs/components/ad-recreation/sidebar/ModeToggle';
 import AdUploader from '@/libs/components/ad-recreation/sidebar/AdUploader';
-import ProductForm from '@/libs/components/ad-recreation/sidebar/ProductForm';
 import AngleSelector, { MARKETING_ANGLES } from '@/libs/components/ad-recreation/sidebar/AngleSelector';
 import FormatSelector, { OUTPUT_FORMATS } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
 
@@ -56,7 +55,6 @@ const AdRecreationPage: React.FC = () => {
     const [analysisJson, setAnalysisJson] = useState<any>(null);
     const [inspirationImageUrl, setInspirationImageUrl] = useState<string | null>(null);
 
-    const [productDetails, setProductDetails] = useState('');
     const [selectedAngles, setSelectedAngles] = useState<string[]>([]);
     const [selectedFormats, setSelectedFormats] = useState<string[]>(['story']);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -193,10 +191,6 @@ const AdRecreationPage: React.FC = () => {
             setErrorMessage('Please upload an inspiration ad first');
             return;
         }
-        if (!productDetails.trim()) {
-            setErrorMessage('Please enter product details');
-            return;
-        }
         if (selectedAngles.length === 0) {
             setErrorMessage('Please select at least one marketing angle');
             return;
@@ -232,7 +226,6 @@ const AdRecreationPage: React.FC = () => {
                     const payload = {
                         brand_id: selectedBrandId,
                         concept_id: conceptId,
-                        product_input: productDetails,
                         marketing_angle_id: angleId,
                         format_id: formatId,
                     };
@@ -349,13 +342,7 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                         />
 
-                        <ProductForm
-                            value={productDetails}
-                            onChange={setProductDetails}
-                            isDarkMode={isDarkMode}
-                        />
-
-                        {/* New Dropdown AngleSelector */}
+                        {/* Angle Selector */}
                         <AngleSelector
                             selected={selectedAngles}
                             onChange={handleAngleToggle}

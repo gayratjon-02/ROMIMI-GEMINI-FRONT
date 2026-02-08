@@ -8,18 +8,16 @@ import axiosClient from '@/libs/server/axios-client';
 
 /**
  * Backend DTO Structure (from generate-ad.dto.ts):
- * - brand_id: UUID (required)
+ * - brand_id: UUID (required) - product data is auto-fetched from brand
  * - concept_id: UUID (required)
  * - marketing_angle_id: string (required) - e.g., "social_proof"
  * - format_id: string (required) - e.g., "story"
- * - product_input: string (required, max 2000 chars)
  */
 export interface GenerationPayload {
-    brand_id: string;           // UUID
+    brand_id: string;           // UUID - product data auto-fetched on backend
     concept_id: string;         // UUID
     marketing_angle_id: string; // e.g., "problem_solution", "social_proof"
     format_id: string;          // e.g., "story", "square", "portrait"
-    product_input: string;      // max 2000 characters
 }
 
 export interface AdCopyResult {
@@ -47,7 +45,6 @@ export interface GenerationResult {
     concept_id?: string;
     marketing_angle_id?: string;
     format_id?: string;
-    product_input?: string;
     generated_copy?: AdCopyResult;
     result_images?: ResultImage[];
     created_at?: string;
