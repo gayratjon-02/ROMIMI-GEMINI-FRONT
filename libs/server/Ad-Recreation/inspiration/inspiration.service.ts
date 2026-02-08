@@ -20,7 +20,12 @@ export interface AdConceptAnalysis {
 
 export interface AdConceptResponse {
     success: boolean;
-    data: AdConceptAnalysis;
+    data?: AdConceptAnalysis;
+    // Sometimes backend returns flat structure
+    id?: string;
+    analysis_json?: any;
+    image_url?: string;
+    original_image_url?: string;
     message?: string;
 }
 
@@ -38,19 +43,34 @@ export interface UploadResult {
  */
 export async function uploadInspirationImage(file: File): Promise<UploadResult> {
     const formData = new FormData();
-    formData.append('file', file); // Backend FileInterceptor expects 'file', not 'image'
+    formData.append('file', file); // Backend FileInterceptor expects 'file'
 
     // Note: axios automatically sets Content-Type with boundary for FormData
     const response = await axiosClient.post<AdConceptResponse>('/api/ad-concepts/analyze', formData);
 
-    if (!response.data.success) {
-        throw new Error(response.data.message || 'Analysis failed');
+    // Debug: Log full response to understand structure
+    console.log('UPLOAD RESPONSE:', JSON.stringify(response.data, null, 2));
+
+    // Handle both nested (data.data) and flat (data) response structures
+    const result = response.data.data || response.data;
+
+    // Validate response structure
+    if (!result || !result.id) {
+        console.error('Invalid API response structure:', response.data);
+        throw new Error('Invalid API response structure - missing id');
     }
 
+    // Extract fields with fallbacks for different naming conventions
+    const conceptId = result.id;
+    const analysisJson = result.analysis_json || result.analysis || {};
+    const imageUrl = result.image_url || result.original_image_url || result.url || '';
+
+    console.log('Parsed concept:', { conceptId, analysisJson, imageUrl });
+
     return {
-        conceptId: response.data.data.id,
-        analysisJson: response.data.data.analysis_json,
-        imageUrl: response.data.data.image_url,
+        conceptId,
+        analysisJson,
+        imageUrl,
     };
 }
 
@@ -61,8 +81,11 @@ export async function uploadInspirationImage(file: File): Promise<UploadResult> 
  */
 export async function fetchConceptById(conceptId: string): Promise<AdConceptAnalysis | null> {
     try {
-        const response = await axiosClient.get<{ data: AdConceptAnalysis }>(`/api/ad-concepts/${conceptId}`);
-        return response.data.data || null;
+        const response = await axiosClient.get<{ data?: AdConceptAnalysis } & AdConceptAnalysis>(`/api/ad-concepts/${conceptId}`);
+
+        // Handle both nested and flat response
+        const result = response.data.data || response.data;
+        return result || null;
     } catch (error) {
         console.error(`Error fetching concept ${conceptId}:`, error);
         return null;
