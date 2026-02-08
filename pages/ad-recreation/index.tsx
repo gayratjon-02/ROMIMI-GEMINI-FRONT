@@ -15,7 +15,7 @@ import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 import BrandSelect from '@/libs/components/ad-recreation/sidebar/BrandSelect';
 import ModeToggle from '@/libs/components/ad-recreation/sidebar/ModeToggle';
 import AdUploader from '@/libs/components/ad-recreation/sidebar/AdUploader';
-import ConceptJson from '@/libs/components/ad-recreation/sidebar/ConceptJson';
+import ConceptViewer from '@/libs/components/ad-recreation/sidebar/ConceptViewer';
 import ProductForm from '@/libs/components/ad-recreation/sidebar/ProductForm';
 import AngleSelector, { Angle } from '@/libs/components/ad-recreation/sidebar/AngleSelector';
 import FormatSelector, { Format } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
@@ -175,9 +175,8 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                         />
 
-                        <ConceptJson
-                            conceptData={analysisJson || {}}
-                            isVisible={!!analysisJson}
+                        <ConceptViewer
+                            conceptData={analysisJson}
                             isDarkMode={isDarkMode}
                         />
 
