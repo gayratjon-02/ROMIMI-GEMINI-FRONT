@@ -1,14 +1,10 @@
 // libs/components/ad-recreation/layout/BottomActionBar.tsx
-import React from 'react';
-import { Sparkles, Loader2, User, Crown } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Sparkles, Loader2, Crown } from 'lucide-react';
+import { getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 interface BottomActionBarProps {
-    // User Profile
-    userName?: string;
-    userPlan?: string;
-    userAvatar?: string;
-
     // Status
     status: 'ready' | 'processing' | 'complete' | 'error';
     statusMessage?: string;
@@ -23,9 +19,6 @@ interface BottomActionBarProps {
 }
 
 const BottomActionBar: React.FC<BottomActionBarProps> = ({
-    userName = 'User',
-    userPlan = 'Pro Plan',
-    userAvatar,
     status,
     statusMessage,
     progress = 0,
@@ -34,6 +27,19 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
     onGenerate,
     isDarkMode,
 }) => {
+    const [user, setUser] = useState<UserInfo | null>(null);
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+    // Load user info on mount
+    useEffect(() => {
+        const loadUser = () => {
+            const userInfo = getUserInfo();
+            setUser(userInfo);
+            setIsLoadingUser(false);
+        };
+        loadUser();
+    }, []);
+
     const getStatusText = () => {
         switch (status) {
             case 'processing':
@@ -65,24 +71,46 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
         return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     };
 
+    // Get display name (first name or email prefix)
+    const getDisplayName = (): string => {
+        if (user?.name) return user.name;
+        if (user?.email) return user.email.split('@')[0];
+        return 'User';
+    };
+
     return (
         <div className={`${styles.bottomActionBar} ${!isDarkMode ? styles.light : ''}`}>
             {/* Left: User Profile */}
             <div className={styles.userSection}>
-                <div className={styles.userAvatar}>
-                    {userAvatar ? (
-                        <img src={userAvatar} alt={userName} />
-                    ) : (
-                        <span>{getInitials(userName)}</span>
-                    )}
-                </div>
-                <div className={styles.userInfo}>
-                    <span className={styles.userName}>{userName}</span>
-                    <span className={styles.userPlan}>
-                        <Crown size={12} />
-                        {userPlan}
-                    </span>
-                </div>
+                {isLoadingUser ? (
+                    // Skeleton loader for user section
+                    <>
+                        <div className={`${styles.userAvatar} ${styles.skeleton}`}>
+                            <div className={styles.skeletonPulse} />
+                        </div>
+                        <div className={styles.userInfo}>
+                            <span className={`${styles.userName} ${styles.skeleton}`} style={{ width: 80, height: 14 }}>
+                                <span className={styles.skeletonPulse} />
+                            </span>
+                            <span className={`${styles.userPlan} ${styles.skeleton}`} style={{ width: 60, height: 12 }}>
+                                <span className={styles.skeletonPulse} />
+                            </span>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className={styles.userAvatar}>
+                            <span>{getInitials(getDisplayName())}</span>
+                        </div>
+                        <div className={styles.userInfo}>
+                            <span className={styles.userName}>{getDisplayName()}</span>
+                            <span className={styles.userPlan}>
+                                <Crown size={12} />
+                                Pro Plan
+                            </span>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Center: Status Indicator */}

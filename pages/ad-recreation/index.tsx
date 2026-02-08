@@ -3,10 +3,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/router';
 import { useTheme } from "@mui/material";
 import { LogOut } from 'lucide-react';
 import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
+import { logout } from '@/libs/server/HomePage/signup';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 // Sidebar Components
@@ -54,6 +56,7 @@ const MOCK_RESULTS: MockResult[] = [
 // MAIN PAGE CONTROLLER
 // ============================================
 const AdRecreationPage: React.FC = () => {
+    const router = useRouter();
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
 
@@ -125,8 +128,8 @@ const AdRecreationPage: React.FC = () => {
     };
 
     const handleLogout = () => {
-        // TODO: Implement logout logic
-        console.log('Logout clicked');
+        logout();
+        router.push('/signup');
     };
 
     const canGenerate = conceptId && selectedAngles.length > 0 && selectedFormats.length > 0;
@@ -227,8 +230,6 @@ const AdRecreationPage: React.FC = () => {
 
             {/* BOTTOM ACTION BAR - Fixed at bottom */}
             <BottomActionBar
-                userName="John Doe"
-                userPlan="Pro Plan"
                 status={getStatus()}
                 statusMessage={isGenerating ? 'Generating your ad...' : undefined}
                 progress={generationProgress}
