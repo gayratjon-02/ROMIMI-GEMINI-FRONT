@@ -29,6 +29,17 @@ export interface AdCopyResult {
     image_prompt: string;
 }
 
+export interface ResultImage {
+    id: string;
+    url?: string;
+    base64?: string;
+    mimeType?: string;
+    format: string;
+    angle: string;
+    variation_index: number;
+    generated_at: string;
+}
+
 export interface GenerationResult {
     id: string;
     status: string;
@@ -37,8 +48,8 @@ export interface GenerationResult {
     marketing_angle_id?: string;
     format_id?: string;
     product_input?: string;
-    ad_copy?: AdCopyResult;
-    image_url?: string;
+    generated_copy?: AdCopyResult;
+    result_images?: ResultImage[];
     created_at?: string;
 }
 
@@ -58,16 +69,19 @@ export interface GenerationResponse {
  * 
  * The backend will:
  * 1. Fetch the brand and concept from DB
- * 2. Call Claude AI with the combined data
- * 3. Generate ad copy (headline, subheadline, cta, image_prompt)
- * 4. Save the generation to DB
+ * 2. Call Gemini AI for text generation (headline, subheadline, cta, image_prompt)
+ * 3. Call Gemini AI for image generation
+ * 4. Save the generation to DB with result_images
  * 
  * @param payload - Generation configuration matching backend DTO
- * @returns Promise<GenerationResponse['generation']>
+ * @returns Promise<GenerationResult>
  * @throws Error if generation fails
  */
 export async function generateAdVariations(payload: GenerationPayload): Promise<GenerationResult> {
-    console.log('📤 Sending generation request:', payload);
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📤 SENDING GENERATION REQUEST');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('Payload:', JSON.stringify(payload, null, 2));
 
     try {
         const response = await axiosClient.post<GenerationResponse>(
@@ -75,18 +89,37 @@ export async function generateAdVariations(payload: GenerationPayload): Promise<
             payload
         );
 
-        console.log('✅ Generation created:', response.data.generation.id);
-        console.log('📝 Ad Copy:', response.data.ad_copy);
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('📥 RECEIVED RESPONSE');
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('Status:', response.status);
+        console.log('Generation ID:', response.data.generation?.id);
+        console.log('Generation Status:', response.data.generation?.status);
+        console.log('Ad Copy:', JSON.stringify(response.data.ad_copy, null, 2));
+        console.log('Result Images Count:', response.data.generation?.result_images?.length || 0);
+
+        if (response.data.generation?.result_images?.length) {
+            response.data.generation.result_images.forEach((img, idx) => {
+                console.log(`  Image ${idx + 1}:`);
+                console.log(`    - ID: ${img.id}`);
+                console.log(`    - URL: ${img.url || 'N/A'}`);
+                console.log(`    - Has Base64: ${img.base64 ? 'Yes (' + (img.base64.length / 1024).toFixed(1) + ' KB)' : 'No'}`);
+            });
+        }
+        console.log('═══════════════════════════════════════════════════════════\n');
 
         return response.data.generation;
     } catch (error: any) {
         // ============================================
         // ENHANCED ERROR LOGGING
         // ============================================
-        console.error('❌ Generation API Error:');
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ GENERATION API ERROR');
+        console.error('═══════════════════════════════════════════════════════════');
         console.error('Status:', error.response?.status);
         console.error('Validation errors:', error.response?.data?.message);
-        console.error('Full response:', error.response?.data);
+        console.error('Full response:', JSON.stringify(error.response?.data, null, 2));
+        console.error('═══════════════════════════════════════════════════════════\n');
 
         // Format error message
         const errorMessage = Array.isArray(error.response?.data?.message)
@@ -115,7 +148,7 @@ export async function renderAdImage(generationId: string): Promise<GenerationRes
             generation: GenerationResult;
         }>(`/api/ad-generations/${generationId}/render`);
 
-        console.log('✅ Image rendered:', response.data.generation.image_url);
+        console.log('✅ Image rendered:', response.data.generation.result_images?.[0]?.url);
         return response.data.generation;
     } catch (error: any) {
         console.error('❌ Render API Error:', error.response?.data);

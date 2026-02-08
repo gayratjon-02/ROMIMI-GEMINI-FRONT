@@ -9,7 +9,7 @@ import { LogOut } from 'lucide-react';
 import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
 import { logout, getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
-import { generateAdVariations } from '@/libs/server/Ad-Recreation/generation/generation.service';
+import { generateAdVariations, GenerationResult, AdCopyResult } from '@/libs/server/Ad-Recreation/generation/generation.service';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 // Sidebar Components
@@ -46,13 +46,6 @@ const MOCK_FORMATS: Format[] = [
     { id: 'landscape', label: '16:9', name: 'Landscape', width: 1920, height: 1080 },
 ];
 
-const MOCK_RESULTS: MockResult[] = [
-    { id: '1', angle: 'problem_solution', format: 'story', imageUrl: 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Nike+Air+Zoom', headline: 'STOP SETTLING FOR HEAVY SHOES', cta: 'RUN FASTER NOW', subtext: 'Feel the difference with 40% lighter soles' },
-    { id: '2', angle: 'social_proof', format: 'story', imageUrl: 'https://placehold.co/1080x1920/1a2e1a/FFF?text=5+Star+Reviews', headline: 'TRUSTED BY 10M+ RUNNERS', cta: 'JOIN THE MOVEMENT', subtext: '★★★★★ 4.9/5 from verified buyers' },
-    { id: '3', angle: 'fomo', format: 'square', imageUrl: 'https://placehold.co/1080x1080/2e1a1a/FFF?text=Limited+Edition', headline: 'ONLY 48 HOURS LEFT', cta: 'GRAB YOURS NOW', subtext: '73% already sold out' },
-    { id: '4', angle: 'minimalist', format: 'portrait', imageUrl: 'https://placehold.co/1080x1350/0a0a14/FFF?text=Air+Zoom', headline: 'AIR ZOOM', cta: 'DISCOVER', subtext: 'Precision engineered for speed' },
-];
-
 // ============================================
 // MAIN PAGE CONTROLLER
 // ============================================
@@ -81,6 +74,9 @@ const AdRecreationPage: React.FC = () => {
     const [generationProgress, setGenerationProgress] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    // NEW: Real generation results
+    const [generatedResults, setGeneratedResults] = useState<MockResult[]>([]);
+
     // Load user info on mount
     useEffect(() => {
         const userInfo = getUserInfo();
@@ -102,7 +98,7 @@ const AdRecreationPage: React.FC = () => {
     const handleAngleToggle = (angleId: string) => {
         setSelectedAngles(prev =>
             prev.includes(angleId)
-                ? prev.filter(id => id !== angleId)
+                ? prev.filter(a => a !== angleId)
                 : [...prev, angleId]
         );
     };
@@ -110,25 +106,28 @@ const AdRecreationPage: React.FC = () => {
     const handleFormatToggle = (formatId: string) => {
         setSelectedFormats(prev =>
             prev.includes(formatId)
-                ? prev.filter(id => id !== formatId)
+                ? prev.filter(f => f !== formatId)
                 : [...prev, formatId]
         );
     };
 
     const handleGenerate = async () => {
+        console.log('🚀 ========== GENERATE AD CLICKED ==========');
+
+        // Clear previous error
         setErrorMessage(null);
 
         // ============================================
         // VALIDATION
         // ============================================
         if (!selectedBrandId) {
-            setErrorMessage('Please select a brand first');
-            console.warn('⚠️ Please select a brand first');
+            setErrorMessage('Please select a brand');
+            console.warn('⚠️ Please select a brand');
             return;
         }
         if (!conceptId) {
-            setErrorMessage('Please upload and analyze an inspiration image');
-            console.warn('⚠️ Please upload and analyze an inspiration image');
+            setErrorMessage('Please upload an inspiration ad first');
+            console.warn('⚠️ Please upload an inspiration ad first');
             return;
         }
         if (!productDetails.trim()) {
@@ -152,6 +151,7 @@ const AdRecreationPage: React.FC = () => {
         // ============================================
         setIsGenerating(true);
         setGenerationProgress(0);
+        setGeneratedResults([]);
 
         // Simulate progress while waiting
         const progressInterval = setInterval(() => {
@@ -162,21 +162,69 @@ const AdRecreationPage: React.FC = () => {
         }, 400);
 
         try {
-            // Get format label (aspect ratio)
-            const selectedFormat = MOCK_FORMATS.find(f => selectedFormats.includes(f.id));
-            const aspectRatio = selectedFormat?.label || '9:16';
-
-            // Call real API with correct DTO keys
-            const result = await generateAdVariations({
+            // Build payload
+            const payload = {
                 brand_id: selectedBrandId,
                 concept_id: conceptId,
-                product_input: productDetails,              // NOT product_description
-                marketing_angle_id: selectedAngles[0],      // NOT marketing_angle
-                format_id: selectedFormats[0],              // NOT aspect_ratio
+                product_input: productDetails,
+                marketing_angle_id: selectedAngles[0],
+                format_id: selectedFormats[0],
+            };
+
+            console.log('📤 SENDING PAYLOAD:', JSON.stringify(payload, null, 2));
+
+            // Call real API
+            const result = await generateAdVariations(payload);
+
+            console.log('📥 RECEIVED RESPONSE:', JSON.stringify(result, null, 2));
+
+            // Parse result into MockResult format for ResultsGrid
+            const resultImages = (result as any).result_images || [];
+            const generatedCopy = (result as any).generated_copy || {};
+
+            console.log('🖼️ Result Images:', resultImages);
+            console.log('📝 Generated Copy:', generatedCopy);
+
+            // Build results for display
+            const newResults: MockResult[] = resultImages.map((img: any, index: number) => {
+                // Determine image source: URL, base64, or placeholder
+                let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
+
+                if (img.url) {
+                    imageUrl = img.url;
+                } else if (img.base64) {
+                    // Use base64 data URI
+                    const mimeType = img.mimeType || 'image/png';
+                    imageUrl = `data:${mimeType};base64,${img.base64}`;
+                }
+
+                return {
+                    id: img.id || `gen-${index}`,
+                    angle: img.angle || selectedAngles[0],
+                    format: img.format || selectedFormats[0],
+                    imageUrl: imageUrl,
+                    headline: generatedCopy.headline || 'Your Ad Headline',
+                    cta: generatedCopy.cta || 'Shop Now',
+                    subtext: generatedCopy.subheadline || 'Generated ad copy',
+                };
             });
 
-            console.log('✅ Generation started:', result);
+            // If no images were returned, still show the copy
+            if (newResults.length === 0 && generatedCopy.headline) {
+                newResults.push({
+                    id: result.id || 'gen-1',
+                    angle: selectedAngles[0],
+                    format: selectedFormats[0],
+                    imageUrl: 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Copy+Generated',
+                    headline: generatedCopy.headline,
+                    cta: generatedCopy.cta || 'Shop Now',
+                    subtext: generatedCopy.subheadline,
+                });
+            }
 
+            console.log('✅ Processed Results:', newResults);
+
+            setGeneratedResults(newResults);
             clearInterval(progressInterval);
             setGenerationProgress(100);
             setShowResults(true);
@@ -258,9 +306,24 @@ const AdRecreationPage: React.FC = () => {
                     <HomeTop />
 
                     <div className={`${styles.contentArea} ${lightClass}`} style={{ paddingBottom: 100 }}>
+                        {/* Error Message Display */}
+                        {errorMessage && (
+                            <div style={{
+                                background: 'rgba(255, 59, 48, 0.1)',
+                                border: '1px solid rgba(255, 59, 48, 0.3)',
+                                borderRadius: '8px',
+                                padding: '12px 16px',
+                                marginBottom: '16px',
+                                color: '#FF3B30',
+                                fontSize: '14px',
+                            }}>
+                                ❌ {errorMessage}
+                            </div>
+                        )}
+
                         {showResults ? (
                             <ResultsGrid
-                                results={MOCK_RESULTS}
+                                results={generatedResults.length > 0 ? generatedResults : []}
                                 angles={MOCK_ANGLES}
                                 selectedAngles={selectedAngles}
                                 selectedFormats={selectedFormats}
