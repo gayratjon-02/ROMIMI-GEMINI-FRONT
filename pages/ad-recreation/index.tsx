@@ -166,13 +166,13 @@ const AdRecreationPage: React.FC = () => {
             const selectedFormat = MOCK_FORMATS.find(f => selectedFormats.includes(f.id));
             const aspectRatio = selectedFormat?.label || '9:16';
 
-            // Call real API
+            // Call real API with correct DTO keys
             const result = await generateAdVariations({
                 brand_id: selectedBrandId,
                 concept_id: conceptId,
-                product_description: productDetails,
-                marketing_angle: selectedAngles[0], // Primary angle
-                aspect_ratio: aspectRatio,
+                product_input: productDetails,              // NOT product_description
+                marketing_angle_id: selectedAngles[0],      // NOT marketing_angle
+                format_id: selectedFormats[0],              // NOT aspect_ratio
             });
 
             console.log('✅ Generation started:', result);
