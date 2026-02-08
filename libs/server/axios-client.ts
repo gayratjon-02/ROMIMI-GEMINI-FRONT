@@ -12,6 +12,7 @@ const axiosClient = axios.create({
 
 /**
  * Request Interceptor: Automatically attach Bearer token to every request
+ * and handle Content-Type for FormData vs JSON
  */
 axiosClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
@@ -28,6 +29,18 @@ axiosClient.interceptors.request.use(
                 config.headers.Authorization = `Bearer ${token}`;
             }
         }
+
+        // Smart Content-Type handling
+        // If sending FormData, DELETE Content-Type to let browser set it with boundary
+        // Otherwise, ensure JSON Content-Type for regular payloads
+        if (config.data instanceof FormData) {
+            // Delete Content-Type to allow browser to auto-generate multipart boundary
+            delete config.headers['Content-Type'];
+        } else if (config.data && typeof config.data === 'object') {
+            // Explicitly set JSON for object payloads
+            config.headers['Content-Type'] = 'application/json';
+        }
+
         return config;
     },
     (error) => {
