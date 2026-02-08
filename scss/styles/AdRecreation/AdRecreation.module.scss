@@ -1976,26 +1976,24 @@
   background: #1e1e1e;
 
   // VS Code-like syntax colors
-  :global {
-    .key {
-      color: #9cdcfe;
-    }
+  :global(.key) {
+    color: #9cdcfe;
+  }
 
-    .string {
-      color: #ce9178;
-    }
+  :global(.string) {
+    color: #ce9178;
+  }
 
-    .number {
-      color: #b5cea8;
-    }
+  :global(.number) {
+    color: #b5cea8;
+  }
 
-    .boolean {
-      color: #569cd6;
-    }
+  :global(.boolean) {
+    color: #569cd6;
+  }
 
-    .null {
-      color: #569cd6;
-    }
+  :global(.null) {
+    color: #569cd6;
   }
 
   &::-webkit-scrollbar {
@@ -2070,26 +2068,24 @@
     background: #fff;
     color: #374151;
 
-    :global {
-      .key {
-        color: #4338ca;
-      }
+    :global(.key) {
+      color: #4338ca;
+    }
 
-      .string {
-        color: #b91c1c;
-      }
+    :global(.string) {
+      color: #b91c1c;
+    }
 
-      .number {
-        color: #15803d;
-      }
+    :global(.number) {
+      color: #15803d;
+    }
 
-      .boolean {
-        color: #1d4ed8;
-      }
+    :global(.boolean) {
+      color: #1d4ed8;
+    }
 
-      .null {
-        color: #1d4ed8;
-      }
+    :global(.null) {
+      color: #1d4ed8;
     }
 
     &::-webkit-scrollbar-track {
