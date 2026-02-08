@@ -213,7 +213,8 @@ const AdRecreationPage: React.FC = () => {
                         ) : analysisJson ? (
                             <AnalysisStage
                                 data={analysisJson}
-                                imageUrl={inspirationImageUrl || undefined}
+                                conceptId={conceptId || undefined}
+                                onUpdate={setAnalysisJson}
                                 isDarkMode={isDarkMode}
                             />
                         ) : (

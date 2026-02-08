@@ -74,3 +74,24 @@ export async function fetchConceptById(conceptId: string): Promise<AdConceptAnal
         return null;
     }
 }
+
+/**
+ * Updates the analysis JSON for an existing concept.
+ * @param conceptId - The concept ID to update
+ * @param analysisJson - The new analysis JSON object
+ * @returns Promise<AdConceptAnalysis>
+ * @throws Error if update fails
+ */
+export async function updateConceptAnalysis(conceptId: string, analysisJson: object): Promise<AdConceptAnalysis> {
+    const response = await axiosClient.patch<{ success: boolean; message: string; concept: AdConceptAnalysis }>(
+        `/api/ad-concepts/${conceptId}`,
+        { analysis_json: analysisJson }
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Update failed');
+    }
+
+    console.log('Concept updated:', response.data.concept.id);
+    return response.data.concept;
+}

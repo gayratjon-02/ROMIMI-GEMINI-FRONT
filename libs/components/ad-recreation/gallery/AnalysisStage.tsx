@@ -1,49 +1,77 @@
 // libs/components/ad-recreation/gallery/AnalysisStage.tsx
-// Displays the analysis result in a VS Code-like editor style
-import React from 'react';
-import { CheckCircle2, Copy, Check } from 'lucide-react';
+// Displays and allows editing of the analysis result
+import React, { useState, useEffect } from 'react';
+import { CheckCircle2, Save, Loader2, AlertCircle } from 'lucide-react';
+import { updateConceptAnalysis } from '@/libs/server/Ad-Recreation/inspiration/inspiration.service';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 interface AnalysisStageProps {
     data: any;
-    imageUrl?: string;
+    conceptId?: string;
+    onUpdate?: (newData: any) => void;
     isDarkMode?: boolean;
 }
 
-// Syntax highlight JSON for display
-const syntaxHighlight = (json: any): string => {
-    if (!json) return '';
-    const str = typeof json === 'string' ? json : JSON.stringify(json, null, 2);
-    return str
-        .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
-            let cls = 'number';
-            if (/^"/.test(match)) {
-                if (/:$/.test(match)) {
-                    cls = 'key';
-                } else {
-                    cls = 'string';
-                }
-            } else if (/true|false/.test(match)) {
-                cls = 'boolean';
-            } else if (/null/.test(match)) {
-                cls = 'null';
-            }
-            return `<span class="${cls}">${match}</span>`;
-        });
-};
+const AnalysisStage: React.FC<AnalysisStageProps> = ({
+    data,
+    conceptId,
+    onUpdate,
+    isDarkMode = true
+}) => {
+    const [editedJson, setEditedJson] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
 
-const AnalysisStage: React.FC<AnalysisStageProps> = ({ data, imageUrl, isDarkMode = true }) => {
-    const [copied, setCopied] = React.useState(false);
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+    // Initialize with formatted JSON
+    useEffect(() => {
+        if (data) {
+            setEditedJson(JSON.stringify(data, null, 2));
+        }
+    }, [data]);
 
     // Extract key info for summary cards
     const layout = data?.layout || {};
     const visualStyle = data?.visual_style || {};
+
+    const handleSave = async () => {
+        // Validate JSON before saving
+        let parsedJson: object;
+        try {
+            parsedJson = JSON.parse(editedJson);
+        } catch {
+            setErrorMessage('Invalid JSON format. Please check your syntax.');
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+            return;
+        }
+
+        if (!conceptId) {
+            setErrorMessage('Cannot save: missing concept ID');
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+            return;
+        }
+
+        setIsSaving(true);
+        setErrorMessage('');
+
+        try {
+            const updated = await updateConceptAnalysis(conceptId, parsedJson);
+            setSaveStatus('success');
+            if (onUpdate) {
+                onUpdate(updated.analysis_json || parsedJson);
+            }
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (err: any) {
+            console.error('Save failed:', err);
+            setErrorMessage(err.message || 'Failed to save changes');
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <div className={styles.analysisStage}>
@@ -55,62 +83,82 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({ data, imageUrl, isDarkMod
                 </div>
             </div>
 
-            {/* Two column layout */}
-            <div className={styles.analysisContent}>
-                {/* Left: Image Preview */}
-                {imageUrl && (
-                    <div className={styles.previewColumn}>
-                        <div className={styles.previewCard}>
-                            <div className={styles.previewLabel}>Inspiration Image</div>
-                            <img src={imageUrl} alt="Uploaded ad" className={styles.previewImage} />
-                        </div>
+            {/* Full width content */}
+            <div className={styles.analysisContentFull}>
+                {/* Quick Summary Cards */}
+                <div className={styles.summaryCards}>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Layout</span>
+                        <span className={styles.cardValue}>{layout.type || 'Unknown'}</span>
                     </div>
-                )}
-
-                {/* Right: Analysis Data */}
-                <div className={styles.dataColumn}>
-                    {/* Quick Summary Cards */}
-                    <div className={styles.summaryCards}>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.cardLabel}>Layout</span>
-                            <span className={styles.cardValue}>{layout.type || 'Unknown'}</span>
-                        </div>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.cardLabel}>Format</span>
-                            <span className={styles.cardValue}>{layout.format || '—'}</span>
-                        </div>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.cardLabel}>Mood</span>
-                            <span className={styles.cardValue}>{visualStyle.mood || '—'}</span>
-                        </div>
-                        <div className={styles.summaryCard}>
-                            <span className={styles.cardLabel}>Background</span>
-                            <span className={styles.cardValue}>
-                                <span
-                                    className={styles.colorSwatch}
-                                    style={{ backgroundColor: visualStyle.background_hex || '#000' }}
-                                />
-                                {visualStyle.background_hex || '—'}
-                            </span>
-                        </div>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Format</span>
+                        <span className={styles.cardValue}>{layout.format || '—'}</span>
                     </div>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Mood</span>
+                        <span className={styles.cardValue}>{visualStyle.mood || '—'}</span>
+                    </div>
+                    <div className={styles.summaryCard}>
+                        <span className={styles.cardLabel}>Background</span>
+                        <span className={styles.cardValue}>
+                            <span
+                                className={styles.colorSwatch}
+                                style={{ backgroundColor: visualStyle.background_hex || '#000' }}
+                            />
+                            {visualStyle.background_hex || '—'}
+                        </span>
+                    </div>
+                </div>
 
-                    {/* Code Editor Style JSON */}
-                    <div className={styles.codeEditor}>
-                        <div className={styles.editorHeader}>
-                            <div className={styles.editorTabs}>
-                                <span className={styles.tabActive}>analysis.json</span>
-                            </div>
-                            <button onClick={handleCopy} className={styles.copyButton}>
-                                {copied ? <Check size={14} /> : <Copy size={14} />}
-                                {copied ? 'Copied!' : 'Copy'}
+                {/* Code Editor Style JSON */}
+                <div className={styles.codeEditor}>
+                    <div className={styles.editorHeader}>
+                        <div className={styles.editorTabs}>
+                            <span className={styles.tabActive}>analysis.json</span>
+                            <span className={styles.editBadge}>✎ Editable</span>
+                        </div>
+
+                        <div className={styles.headerActions}>
+                            {saveStatus === 'error' && (
+                                <span className={styles.errorText}>
+                                    <AlertCircle size={14} />
+                                    {errorMessage}
+                                </span>
+                            )}
+                            {saveStatus === 'success' && (
+                                <span className={styles.successText}>
+                                    <CheckCircle2 size={14} />
+                                    Saved!
+                                </span>
+                            )}
+                            <button
+                                onClick={handleSave}
+                                className={styles.saveButton}
+                                disabled={isSaving || !conceptId}
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <Loader2 size={14} className={styles.spinner} />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={14} />
+                                        Save Changes
+                                    </>
+                                )}
                             </button>
                         </div>
-                        <pre
-                            className={styles.editorBody}
-                            dangerouslySetInnerHTML={{ __html: syntaxHighlight(data) }}
-                        />
                     </div>
+
+                    <textarea
+                        className={styles.editorTextarea}
+                        value={editedJson}
+                        onChange={(e) => setEditedJson(e.target.value)}
+                        spellCheck={false}
+                        placeholder="{ }"
+                    />
                 </div>
             </div>
         </div>
