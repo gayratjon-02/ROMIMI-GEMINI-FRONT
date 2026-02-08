@@ -40,14 +40,7 @@ const MOCK_FORMATS: Format[] = [
     { id: 'landscape', label: '16:9', name: 'Landscape', width: 1920, height: 1080 },
 ];
 
-const MOCK_CONCEPT_JSON = {
-    zones: {
-        headline: { position: 'top', text: 'STOP SETTLING FOR HEAVY SHOES', style: 'bold_uppercase', color: '#FFFFFF' },
-        image: { position: 'center', type: 'product_hero', subject: 'Nike Air Zoom running shoe', background: 'gradient_dark' },
-        cta: { position: 'bottom', text: 'RUN FASTER NOW', style: 'button_primary', color: '#FF5722' }
-    },
-    style: { palette: ['#1a1a1a', '#ffffff', '#ff5722'], mood: 'energetic', typography: 'modern_sans' }
-};
+
 
 const MOCK_RESULTS: MockResult[] = [
     { id: '1', angle: 'problem_solution', format: 'story', imageUrl: 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Nike+Air+Zoom', headline: 'STOP SETTLING FOR HEAVY SHOES', cta: 'RUN FASTER NOW', subtext: 'Feel the difference with 40% lighter soles' },
@@ -68,7 +61,12 @@ const AdRecreationPage: React.FC = () => {
     // ============================================
     const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
     const [activeMode, setActiveMode] = useState<'single' | 'batch'>('single');
-    const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+
+    // Inspiration/Concept state
+    const [conceptId, setConceptId] = useState<string | null>(null);
+    const [analysisJson, setAnalysisJson] = useState<any>(null);
+    const [inspirationImageUrl, setInspirationImageUrl] = useState<string | null>(null);
+
     const [productDetails, setProductDetails] = useState('');
     const [selectedAngles, setSelectedAngles] = useState<string[]>([]);
     const [selectedFormats, setSelectedFormats] = useState<string[]>(['story']);
@@ -78,9 +76,13 @@ const AdRecreationPage: React.FC = () => {
     // ============================================
     // HANDLERS (Business Logic)
     // ============================================
-    const handleUpload = () => {
-        // TODO: Implement real file upload
-        setUploadedFile('nike_ad_story.jpg');
+
+    // Called when inspiration image is successfully uploaded and analyzed
+    const handleUploadSuccess = (data: { conceptId: string; analysisJson: any; imageUrl: string }) => {
+        setConceptId(data.conceptId);
+        setAnalysisJson(data.analysisJson);
+        setInspirationImageUrl(data.imageUrl);
+        console.log('Concept analyzed:', data.conceptId);
     };
 
     const handleAngleToggle = (angleId: string) => {
@@ -107,7 +109,7 @@ const AdRecreationPage: React.FC = () => {
         setShowResults(true);
     };
 
-    const canGenerate = uploadedFile && selectedAngles.length > 0 && selectedFormats.length > 0;
+    const canGenerate = conceptId && selectedAngles.length > 0 && selectedFormats.length > 0;
     const lightClass = !isDarkMode ? styles.light : '';
 
     // ============================================
@@ -131,14 +133,13 @@ const AdRecreationPage: React.FC = () => {
                     />
 
                     <AdUploader
-                        uploadedFile={uploadedFile}
-                        onUpload={handleUpload}
+                        onUploadSuccess={handleUploadSuccess}
                         isDarkMode={isDarkMode}
                     />
 
                     <ConceptJson
-                        conceptData={MOCK_CONCEPT_JSON}
-                        isVisible={!!uploadedFile}
+                        conceptData={analysisJson || {}}
+                        isVisible={!!analysisJson}
                         isDarkMode={isDarkMode}
                     />
 
