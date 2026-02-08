@@ -2,13 +2,13 @@
 // Controller Pattern: State management only, UI delegated to components
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useTheme } from "@mui/material";
 import { LogOut } from 'lucide-react';
 import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
-import { logout } from '@/libs/server/HomePage/signup';
+import { logout, getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 // Sidebar Components
@@ -63,6 +63,7 @@ const AdRecreationPage: React.FC = () => {
     // ============================================
     // STATE (The Controller's Responsibility)
     // ============================================
+    const [user, setUser] = useState<UserInfo | null>(null);
     const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
     const [activeMode, setActiveMode] = useState<'single' | 'batch'>('single');
 
@@ -77,6 +78,12 @@ const AdRecreationPage: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
+
+    // Load user info on mount
+    useEffect(() => {
+        const userInfo = getUserInfo();
+        setUser(userInfo);
+    }, []);
 
     // ============================================
     // HANDLERS (Business Logic)
@@ -195,16 +202,26 @@ const AdRecreationPage: React.FC = () => {
                         />
                     </div>
 
-                    {/* Sidebar Footer with Logout */}
+                    {/* Sidebar Footer with User Profile */}
                     <div className={styles.sidebarFooter}>
-                        <button
-                            className={styles.logoutButton}
-                            onClick={handleLogout}
-                            type="button"
-                        >
-                            <LogOut size={16} />
-                            Sign Out
-                        </button>
+                        <div className={styles.userProfileCard}>
+                            <div className={styles.userProfileAvatar}>
+                                <span>{user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}</span>
+                            </div>
+                            <div className={styles.userProfileInfo}>
+                                <span className={styles.userProfileName}>
+                                    {user?.name || user?.email?.split('@')[0] || 'User'}
+                                </span>
+                                <span className={styles.userProfilePlan}>Pro Plan</span>
+                            </div>
+                            <button
+                                className={styles.logoutBtnSmall}
+                                onClick={handleLogout}
+                                type="button"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
 
