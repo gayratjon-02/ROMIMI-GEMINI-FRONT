@@ -201,28 +201,6 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                         />
                     </div>
-
-                    {/* Sidebar Footer with User Profile */}
-                    <div className={styles.sidebarFooter}>
-                        <div className={styles.userProfileCard}>
-                            <div className={styles.userProfileAvatar}>
-                                <span>{user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}</span>
-                            </div>
-                            <div className={styles.userProfileInfo}>
-                                <span className={styles.userProfileName}>
-                                    {user?.name || user?.email?.split('@')[0] || 'User'}
-                                </span>
-                                <span className={styles.userProfilePlan}>Pro Plan</span>
-                            </div>
-                            <button
-                                className={styles.logoutBtnSmall}
-                                onClick={handleLogout}
-                                type="button"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 {/* MAIN AREA - Results Zone */}
@@ -253,6 +231,7 @@ const AdRecreationPage: React.FC = () => {
                 isGenerating={isGenerating}
                 canGenerate={!!canGenerate}
                 onGenerate={handleGenerate}
+                onLogout={handleLogout}
                 isDarkMode={isDarkMode}
             />
         </>

@@ -14,6 +14,7 @@ interface BottomActionBarProps {
     isGenerating: boolean;
     canGenerate: boolean;
     onGenerate: () => void;
+    onLogout: () => void;
 
     isDarkMode: boolean;
 }
@@ -25,6 +26,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
     isGenerating,
     canGenerate,
     onGenerate,
+    onLogout,
     isDarkMode,
 }) => {
     const [user, setUser] = useState<UserInfo | null>(null);
@@ -80,7 +82,7 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
 
     return (
         <div className={`${styles.bottomActionBar} ${!isDarkMode ? styles.light : ''}`}>
-            {/* Left: User Profile */}
+            {/* Left: User Profile with Logout */}
             <div className={styles.userSection}>
                 {isLoadingUser ? (
                     // Skeleton loader for user section
@@ -109,6 +111,13 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
                                 Pro Plan
                             </span>
                         </div>
+                        <button
+                            className={styles.logoutBtnSmall}
+                            onClick={onLogout}
+                            type="button"
+                        >
+                            Logout
+                        </button>
                     </>
                 )}
             </div>
