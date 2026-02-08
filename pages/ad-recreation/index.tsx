@@ -15,7 +15,6 @@ import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 import BrandSelect from '@/libs/components/ad-recreation/sidebar/BrandSelect';
 import ModeToggle from '@/libs/components/ad-recreation/sidebar/ModeToggle';
 import AdUploader from '@/libs/components/ad-recreation/sidebar/AdUploader';
-import ConceptViewer from '@/libs/components/ad-recreation/sidebar/ConceptViewer';
 import ProductForm from '@/libs/components/ad-recreation/sidebar/ProductForm';
 import AngleSelector, { Angle } from '@/libs/components/ad-recreation/sidebar/AngleSelector';
 import FormatSelector, { Format } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
@@ -25,6 +24,7 @@ import BottomActionBar from '@/libs/components/ad-recreation/layout/BottomAction
 
 // Gallery Components
 import EmptyState from '@/libs/components/ad-recreation/gallery/EmptyState';
+import AnalysisStage from '@/libs/components/ad-recreation/gallery/AnalysisStage';
 import ResultsGrid, { MockResult } from '@/libs/components/ad-recreation/gallery/ResultsGrid';
 
 // ============================================
@@ -175,11 +175,6 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                         />
 
-                        <ConceptViewer
-                            conceptData={analysisJson}
-                            isDarkMode={isDarkMode}
-                        />
-
                         <ProductForm
                             value={productDetails}
                             onChange={setProductDetails}
@@ -207,9 +202,7 @@ const AdRecreationPage: React.FC = () => {
                     <HomeTop />
 
                     <div className={`${styles.contentArea} ${lightClass}`} style={{ paddingBottom: 100 }}>
-                        {!showResults ? (
-                            <EmptyState isDarkMode={isDarkMode} />
-                        ) : (
+                        {showResults ? (
                             <ResultsGrid
                                 results={MOCK_RESULTS}
                                 angles={MOCK_ANGLES}
@@ -217,6 +210,14 @@ const AdRecreationPage: React.FC = () => {
                                 selectedFormats={selectedFormats}
                                 isDarkMode={isDarkMode}
                             />
+                        ) : analysisJson ? (
+                            <AnalysisStage
+                                data={analysisJson}
+                                imageUrl={inspirationImageUrl || undefined}
+                                isDarkMode={isDarkMode}
+                            />
+                        ) : (
+                            <EmptyState isDarkMode={isDarkMode} />
                         )}
                     </div>
                 </div>
