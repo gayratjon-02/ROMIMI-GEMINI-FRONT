@@ -99,16 +99,19 @@ export async function createBrand(data: CreateBrandData): Promise<AdBrand> {
 }
 
 /**
- * Brand Playbook JSON structure
+ * Brand Playbook JSON structure (enhanced)
  */
 export interface BrandPlaybookJson {
     brand_name: string;
     website: string;
+    industry?: string;
     brand_colors: {
         primary: string;
         secondary: string;
         background: string;
+        accent?: string;
         text_dark: string;
+        text_light?: string;
     };
     typography: {
         headline: string;
@@ -118,26 +121,43 @@ export interface BrandPlaybookJson {
     target_audience: {
         gender: string;
         age_range: string;
+        personas?: string[];
+    };
+    compliance?: {
+        region: string;
+        rules: string[];
+    };
+    usp_offers?: {
+        key_benefits: string[];
+        current_offer: string;
     };
 }
 
 /**
- * Response from analyze endpoint
+ * Response from analyze endpoint (only playbook, no brand created)
  */
-interface AnalyzeBrandResponse {
+interface AnalyzeOnlyResponse {
     success: boolean;
     message: string;
-    brand_id: string;
-    brand_name: string;
     playbook: BrandPlaybookJson;
 }
 
 /**
- * Analyzes brand assets and creates a brand in one step.
- * @param data - Brand data with either file or text_content
- * @returns Promise with brand_id and playbook JSON
+ * Response from confirm endpoint (brand is created)
  */
-export async function analyzeAndCreateBrand(data: AnalyzeBrandData): Promise<AnalyzeBrandResponse> {
+interface ConfirmBrandResponse {
+    success: boolean;
+    message: string;
+    brand: AdBrand;
+}
+
+/**
+ * Analyzes brand assets WITHOUT creating the brand.
+ * Returns playbook JSON for user to review/edit.
+ * @param data - Brand data with either file or text_content
+ * @returns Promise with analyzed playbook JSON
+ */
+export async function analyzeBrandOnly(data: AnalyzeBrandData): Promise<AnalyzeOnlyResponse> {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('website', data.website);
@@ -149,7 +169,7 @@ export async function analyzeAndCreateBrand(data: AnalyzeBrandData): Promise<Ana
         formData.append('text_content', data.text_content);
     }
 
-    const response = await axiosClient.post<AnalyzeBrandResponse>('/api/ad-brands/analyze', formData);
+    const response = await axiosClient.post<AnalyzeOnlyResponse>('/api/ad-brands/analyze', formData);
 
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to analyze brand');
@@ -159,12 +179,38 @@ export async function analyzeAndCreateBrand(data: AnalyzeBrandData): Promise<Ana
 }
 
 /**
- * Updates the brand playbook JSON.
+ * Creates brand with the user-edited playbook.
+ * Called when user clicks "Save Brand" after reviewing JSON.
+ * @param name - Brand name
+ * @param website - Brand website
+ * @param playbook - The edited playbook JSON
+ * @returns Promise with created brand
+ */
+export async function confirmAndCreateBrand(
+    name: string,
+    website: string,
+    playbook: BrandPlaybookJson
+): Promise<AdBrand> {
+    const response = await axiosClient.post<ConfirmBrandResponse>('/api/ad-brands/confirm', {
+        name,
+        website,
+        playbook,
+    });
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to create brand');
+    }
+
+    return response.data.brand;
+}
+
+/**
+ * Updates the brand playbook JSON (for existing brands).
  * @param brandId - The brand ID
  * @param playbook - The edited playbook JSON
  * @returns Promise with updated brand
  */
-export async function updateBrandPlaybook(brandId: string, playbook: any): Promise<AdBrand> {
+export async function updateBrandPlaybook(brandId: string, playbook: BrandPlaybookJson): Promise<AdBrand> {
     const response = await axiosClient.patch<{ success: boolean; message: string; brand: AdBrand }>(
         `/api/ad-brands/${brandId}/playbook`,
         { playbook }

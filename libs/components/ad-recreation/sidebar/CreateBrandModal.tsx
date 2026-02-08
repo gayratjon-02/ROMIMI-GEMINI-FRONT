@@ -3,8 +3,8 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { X, Loader2, Upload, FileText, ChevronLeft, Check, AlertCircle } from 'lucide-react';
 import {
-    analyzeAndCreateBrand,
-    updateBrandPlaybook,
+    analyzeBrandOnly,
+    confirmAndCreateBrand,
     AdBrand,
     BrandPlaybookJson,
 } from '@/libs/server/Ad-Recreation/brand/brand.service';
@@ -36,8 +36,7 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
     const [file, setFile] = useState<File | null>(null);
     const [textContent, setTextContent] = useState('');
 
-    // Step 2 data
-    const [brandId, setBrandId] = useState<string | null>(null);
+    // Step 2 data (playbook only - no brand created yet)
     const [playbook, setPlaybook] = useState<BrandPlaybookJson | null>(null);
     const [playbookJson, setPlaybookJson] = useState('');
 
@@ -57,14 +56,11 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         setWebsite('');
         setFile(null);
         setTextContent('');
-        setBrandId(null);
         setPlaybook(null);
         setPlaybookJson('');
         setError(null);
         setJsonError(null);
     };
-
-    if (!isOpen) return null;
 
     // Handle file drop
     const handleDrop = useCallback((e: React.DragEvent) => {
@@ -85,6 +81,8 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         }
     }, []);
 
+    if (!isOpen) return null;
+
     // Handle file select
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -104,7 +102,7 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         }
     };
 
-    // Step 1: Handle Analyze & Create
+    // Step 1: Handle Analyze (NO brand creation)
     const handleAnalyze = async () => {
         setError(null);
 
@@ -134,15 +132,15 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
 
         setIsLoading(true);
         try {
-            const result = await analyzeAndCreateBrand({
+            // Only analyze - NO brand creation yet
+            const result = await analyzeBrandOnly({
                 name: name.trim(),
                 website: website.trim(),
                 file: inputTab === 'file' ? file || undefined : undefined,
                 text_content: inputTab === 'text' ? textContent.trim() : undefined,
             });
 
-            // Move to Step 2
-            setBrandId(result.brand_id);
+            // Move to Step 2 with playbook (no brandId yet)
             setPlaybook(result.playbook);
             setPlaybookJson(JSON.stringify(result.playbook, null, 2));
             setStep('verify');
@@ -165,10 +163,8 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         }
     };
 
-    // Step 2: Handle Save
+    // Step 2: Handle Save (NOW creates brand with playbook)
     const handleSave = async () => {
-        if (!brandId) return;
-
         if (!validateJson(playbookJson)) {
             return;
         }
@@ -176,7 +172,13 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         setIsLoading(true);
         try {
             const parsedPlaybook = JSON.parse(playbookJson);
-            const brand = await updateBrandPlaybook(brandId, parsedPlaybook);
+
+            // NOW create brand with the edited playbook
+            const brand = await confirmAndCreateBrand(
+                name.trim(),
+                website.trim(),
+                parsedPlaybook
+            );
 
             // Success - notify parent and close
             onCreated(brand);
