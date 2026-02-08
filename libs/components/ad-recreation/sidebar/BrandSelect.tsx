@@ -1,6 +1,6 @@
 // libs/components/ad-recreation/sidebar/BrandSelect.tsx
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2, Plus } from 'lucide-react';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 import { fetchAdBrands, AdBrand } from '@/libs/server/Ad-Recreation/brand/brand.service';
 
@@ -16,6 +16,7 @@ interface BrandSelectProps {
     brands?: Brand[]; // Optional override with mock data
     selectedBrandId: string | null;
     onSelect: (brandId: string) => void;
+    onCreateBrand?: () => void; // Callback to open create brand modal/page
     isDarkMode: boolean;
 }
 
@@ -43,6 +44,7 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
     brands: propBrands,
     selectedBrandId,
     onSelect,
+    onCreateBrand,
     isDarkMode,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -83,6 +85,11 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
     const handleSelect = (brandId: string) => {
         onSelect(brandId);
         setIsOpen(false);
+    };
+
+    const handleCreateBrand = () => {
+        setIsOpen(false);
+        onCreateBrand?.();
     };
 
     // Find selected brand object
@@ -160,6 +167,21 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
                                 </button>
                             ))
                         )}
+
+                        {/* Create Brand Button at bottom */}
+                        {onCreateBrand && (
+                            <>
+                                <div className={styles.brandMenuDivider} />
+                                <button
+                                    className={styles.createBrandButton}
+                                    onClick={handleCreateBrand}
+                                    type="button"
+                                >
+                                    <Plus size={16} />
+                                    <span>Create Brand</span>
+                                </button>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
@@ -168,3 +190,4 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
 };
 
 export default BrandSelect;
+
