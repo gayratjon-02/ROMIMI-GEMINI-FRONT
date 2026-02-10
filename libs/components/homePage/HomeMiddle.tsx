@@ -726,10 +726,37 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
         }
     };
 
+    // Helper to fix mixed content errors (HTTP vs HTTPS)
+    const getSecureImageUrl = (url: string | undefined): string | undefined => {
+        if (!url) return undefined;
+
+        // If it's already HTTPS or a data URL, return as is
+        if (url.startsWith('https://') || url.startsWith('data:')) {
+            return url;
+        }
+
+        // If it's an insecure HTTP URL from our backend IP, replace with secure domain
+        // This handles cases where backend returns absolute HTTP URLs
+        if (url.startsWith('http://167.172.90.235:4001')) {
+            const secureBase = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://ad-production-99f4.up.railway.app';
+            return url.replace('http://167.172.90.235:4001', secureBase);
+        }
+
+        // Also handle generic http to https upgrade if domain matches but protocol is wrong
+        const secureBase = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+        if (secureBase && url.startsWith('http://') && url.includes(secureBase.replace('https://', ''))) {
+            return url.replace('http://', 'https://');
+        }
+
+        return url;
+    };
+
+    const secureImageUrl = getSecureImageUrl(visual.image_url);
+
     // Handle single image download
     const handleDownload = () => {
-        if (visual.image_url) {
-            onDownload(visual.image_url, visual.type);
+        if (secureImageUrl) {
+            onDownload(secureImageUrl, visual.type);
         }
     };
 
@@ -751,10 +778,10 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
 
                 {/* Image or Loading State */}
                 <div className={styles.visualContent}>
-                    {visual.status === 'completed' && visual.image_url ? (
+                    {visual.status === 'completed' && secureImageUrl ? (
                         <>
                             <img
-                                src={visual.image_url}
+                                src={secureImageUrl}
                                 alt={visual.type}
                                 className={styles.visualImage}
                                 onClick={() => setIsZoomed(true)}
@@ -815,7 +842,7 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
 
             {/* Image Zoom Modal */}
             <AnimatePresence>
-                {isZoomed && visual.image_url && (
+                {isZoomed && secureImageUrl && (
                     <motion.div
                         className={styles.zoomModal}
                         initial={{ opacity: 0 }}
@@ -824,7 +851,7 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
                         onClick={() => setIsZoomed(false)}
                     >
                         <motion.img
-                            src={visual.image_url}
+                            src={secureImageUrl}
                             alt={visual.type}
                             className={styles.zoomedImage}
                             initial={{ scale: 0.9 }}
