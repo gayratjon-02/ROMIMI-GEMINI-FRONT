@@ -62,7 +62,7 @@ export interface GenerationResponse {
 // ============================================
 
 /**
- * Triggers ad generation via POST /api/ad-generations/generate
+ * Triggers ad generation via POST /api/ad-recreation/generate
  * 
  * The backend will:
  * 1. Fetch the brand and concept from DB
@@ -82,7 +82,7 @@ export async function generateAdVariations(payload: GenerationPayload): Promise<
 
     try {
         const response = await axiosClient.post<GenerationResponse>(
-            '/api/ad-generations/generate',
+            '/api/ad-recreation/generate',
             payload
         );
 
@@ -128,7 +128,7 @@ export async function generateAdVariations(payload: GenerationPayload): Promise<
 }
 
 /**
- * Renders the ad image via POST /api/ad-generations/:id/render
+ * Renders the ad image via POST /api/ad-recreation/:id/render
  * 
  * Uses the image_prompt from the generation to create the final image.
  * 
@@ -143,7 +143,7 @@ export async function renderAdImage(generationId: string): Promise<GenerationRes
             success: boolean;
             message: string;
             generation: GenerationResult;
-        }>(`/api/ad-generations/${generationId}/render`);
+        }>(`/api/ad-recreation/${generationId}/render`);
 
         console.log('✅ Image rendered:', response.data.generation.result_images?.[0]?.url);
         return response.data.generation;
@@ -160,7 +160,7 @@ export async function renderAdImage(generationId: string): Promise<GenerationRes
  */
 export async function getGenerationStatus(generationId: string): Promise<GenerationResult> {
     const response = await axiosClient.get<{ success: boolean; generation: GenerationResult }>(
-        `/api/ad-generations/${generationId}`
+        `/api/ad-recreation/${generationId}`
     );
 
     return response.data.generation;
@@ -172,7 +172,7 @@ export async function getGenerationStatus(generationId: string): Promise<Generat
  */
 export async function getAllGenerations(): Promise<GenerationResult[]> {
     const response = await axiosClient.get<{ success: boolean; generations: GenerationResult[] }>(
-        '/api/ad-generations'
+        '/api/ad-recreation'
     );
 
     return response.data.generations;

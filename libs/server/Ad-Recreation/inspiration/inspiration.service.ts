@@ -67,7 +67,7 @@ export async function uploadInspirationImage(file: File): Promise<UploadResult> 
     const formData = new FormData();
     formData.append('file', file); // Backend FileInterceptor expects 'file'
 
-    const response = await axiosClient.post<AdConceptResponse>('/api/ad-concepts/analyze', formData);
+    const response = await axiosClient.post<AdConceptResponse>('/api/concepts/analyze', formData);
     const data = response.data;
 
     // Debug log
@@ -93,7 +93,7 @@ export async function uploadInspirationImage(file: File): Promise<UploadResult> 
  */
 export async function fetchConceptById(conceptId: string): Promise<AdConceptAnalysis | null> {
     try {
-        const response = await axiosClient.get<{ concept: AdConceptAnalysis }>(`/api/ad-concepts/${conceptId}`);
+        const response = await axiosClient.get<{ concept: AdConceptAnalysis }>(`/api/concepts/${conceptId}`);
         return response.data.concept || null;
     } catch (error) {
         console.error(`Error fetching concept ${conceptId}:`, error);
@@ -110,7 +110,7 @@ export async function fetchConceptById(conceptId: string): Promise<AdConceptAnal
  */
 export async function updateConceptAnalysis(conceptId: string, analysisJson: object): Promise<AdConceptAnalysis> {
     const response = await axiosClient.patch<{ success: boolean; message: string; concept: AdConceptAnalysis }>(
-        `/api/ad-concepts/${conceptId}`,
+        `/api/concepts/${conceptId}`,
         { analysis_json: analysisJson }
     );
 

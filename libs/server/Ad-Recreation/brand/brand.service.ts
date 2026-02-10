@@ -30,7 +30,7 @@ interface SingleBrandResponse {
  * @returns Promise<AdBrand[]> - Array of brands or empty array on error
  */
 export async function fetchAdBrands(): Promise<AdBrand[]> {
-    const response = await axiosClient.get<BrandResponse>('/api/ad-brands');
+    const response = await axiosClient.get<BrandResponse>('/api/brands');
 
     if (!response.data.success) {
         console.error('API returned success: false');
@@ -47,7 +47,7 @@ export async function fetchAdBrands(): Promise<AdBrand[]> {
  */
 export async function fetchAdBrandById(brandId: string): Promise<AdBrand | null> {
     try {
-        const response = await axiosClient.get<{ brand: AdBrand }>(`/api/ad-brands/${brandId}`);
+        const response = await axiosClient.get<{ brand: AdBrand }>(`/api/brands/${brandId}`);
         return response.data.brand || null;
     } catch (error) {
         console.error(`Failed to fetch brand ${brandId}:`, error);
@@ -89,7 +89,7 @@ export async function createBrand(data: CreateBrandData): Promise<AdBrand> {
         industry: 'General', // P0 default - skipable advanced field
     };
 
-    const response = await axiosClient.post<SingleBrandResponse>('/api/ad-brands', payload);
+    const response = await axiosClient.post<SingleBrandResponse>('/api/brands', payload);
 
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to create brand');
@@ -169,7 +169,7 @@ export async function analyzeBrandOnly(data: AnalyzeBrandData): Promise<AnalyzeO
         formData.append('text_content', data.text_content);
     }
 
-    const response = await axiosClient.post<AnalyzeOnlyResponse>('/api/ad-brands/analyze', formData);
+    const response = await axiosClient.post<AnalyzeOnlyResponse>('/api/brands/analyze', formData);
 
     if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to analyze brand');
@@ -191,7 +191,7 @@ export async function confirmAndCreateBrand(
     website: string,
     playbook: BrandPlaybookJson
 ): Promise<AdBrand> {
-    const response = await axiosClient.post<ConfirmBrandResponse>('/api/ad-brands/confirm', {
+    const response = await axiosClient.post<ConfirmBrandResponse>('/api/brands/confirm', {
         name,
         website,
         playbook,
@@ -212,7 +212,7 @@ export async function confirmAndCreateBrand(
  */
 export async function updateBrandPlaybook(brandId: string, playbook: BrandPlaybookJson): Promise<AdBrand> {
     const response = await axiosClient.patch<{ success: boolean; message: string; brand: AdBrand }>(
-        `/api/ad-brands/${brandId}/playbook`,
+        `/api/brands/${brandId}/playbook`,
         { playbook }
     );
 
