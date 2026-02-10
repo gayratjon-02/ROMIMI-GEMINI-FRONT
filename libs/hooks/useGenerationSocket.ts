@@ -58,7 +58,7 @@ export const useGenerationSocket = (
             return;
         }
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5031';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         const token = getAuthToken();
 
         // Construct SSE URL with token
