@@ -368,7 +368,7 @@ const AdRecreationPage: React.FC = () => {
                                 }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                                    <Loader2 size={18} className="animate-spin" style={{ color: '#7c4dff' }} />
+                                    <Loader2 size={18} className="spinner-icon" style={{ color: '#7c4dff' }} />
                                     <span style={{ fontSize: '14px', fontWeight: 500 }}>
                                         Generating {completedCount} of {totalExpected} ads...
                                     </span>
@@ -824,7 +824,7 @@ const AdRecreationPage: React.FC = () => {
                     {
                         isGenerating ? (
                             <>
-                                <Loader2 size={16} className="animate-spin" />
+                                <Loader2 size={16} className="spinner-icon" />
                                 Generating...
                             </>
                         ) : (
