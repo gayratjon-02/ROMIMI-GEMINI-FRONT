@@ -4,6 +4,7 @@ import { CssBaseline } from '@mui/material';
 import { useState, useMemo, createContext, useEffect } from "react";
 import { light, dark } from '../scss/MaterialTheme';
 import "../scss/styles/globals.css";
+import { ProductProvider } from '@/libs/context/ProductContext';
 
 // LocalStorage key for theme
 const THEME_STORAGE_KEY = 'romimi-theme-mode';
@@ -55,7 +56,9 @@ export default function App({ Component, pageProps }: AppProps) {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Component {...pageProps} />
+        <ProductProvider>
+          <Component {...pageProps} />
+        </ProductProvider>
       </ThemeProvider>
     </ColorModeContext.Provider>
   )

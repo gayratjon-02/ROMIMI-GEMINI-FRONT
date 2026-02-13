@@ -22,6 +22,8 @@ import ModeToggle from '@/libs/components/ad-recreation/sidebar/ModeToggle';
 import AdUploader from '@/libs/components/ad-recreation/sidebar/AdUploader';
 import AngleSelector, { MARKETING_ANGLES } from '@/libs/components/ad-recreation/sidebar/AngleSelector';
 import FormatSelector, { OUTPUT_FORMATS } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
+import ProductUploadSection from '@/libs/components/homePage/ProductUploadSection';
+import { useProductContext } from '@/libs/context/ProductContext';
 
 // Gallery Components
 import EmptyState from '@/libs/components/ad-recreation/gallery/EmptyState';
@@ -42,6 +44,16 @@ const AdRecreationPage: React.FC = () => {
     const router = useRouter();
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
+
+    // Shared product context (persists across Product Visuals ↔ Ad Recreation)
+    const {
+        frontImage, backImage, referenceImages,
+        setFrontImage, setBackImage, setReferenceImages,
+        isAnalyzing, isAnalyzed,
+        productJSON, productId,
+        fullAnalysisResponse,
+        handleAnalyze,
+    } = useProductContext();
 
     // ============================================
     // STATE
@@ -336,6 +348,35 @@ const AdRecreationPage: React.FC = () => {
                             onChange={setActiveMode}
                             isDarkMode={isDarkMode}
                         />
+
+                        {/* Product Upload (shared with Product Visuals) */}
+                        <ProductUploadSection
+                            isDarkMode={isDarkMode}
+                            frontImage={frontImage}
+                            backImage={backImage}
+                            referenceImages={referenceImages}
+                            onFrontImageChange={setFrontImage}
+                            onBackImageChange={setBackImage}
+                            onReferenceImagesChange={setReferenceImages}
+                            onAnalyze={handleAnalyze}
+                            isAnalyzing={isAnalyzing}
+                            isAnalyzed={isAnalyzed}
+                        />
+
+                        {/* Show analyzed product name if available */}
+                        {productJSON && (
+                            <div style={{
+                                padding: '8px 12px',
+                                margin: '0 0 12px',
+                                borderRadius: '8px',
+                                background: isDarkMode ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.08)',
+                                border: '1px solid rgba(34,197,94,0.3)',
+                                fontSize: '12px',
+                                color: isDarkMode ? '#86efac' : '#16a34a',
+                            }}>
+                                ✅ Product: <strong>{productJSON.type}</strong>
+                            </div>
+                        )}
 
                         <AdUploader
                             onUploadSuccess={handleUploadSuccess}

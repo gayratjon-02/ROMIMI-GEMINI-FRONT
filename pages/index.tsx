@@ -14,6 +14,7 @@ import { withAuth } from "@/libs/components/auth/withAuth";
 import { createProduct, analyzeProduct, getProductWithJson } from '@/libs/server/HomePage/product';
 import { Product } from '@/libs/types/homepage/product';
 import { getCollection, updateDAJSON } from '@/libs/server/HomePage/collection';
+import { useProductContext } from '@/libs/context/ProductContext';
 import {
   createGeneration,
   updateMergedPrompts as updatePromptsAPI,
@@ -79,18 +80,17 @@ function Home() {
   // Mobile drawer state
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
-  // ==================== NEW SINGLE-PAGE STATE ====================
-  // Product Upload
-  const [frontImage, setFrontImage] = useState<File | null>(null);
-  const [backImage, setBackImage] = useState<File | null>(null);
-  const [referenceImages, setReferenceImages] = useState<File[]>([]);
-
-  // Analysis State
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [productJSON, setProductJSON] = useState<ProductJSON | null>(null);
-  const [productId, setProductId] = useState<string | null>(null);
-  // Full analysis response from backend (for display)
-  const [fullAnalysisResponse, setFullAnalysisResponse] = useState<any>(null);
+  // ==================== SHARED PRODUCT STATE (from context) ====================
+  const {
+    frontImage, backImage, referenceImages,
+    setFrontImage, setBackImage, setReferenceImages,
+    isAnalyzing,
+    productJSON, setProductJSON,
+    productId, setProductId,
+    fullAnalysisResponse, setFullAnalysisResponse,
+    handleAnalyze: contextAnalyze,
+    handleProductSelect: contextProductSelect,
+  } = useProductContext();
 
   // DA State
   const [daJSON, setDAJSON] = useState<DAJSON | null>(null);
@@ -294,90 +294,17 @@ function Home() {
     }
   }, []);
 
-  // Handle Product Catalog selection: auto-fill product data
+  // Handle Product Catalog selection: delegate to context + reset generation state
   const handleProductSelect = useCallback(async (product: Product) => {
-    try {
-      console.log('📦 Product selected from catalog:', product.name, product.id);
-
-      // Set product ID for generation
-      setProductId(product.id);
-
-      // Clear previous generation state
-      setLibrarySelectedGeneration(null);
-      setVisuals([]);
-      setMergedPrompts({});
-      setGenerationResponse(null);
-      setProgress(0);
-
-      // Map analysis to ProductJSON for display
-      const analysis = product.analyzed_product_json as any;
-      if (analysis) {
-        const getLogoDesc = (field: any): string => {
-          if (!field) return 'None';
-          if (typeof field === 'string') return field;
-          if (typeof field === 'object' && field !== null) {
-            const parts: string[] = [];
-            if (field.type) parts.push(field.type);
-            if (field.color && field.color.toLowerCase() !== 'unknown') parts.push(`(${field.color})`);
-            if (field.position) parts.push(`at ${field.position}`);
-            if (parts.length > 0) return parts.join(' ');
-            if (field.description) return field.description;
-            return JSON.stringify(field).replace(/[{}"]/g, '').replace(/,/g, ', ');
-          }
-          return String(field);
-        };
-
-        const mappedAnalysis: ProductJSON = {
-          type: analysis.general_info?.product_name || product.name || 'Product',
-          color: analysis.colors?.primary?.name || 'Not detected',
-          color_hex: analysis.colors?.primary?.hex || '#000000',
-          texture: analysis.texture_description || 'Not detected',
-          material: Array.isArray(analysis.materials) ? analysis.materials.join(', ') : 'Not detected',
-          details: (() => {
-            const parts: string[] = [];
-            if (analysis.design_elements && Array.isArray(analysis.design_elements)) parts.push(...analysis.design_elements);
-            if (analysis.style_keywords && Array.isArray(analysis.style_keywords)) parts.push(...analysis.style_keywords);
-            if (analysis.additional_details) parts.push(analysis.additional_details);
-            return parts.join(', ') || 'No details detected';
-          })(),
-          logo_front: getLogoDesc(analysis.logo_front),
-          logo_back: getLogoDesc(analysis.logo_back),
-        };
-
-        setProductJSON(mappedAnalysis);
-
-        // Set full analysis response for save/merge
-        setFullAnalysisResponse({
-          product_id: product.id,
-          name: product.name,
-          category: product.category,
-          analysis: analysis,
-          imageUrl: product.front_image_url || '',
-          front_image_url: product.front_image_url,
-          back_image_url: product.back_image_url,
-          reference_images: product.reference_images || [],
-        });
-      }
-
-      // Set front/back images from URLs (for display, not File objects)
-      // The frontImage/backImage state holds File objects for upload,
-      // but for catalog products they are already uploaded.
-      // We clear the local files since images are already on the server.
-      setFrontImage(null);
-      setBackImage(null);
-      setReferenceImages([]);
-
-      console.log('✅ Product catalog selection complete:', {
-        productId: product.id,
-        hasAnalysis: !!analysis,
-        frontImage: product.front_image_url,
-        backImage: product.back_image_url,
-      });
-
-    } catch (error) {
-      console.error('Failed to select product from catalog:', error);
-    }
-  }, []);
+    // Clear page-specific generation state
+    setLibrarySelectedGeneration(null);
+    setVisuals([]);
+    setMergedPrompts({});
+    setGenerationResponse(null);
+    setProgress(0);
+    // Delegate product data mapping to context
+    contextProductSelect(product);
+  }, [contextProductSelect]);
 
   // Fetch DA when collection changes
   useEffect(() => {
@@ -445,109 +372,19 @@ function Home() {
   }, [shotOptions.solo, shotOptions.flatlay_front, shotOptions.flatlay_back]);
 
   // Handle Product Analysis - Uses analyzeProductDirect API (NO collection needed!)
+  // Wrap context analyze with page-specific generation-reset logic
   const handleAnalyze = useCallback(async (forceReanalyze = false) => {
-    // If already analyzed and not forcing reanalysis, just reset view to show JSON
     if (productJSON && !forceReanalyze) {
       setVisuals([]);
       return;
     }
-
-    // Both front and back images are required
-    if (!frontImage || !backImage) {
-      alert('Please upload both FRONT and BACK images.');
-      return;
-    }
-
-    // Reset previous analysis state when reanalyzing
     if (forceReanalyze) {
-      setProductJSON(null);
-      setFullAnalysisResponse(null);
-      setProductId(null);
       setMergedPrompts({});
       setGenerationResponse(null);
       setVisuals([]);
     }
-
-    setIsAnalyzing(true);
-    try {
-      // 1. Import analyzeProductDirect API 
-      const { analyzeProductDirect } = await import('@/libs/server/HomePage/product');
-
-      // 2. Prepare images - at least front or back required
-      const frontImages = frontImage ? [frontImage] : [];
-      const backImages = backImage ? [backImage] : [];
-
-      // 3. Call analyzeProductDirect API (NO collection needed!)
-      const response = await analyzeProductDirect(
-        frontImages,
-        backImages,
-        referenceImages,
-        undefined // product_name - optional
-      );
-
-      console.log('✅ Product analyzed:', response);
-
-      // 4. Extract analysis data
-      const analysis = response.analysis;
-
-      // Helper to safely extract logo description
-      const getLogoDesc = (field: any): string => {
-        if (!field) return 'None';
-        if (typeof field === 'string') return field;
-        if (typeof field === 'object' && field !== null) {
-          const parts: string[] = [];
-          if (field.type) parts.push(field.type);
-          if (field.color && field.color.toLowerCase() !== 'unknown') {
-            parts.push(`(${field.color})`);
-          }
-          if (field.position) parts.push(`at ${field.position}`);
-          if (parts.length > 0) return parts.join(' ');
-          if (field.description) return field.description;
-          return JSON.stringify(field).replace(/[{}\"]/g, '').replace(/,/g, ', ');
-        }
-        return String(field);
-      };
-
-      // 5. Map result to state
-      const mappedAnalysis: ProductJSON = {
-        type: analysis.general_info?.product_name || response.name || 'Product',
-        color: analysis.colors?.primary?.name || 'Not detected',
-        color_hex: analysis.colors?.primary?.hex || '#000000',
-        texture: analysis.texture_description || 'Not detected',
-        material: Array.isArray(analysis.materials) ? analysis.materials.join(', ') : 'Not detected',
-        details: (() => {
-          const detailsParts: string[] = [];
-          if (analysis.design_elements && Array.isArray(analysis.design_elements)) {
-            detailsParts.push(...analysis.design_elements);
-          }
-          if (analysis.style_keywords && Array.isArray(analysis.style_keywords)) {
-            detailsParts.push(...analysis.style_keywords);
-          }
-          if (analysis.additional_details) {
-            detailsParts.push(analysis.additional_details);
-          }
-          return detailsParts.join(', ') || 'No details detected';
-        })(),
-        logo_front: getLogoDesc(analysis.logo_front),
-        logo_back: getLogoDesc(analysis.logo_back),
-      };
-
-      setProductJSON(mappedAnalysis);
-      setProductId(response.product_id);
-      // Save full response for display
-      setFullAnalysisResponse(response);
-
-      // NOTE: Merged prompts will be generated when user clicks MERGE
-      // (DA must be selected first, then MERGE creates prompts from backend)
-
-    } catch (error: any) {
-      console.error('Analysis failed:', error);
-      const errorMessage = error?.messages?.join(', ') || error?.message || 'Unknown error';
-      alert(`Analysis failed: ${errorMessage}`);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [frontImage, backImage, referenceImages, daJSON, productJSON]);
+    await contextAnalyze(forceReanalyze);
+  }, [contextAnalyze, productJSON]);
 
   // Handle Analysis Update (from Edit Mode)
   const handleAnalysisUpdate = useCallback((updatedResponse: any) => {
@@ -806,7 +643,7 @@ function Home() {
     setProgress(0);
   }, []);
 
-  const isAnalyzed = !!productJSON;
+  const isAnalyzed = !!productJSON; // also available as ctx.isAnalyzed
   const hasDA = !!daJSON;
 
   // After generation completes, hide Merge/Generate buttons
