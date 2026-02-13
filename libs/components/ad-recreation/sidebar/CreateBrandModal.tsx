@@ -32,7 +32,9 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
 
     // Form fields - Step 1
     const [name, setName] = useState('');
+    const [industry, setIndustry] = useState('');
     const [website, setWebsite] = useState('');
+    const [currency, setCurrency] = useState('GBP');
     const [file, setFile] = useState<File | null>(null);
     const [textContent, setTextContent] = useState('');
 
@@ -53,7 +55,9 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         setStep('input');
         setInputTab('file');
         setName('');
+        setIndustry('');
         setWebsite('');
+        setCurrency('GBP');
         setFile(null);
         setTextContent('');
         setPlaybook(null);
@@ -111,6 +115,10 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
             setError('Brand name is required');
             return;
         }
+        if (!industry.trim()) {
+            setError('Industry is required');
+            return;
+        }
         if (!website.trim()) {
             setError('Website URL is required');
             return;
@@ -122,7 +130,7 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
 
         // Must have file OR text
         if (inputTab === 'file' && !file) {
-            setError('Please upload a brand guidelines file');
+            setError('Please upload a brand playbook file');
             return;
         }
         if (inputTab === 'text' && !textContent.trim()) {
@@ -177,6 +185,8 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
             const brand = await confirmAndCreateBrand(
                 name.trim(),
                 website.trim(),
+                industry.trim(),
+                currency,
                 parsedPlaybook
             );
 
@@ -206,7 +216,7 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
     };
 
     // Can proceed check
-    const canAnalyze = name.trim() && website.trim() && (
+    const canAnalyze = name.trim() && industry.trim() && website.trim() && (
         (inputTab === 'file' && file) ||
         (inputTab === 'text' && textContent.trim())
     );
@@ -294,25 +304,64 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
                             />
                         </div>
 
-                        {/* Website URL */}
+                        {/* Industry */}
                         <div className={styles.modalField}>
                             <label className={styles.modalLabel}>
-                                Website URL <span className={styles.required}>*</span>
+                                Industry <span className={styles.required}>*</span>
                             </label>
                             <input
-                                type="url"
+                                type="text"
                                 className={styles.modalInput}
-                                value={website}
-                                onChange={(e) => setWebsite(e.target.value)}
-                                placeholder="https://example.com"
+                                value={industry}
+                                onChange={(e) => setIndustry(e.target.value)}
+                                placeholder="e.g. Fitness / Home Wellness"
                                 disabled={isLoading}
                             />
+                        </div>
+
+                        {/* Website URL & Currency Row */}
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            {/* Website URL */}
+                            <div className={styles.modalField} style={{ flex: 1 }}>
+                                <label className={styles.modalLabel}>
+                                    Website URL <span className={styles.required}>*</span>
+                                </label>
+                                <input
+                                    type="url"
+                                    className={styles.modalInput}
+                                    value={website}
+                                    onChange={(e) => setWebsite(e.target.value)}
+                                    placeholder="https://example.com"
+                                    disabled={isLoading}
+                                />
+                            </div>
+
+                            {/* Currency */}
+                            <div className={styles.modalField} style={{ width: '110px', flexShrink: 0 }}>
+                                <label className={styles.modalLabel}>
+                                    Currency
+                                </label>
+                                <select
+                                    className={styles.modalInput}
+                                    value={currency}
+                                    onChange={(e) => setCurrency(e.target.value)}
+                                    disabled={isLoading}
+                                    style={{
+                                        cursor: 'pointer',
+                                        appearance: 'auto',
+                                    }}
+                                >
+                                    <option value="GBP">GBP</option>
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            </div>
                         </div>
 
                         {/* Playbook Source Tabs */}
                         <div className={styles.modalField}>
                             <label className={styles.modalLabel}>
-                                Brand Guidelines <span className={styles.required}>*</span>
+                                Brand Playbook <span className={styles.required}>*</span>
                             </label>
 
                             {/* Tab buttons */}

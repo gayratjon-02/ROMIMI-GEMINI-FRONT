@@ -5,11 +5,11 @@ import axiosClient from '@/libs/server/axios-client';
 export interface AdBrand {
     id: string;
     name: string;
-    logo_url?: string;
-    website_url?: string;
-    description?: string;
-    primary_color?: string;
-    secondary_color?: string;
+    industry?: string;
+    website?: string;
+    currency?: string;
+    assets?: any;
+    brand_playbook?: any;
     created_at?: string;
     updated_at?: string;
 }
@@ -189,11 +189,15 @@ export async function analyzeBrandOnly(data: AnalyzeBrandData): Promise<AnalyzeO
 export async function confirmAndCreateBrand(
     name: string,
     website: string,
+    industry: string,
+    currency: string,
     playbook: BrandPlaybookJson
 ): Promise<AdBrand> {
     const response = await axiosClient.post<ConfirmBrandResponse>('/api/brands/confirm', {
         name,
         website,
+        industry,
+        currency,
         playbook,
     });
 
