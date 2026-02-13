@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import styles from '@/scss/styles/HomePage/HomeLeft.module.scss';
 import { getUserInfo, logout, UserInfo } from '@/libs/server/HomePage/signup';
 import { getAllBrands, updateBrand, deleteBrand } from '@/libs/server/HomePage/brand';
 import { getCollectionsByBrand, updateCollection, deleteCollection } from '@/libs/server/HomePage/collection';
 import { getAllGenerations } from '@/libs/server/HomePage/merging';
+import { getAllProducts } from '@/libs/server/HomePage/product';
 import { Brand, UpdateBrandData } from '@/libs/types/homepage/brand';
 import { Collection, UpdateCollectionData } from '@/libs/types/homepage/collection';
 import { Generation } from '@/libs/types/homepage/generation';
+import { Product } from '@/libs/types/homepage/product';
 import CreateCollectionWizard from '@/libs/components/modals/CreateCollectionWizard';
 import EditCollectionModal from '@/libs/components/modals/EditCollectionModal';
 import CreateBrandModal from '@/libs/components/modals/CreateBrandModal';
@@ -42,6 +44,8 @@ interface HomeLeftProps {
   onLibrarySelect?: (generation: Generation) => void;
   /** Increment when generation completes so Library refetches without page refresh */
   libraryRefreshTrigger?: number;
+  /** NEW: Callback when user selects a product from the Product Catalog */
+  onProductSelect?: (product: Product) => void;
 }
 
 const HomeLeft: React.FC<HomeLeftProps> = ({
@@ -69,6 +73,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   onPromptsChange,
   onLibrarySelect,
   libraryRefreshTrigger = 0,
+  onProductSelect,
 }) => {
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState('product-visuals');
@@ -107,6 +112,24 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
   // Library expansion state (default: collapsed)
   const [isLibraryExpanded, setIsLibraryExpanded] = useState(false);
+
+  // Product Catalog: products grouped by category
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [activeProductId, setActiveProductId] = useState<string | null>(null);
+  const [isProductsExpanded, setIsProductsExpanded] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  // Group products by category
+  const productsByCategory = useMemo(() => {
+    const groups: Record<string, Product[]> = {};
+    catalogProducts.forEach(product => {
+      const cat = product.category || 'Uncategorized';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(product);
+    });
+    return groups;
+  }, [catalogProducts]);
 
   useEffect(() => {
     const info = getUserInfo();
@@ -162,6 +185,25 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
     };
     fetchLibrary();
   }, [refreshTrigger, libraryRefreshTrigger, onLibrarySelect]);
+
+  // Product Catalog: fetch all analyzed products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setCatalogLoading(true);
+        const res = await getAllProducts(undefined, 1, 100);
+        // Only show products that have been analyzed
+        const analyzed = (res.items || []).filter(p => p.analyzed_product_json);
+        setCatalogProducts(analyzed);
+      } catch (error: any) {
+        if (error?.status !== 401) console.warn('Product catalog fetch failed:', error);
+        setCatalogProducts([]);
+      } finally {
+        setCatalogLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [refreshTrigger, libraryRefreshTrigger]);
 
   const handleLogout = () => {
     logout();
@@ -570,6 +612,112 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                 <span className={styles.addIcon}>+</span>
                 <span className={styles.label}>Create DA</span>
               </button>
+            )}
+          </div>
+
+          {/* ═══════════ PRODUCTS CATALOG: Category Folders ═══════════ */}
+          <div className={styles.section}>
+            <button
+              className={styles.sectionTitle}
+              onClick={() => setIsProductsExpanded(!isProductsExpanded)}
+              style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: '0' }}
+            >
+              <span>PRODUCTS {catalogProducts.length > 0 ? `(${catalogProducts.length})` : ''}</span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                style={{ transform: isProductsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {isProductsExpanded && (
+              <>
+                {catalogLoading && (
+                  <div className={styles.loadingItem}>
+                    <span className={styles.loadingText}>Loading products...</span>
+                  </div>
+                )}
+                {!catalogLoading && catalogProducts.length === 0 && (
+                  <div className={styles.emptyCollections}>No analyzed products yet</div>
+                )}
+                {!catalogLoading && Object.entries(productsByCategory).map(([category, products]) => {
+                  const isCatExpanded = expandedCategories[category] ?? false;
+                  return (
+                    <div key={category} className={styles.catalogFolder}>
+                      {/* Category Folder Header */}
+                      <button
+                        className={styles.catalogFolderHeader}
+                        onClick={() => setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }))}
+                      >
+                        <span className={styles.catalogFolderIcon}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {isCatExpanded ? (
+                              <>
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                                <line x1="9" y1="14" x2="15" y2="14" />
+                              </>
+                            ) : (
+                              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                            )}
+                          </svg>
+                        </span>
+                        <span className={styles.catalogFolderName}>{category}</span>
+                        <span className={styles.catalogFolderCount}>({products.length})</span>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          style={{ transform: isCatExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', marginLeft: 'auto' }}
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
+
+                      {/* Products inside the folder */}
+                      {isCatExpanded && products.map(product => {
+                        const isActive = activeProductId === product.id;
+                        return (
+                          <button
+                            key={product.id}
+                            className={`${styles.catalogProductItem} ${isActive ? styles.active : ''}`}
+                            onClick={() => {
+                              setActiveProductId(product.id);
+                              if (onProductSelect) onProductSelect(product);
+                            }}
+                          >
+                            {/* Product thumbnail */}
+                            {product.front_image_url ? (
+                              <img
+                                src={product.front_image_url.replace(/^http:/, 'https:')}
+                                alt={product.name}
+                                className={styles.catalogProductThumb}
+                              />
+                            ) : (
+                              <span className={styles.catalogProductThumbPlaceholder}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                              </span>
+                            )}
+                            <span className={styles.catalogProductName} title={product.name}>{product.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </>
             )}
           </div>
 

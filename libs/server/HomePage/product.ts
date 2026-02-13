@@ -103,13 +103,15 @@ export async function createProduct(
 export async function getAllProducts(
     collectionId?: string,
     page?: number,
-    limit?: number
+    limit?: number,
+    category?: string
 ): Promise<ProductsListResponse> {
     try {
         const params = new URLSearchParams();
         if (collectionId) params.append("collection_id", collectionId);
         if (page) params.append("page", page.toString());
         if (limit) params.append("limit", limit.toString());
+        if (category) params.append("category", category);
 
         const queryString = params.toString() ? `?${params.toString()}` : "";
 

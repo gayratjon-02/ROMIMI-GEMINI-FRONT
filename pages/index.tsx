@@ -11,7 +11,8 @@ import { ShotOptions, getEnabledShots } from "@/libs/types/homepage/shot-options
 // Auth HOC import for protected routes
 import { withAuth } from "@/libs/components/auth/withAuth";
 // API imports
-import { createProduct, analyzeProduct } from '@/libs/server/HomePage/product';
+import { createProduct, analyzeProduct, getProductWithJson } from '@/libs/server/HomePage/product';
+import { Product } from '@/libs/types/homepage/product';
 import { getCollection, updateDAJSON } from '@/libs/server/HomePage/collection';
 import {
   createGeneration,
@@ -290,6 +291,91 @@ function Home() {
       console.error('Failed to load generation for Library:', e);
     } finally {
       setIsLibraryLoading(false); // Stop loading
+    }
+  }, []);
+
+  // Handle Product Catalog selection: auto-fill product data
+  const handleProductSelect = useCallback(async (product: Product) => {
+    try {
+      console.log('📦 Product selected from catalog:', product.name, product.id);
+
+      // Set product ID for generation
+      setProductId(product.id);
+
+      // Clear previous generation state
+      setLibrarySelectedGeneration(null);
+      setVisuals([]);
+      setMergedPrompts({});
+      setGenerationResponse(null);
+      setProgress(0);
+
+      // Map analysis to ProductJSON for display
+      const analysis = product.analyzed_product_json as any;
+      if (analysis) {
+        const getLogoDesc = (field: any): string => {
+          if (!field) return 'None';
+          if (typeof field === 'string') return field;
+          if (typeof field === 'object' && field !== null) {
+            const parts: string[] = [];
+            if (field.type) parts.push(field.type);
+            if (field.color && field.color.toLowerCase() !== 'unknown') parts.push(`(${field.color})`);
+            if (field.position) parts.push(`at ${field.position}`);
+            if (parts.length > 0) return parts.join(' ');
+            if (field.description) return field.description;
+            return JSON.stringify(field).replace(/[{}"]/g, '').replace(/,/g, ', ');
+          }
+          return String(field);
+        };
+
+        const mappedAnalysis: ProductJSON = {
+          type: analysis.general_info?.product_name || product.name || 'Product',
+          color: analysis.colors?.primary?.name || 'Not detected',
+          color_hex: analysis.colors?.primary?.hex || '#000000',
+          texture: analysis.texture_description || 'Not detected',
+          material: Array.isArray(analysis.materials) ? analysis.materials.join(', ') : 'Not detected',
+          details: (() => {
+            const parts: string[] = [];
+            if (analysis.design_elements && Array.isArray(analysis.design_elements)) parts.push(...analysis.design_elements);
+            if (analysis.style_keywords && Array.isArray(analysis.style_keywords)) parts.push(...analysis.style_keywords);
+            if (analysis.additional_details) parts.push(analysis.additional_details);
+            return parts.join(', ') || 'No details detected';
+          })(),
+          logo_front: getLogoDesc(analysis.logo_front),
+          logo_back: getLogoDesc(analysis.logo_back),
+        };
+
+        setProductJSON(mappedAnalysis);
+
+        // Set full analysis response for save/merge
+        setFullAnalysisResponse({
+          product_id: product.id,
+          name: product.name,
+          category: product.category,
+          analysis: analysis,
+          imageUrl: product.front_image_url || '',
+          front_image_url: product.front_image_url,
+          back_image_url: product.back_image_url,
+          reference_images: product.reference_images || [],
+        });
+      }
+
+      // Set front/back images from URLs (for display, not File objects)
+      // The frontImage/backImage state holds File objects for upload,
+      // but for catalog products they are already uploaded.
+      // We clear the local files since images are already on the server.
+      setFrontImage(null);
+      setBackImage(null);
+      setReferenceImages([]);
+
+      console.log('✅ Product catalog selection complete:', {
+        productId: product.id,
+        hasAnalysis: !!analysis,
+        frontImage: product.front_image_url,
+        backImage: product.back_image_url,
+      });
+
+    } catch (error) {
+      console.error('Failed to select product from catalog:', error);
     }
   }, []);
 
@@ -1039,6 +1125,7 @@ function Home() {
             daJSON={daJSON}
             mergedPrompts={mergedPrompts}
             onPromptsChange={handlePromptsChange}
+            onProductSelect={handleProductSelect}
           />
         </div>
 
