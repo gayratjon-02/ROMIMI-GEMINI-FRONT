@@ -18,6 +18,7 @@ export interface GenerationPayload {
     concept_id: string;         // UUID
     marketing_angle_id: string; // e.g., "problem_solution", "social_proof"
     format_id: string;          // e.g., "story", "square", "portrait"
+    product_id?: string;        // Optional UUID - product images sent to Gemini as reference
 }
 
 export interface AdCopyResult {

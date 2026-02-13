@@ -240,6 +240,7 @@ const AdRecreationPage: React.FC = () => {
                         concept_id: conceptId,
                         marketing_angle_id: angleId,
                         format_id: formatId,
+                        ...(productId ? { product_id: productId } : {}),
                     };
 
                     console.log(`📤 Generating: angle=${angleId}, format=${formatId}`);
@@ -731,12 +732,14 @@ const AdRecreationPage: React.FC = () => {
                                         })}
                                 </div>
                             </div>
-                        ) : analysisJson ? (
+                        ) : (analysisJson || isAnalyzed) ? (
                             <AnalysisStage
                                 data={analysisJson}
                                 conceptId={conceptId || undefined}
                                 onUpdate={setAnalysisJson}
                                 isDarkMode={isDarkMode}
+                                productJSON={productJSON}
+                                fullAnalysisResponse={fullAnalysisResponse}
                             />
                         ) : (
                             <EmptyState isDarkMode={isDarkMode} />
