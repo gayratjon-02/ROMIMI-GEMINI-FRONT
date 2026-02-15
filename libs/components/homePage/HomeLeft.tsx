@@ -697,7 +697,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                             {/* Product thumbnail */}
                             {product.front_image_url ? (
                               <img
-                                src={product.front_image_url.replace(/^http:/, 'https:')}
+                                src={product.front_image_url}
                                 alt={product.name}
                                 className={styles.catalogProductThumb}
                               />

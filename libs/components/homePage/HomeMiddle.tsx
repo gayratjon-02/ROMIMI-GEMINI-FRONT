@@ -726,26 +726,17 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
         }
     };
 
-    // Helper to fix mixed content errors (HTTP vs HTTPS)
+    // Helper to normalize image URLs using the configured base URL
     const getSecureImageUrl = (url: string | undefined): string | undefined => {
         if (!url) return undefined;
 
-        // If it's already HTTPS or a data URL, return as is
-        if (url.startsWith('https://') || url.startsWith('data:')) {
-            return url;
-        }
+        // Data URLs need no processing
+        if (url.startsWith('data:')) return url;
 
-        // If it's an insecure HTTP URL from our backend IP, replace with secure domain
-        // This handles cases where backend returns absolute HTTP URLs
-        if (url.startsWith('http://167.172.90.235:4001')) {
-            const secureBase = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'https://ad-production-99f4.up.railway.app';
-            return url.replace('http://167.172.90.235:4001', secureBase);
-        }
-
-        // Also handle generic http to https upgrade if domain matches but protocol is wrong
-        const secureBase = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
-        if (secureBase && url.startsWith('http://') && url.includes(secureBase.replace('https://', ''))) {
-            return url.replace('http://', 'https://');
+        // Use configured IMAGE_BASE_URL to rewrite backend URLs if needed
+        const imageBase = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+        if (imageBase && url.startsWith('http://167.172.90.235:4001')) {
+            return url.replace('http://167.172.90.235:4001', imageBase);
         }
 
         return url;
