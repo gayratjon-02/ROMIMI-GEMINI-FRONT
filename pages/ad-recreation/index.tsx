@@ -5,13 +5,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useTheme } from "@mui/material";
-import { Loader2, Eye, Download, X } from 'lucide-react';
+import { Loader2, Eye, Download, X, Heart, RefreshCw, Trash2, Archive } from 'lucide-react';
 import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
 import { logout, getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
 import {
     generateAdVariations,
     getGenerationStatus,
+    regenerateVariation,
     GenerationResult
 } from '@/libs/server/Ad-Recreation/generation/generation.service';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
@@ -35,6 +36,8 @@ import ResultsGrid, { MockResult } from '@/libs/components/ad-recreation/gallery
 // ============================================
 interface PlaceholderResult extends MockResult {
     isLoading?: boolean;
+    generationId?: string;
+    variationIndex?: number;
 }
 
 // ============================================
@@ -79,6 +82,13 @@ const AdRecreationPage: React.FC = () => {
     const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
     const [completedCount, setCompletedCount] = useState(0);
     const [totalExpected, setTotalExpected] = useState(0);
+
+    // P0: Favorite IDs (client-side state)
+    const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+    // P0: Generation ID map for regeneration
+    const [generationIdMap, setGenerationIdMap] = useState<Record<string, string>>({});
+    // P0: Regenerating variation IDs
+    const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
 
     // Polling ref
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -128,11 +138,11 @@ const AdRecreationPage: React.FC = () => {
 
     // Calculate expected images: angles × formats × 4 variations
     const calculateExpectedImages = () => {
-        // For P0 MVP: 1 image per format per angle (not 4 variations yet)
-        return selectedAngles.length * selectedFormats.length;
+        // P0: 4 variations per angle/format combo
+        return selectedAngles.length * selectedFormats.length * 4;
     };
 
-    // Create placeholder cards
+    // Create placeholder cards (4 per angle/format combo)
     const createPlaceholders = (): PlaceholderResult[] => {
         const placeholders: PlaceholderResult[] = [];
         let index = 0;
@@ -140,17 +150,20 @@ const AdRecreationPage: React.FC = () => {
         for (const angleId of selectedAngles) {
             for (const formatId of selectedFormats) {
                 const angle = MARKETING_ANGLES.find(a => a.id === angleId);
-                placeholders.push({
-                    id: `placeholder-${index}`,
-                    angle: angleId,
-                    format: formatId,
-                    imageUrl: '',
-                    headline: angle?.label || 'Generating...',
-                    cta: 'Loading...',
-                    subtext: 'Creating your ad...',
-                    isLoading: true,
-                });
-                index++;
+                for (let v = 0; v < 4; v++) {
+                    placeholders.push({
+                        id: `placeholder-${index}`,
+                        angle: angleId,
+                        format: formatId,
+                        imageUrl: '',
+                        headline: angle?.label || 'Generating...',
+                        cta: 'Loading...',
+                        subtext: `Variation ${v + 1}`,
+                        isLoading: true,
+                        variationIndex: v + 1,
+                    });
+                    index++;
+                }
             }
         }
 
@@ -228,10 +241,10 @@ const AdRecreationPage: React.FC = () => {
         console.log(`📊 Placeholders created: ${placeholders.length}`);
 
         try {
-            // For P0: Generate one at a time for each angle/format combo
-            // In future: batch API call
+            // P0: Generate one combo at a time (4 variations per combo)
             let completedResults: PlaceholderResult[] = [];
             let completed = 0;
+            const newGenIdMap: Record<string, string> = {};
 
             for (const angleId of selectedAngles) {
                 for (const formatId of selectedFormats) {
@@ -249,10 +262,15 @@ const AdRecreationPage: React.FC = () => {
                         const result = await generateAdVariations(payload);
                         const resultImages = (result as any).result_images || [];
                         const generatedCopy = (result as any).generated_copy || {};
+                        const genId = (result as any).id || '';
 
-                        // Process result
-                        if (resultImages.length > 0) {
-                            const img = resultImages[0];
+                        // Store generation ID for regeneration
+                        if (genId) {
+                            newGenIdMap[`${angleId}_${formatId}`] = genId;
+                        }
+
+                        // Process ALL variations (P0: backend sends 4)
+                        for (const img of resultImages) {
                             let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
 
                             if (img.base64 && img.base64.length > 0) {
@@ -263,7 +281,7 @@ const AdRecreationPage: React.FC = () => {
                             }
 
                             completedResults.push({
-                                id: img.id || `gen-${completed}`,
+                                id: img.id || `gen-${completed}-${img.variation_index}`,
                                 angle: angleId,
                                 format: formatId,
                                 imageUrl: imageUrl,
@@ -271,9 +289,13 @@ const AdRecreationPage: React.FC = () => {
                                 cta: generatedCopy.cta || 'Shop Now',
                                 subtext: generatedCopy.subheadline || '',
                                 isLoading: false,
+                                generationId: genId,
+                                variationIndex: img.variation_index || 1,
                             });
-                        } else if (generatedCopy.headline) {
-                            // No image but has copy
+                        }
+
+                        // If no images but has copy
+                        if (resultImages.length === 0 && generatedCopy.headline) {
                             completedResults.push({
                                 id: `gen-${completed}`,
                                 angle: angleId,
@@ -311,6 +333,7 @@ const AdRecreationPage: React.FC = () => {
             if (completedResults.length > 0) {
                 setGeneratedResults(completedResults);
             }
+            setGenerationIdMap(prev => ({ ...prev, ...newGenIdMap }));
             setGenerationProgress(100);
 
         } catch (error: any) {
@@ -324,6 +347,127 @@ const AdRecreationPage: React.FC = () => {
     const handleLogout = () => {
         logout();
         router.push('/signup');
+    };
+
+    // ============================================
+    // P0: GALLERY ACTION HANDLERS
+    // ============================================
+
+    // Favorite toggle (client-side for P0)
+    const handleToggleFavorite = (resultId: string) => {
+        setFavoriteIds(prev => {
+            const next = new Set(prev);
+            if (next.has(resultId)) {
+                next.delete(resultId);
+            } else {
+                next.add(resultId);
+            }
+            return next;
+        });
+    };
+
+    // Regenerate a specific variation
+    const handleRegenerate = async (result: PlaceholderResult) => {
+        if (!result.generationId || !result.variationIndex) return;
+        const rid = result.id;
+        setRegeneratingIds(prev => new Set(prev).add(rid));
+
+        try {
+            const updated = await regenerateVariation(result.generationId, result.variationIndex);
+            const newImages = updated.result_images || [];
+            const matchImg = newImages.find(img => img.variation_index === result.variationIndex);
+
+            if (matchImg) {
+                let imageUrl = '';
+                if ((matchImg as any).base64 && (matchImg as any).base64.length > 0) {
+                    imageUrl = `data:${(matchImg as any).mimeType || 'image/png'};base64,${(matchImg as any).base64}`;
+                } else if (matchImg.url) {
+                    imageUrl = matchImg.url;
+                }
+
+                setGeneratedResults(prev => prev.map(r =>
+                    r.id === rid ? { ...r, imageUrl, id: matchImg.id || rid } : r
+                ));
+            }
+        } catch (err) {
+            console.error('❌ Regeneration failed:', err);
+            alert('Regeneration failed. Please try again.');
+        } finally {
+            setRegeneratingIds(prev => {
+                const next = new Set(prev);
+                next.delete(rid);
+                return next;
+            });
+        }
+    };
+
+    // Delete image (client-side removal)
+    const handleDeleteImage = (resultId: string) => {
+        setGeneratedResults(prev => prev.filter(r => r.id !== resultId));
+        setFavoriteIds(prev => {
+            const next = new Set(prev);
+            next.delete(resultId);
+            return next;
+        });
+    };
+
+    // Download All as ZIP
+    const handleDownloadAllZip = async () => {
+        const completedResults = generatedResults.filter(r => !r.isLoading && r.imageUrl);
+        if (completedResults.length === 0) return;
+
+        try {
+            // Dynamic import JSZip
+            const JSZip = (await import('jszip')).default;
+            const zip = new JSZip();
+
+            for (let i = 0; i < completedResults.length; i++) {
+                const result = completedResults[i];
+                const angleName = MARKETING_ANGLES.find(a => a.id === result.angle)?.label || result.angle;
+                const fileName = `${angleName}_${result.format}_v${result.variationIndex || 1}.png`.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+                try {
+                    if (result.imageUrl.startsWith('data:')) {
+                        // Base64 data URL
+                        const base64 = result.imageUrl.split(',')[1];
+                        zip.file(fileName, base64, { base64: true });
+                    } else {
+                        // Fetch from URL
+                        const response = await fetch(result.imageUrl);
+                        const blob = await response.blob();
+                        zip.file(fileName, blob);
+                    }
+                } catch (err) {
+                    console.error(`Failed to add ${fileName} to ZIP:`, err);
+                }
+            }
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = window.URL.createObjectURL(content);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `ad_variations_${Date.now()}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            console.log(`✅ Downloaded ZIP with ${completedResults.length} images`);
+        } catch (err) {
+            console.error('❌ ZIP download failed:', err);
+            alert('ZIP download failed. Please try again.');
+        }
+    };
+
+    // Helper: group results by angle
+    const getResultsGroupedByAngle = () => {
+        const groups: Record<string, PlaceholderResult[]> = {};
+        for (const result of generatedResults) {
+            if (!groups[result.angle]) {
+                groups[result.angle] = [];
+            }
+            groups[result.angle].push(result);
+        }
+        return groups;
     };
 
     const canGenerate = conceptId && selectedAngles.length > 0 && selectedFormats.length > 0;
@@ -451,29 +595,93 @@ const AdRecreationPage: React.FC = () => {
                         )}
 
                         {/* Content */}
-                        {(showResults || isGenerating) ? (
-                            <div>
-                                {/* Header */}
-                                <div style={{ marginBottom: '20px' }}>
-                                    <h2 style={{
-                                        fontSize: '20px',
-                                        fontWeight: 600,
-                                        marginBottom: '4px',
-                                        color: isDarkMode ? '#fff' : '#1a1a2e'
-                                    }}>
-                                        Generated Ads
-                                    </h2>
-                                    <p style={{
-                                        fontSize: '13px',
-                                        opacity: 0.6,
-                                        color: isDarkMode ? '#fff' : '#1a1a2e'
-                                    }}>
-                                        {generatedResults.filter(r => !r.isLoading).length} of {generatedResults.length} completed
-                                    </p>
-                                </div>
+                        {(showResults || isGenerating) ? (() => {
+                            const grouped = getResultsGroupedByAngle();
+                            const getCardWidth = (format: string) => {
+                                switch (format) {
+                                    case 'story': return '180px';
+                                    case 'square': return '220px';
+                                    case 'portrait': return '200px';
+                                    case 'landscape': return '300px';
+                                    default: return '220px';
+                                }
+                            };
+                            const getAspectRatio = (format: string) => {
+                                switch (format) {
+                                    case 'story': return '9/16';
+                                    case 'square': return '1/1';
+                                    case 'portrait': return '4/5';
+                                    case 'landscape': return '16/9';
+                                    default: return '1/1';
+                                }
+                            };
+                            const getAngleLabel = (angleId: string) => {
+                                const angle = MARKETING_ANGLES.find(a => a.id === angleId);
+                                return angle ? `${angle.icon} ${angle.label}` : angleId;
+                            };
 
-                                {/* Horizontal Flex-Wrap Grid with All Cards - Sorted by Format */}
-                                <style>{`
+                            return (
+                                <div>
+                                    {/* Header with Download All */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                        <div>
+                                            <h2 style={{
+                                                fontSize: '20px',
+                                                fontWeight: 600,
+                                                marginBottom: '4px',
+                                                color: isDarkMode ? '#fff' : '#1a1a2e'
+                                            }}>
+                                                Generated Ads
+                                            </h2>
+                                            <p style={{
+                                                fontSize: '13px',
+                                                opacity: 0.6,
+                                                color: isDarkMode ? '#fff' : '#1a1a2e'
+                                            }}>
+                                                {generatedResults.filter(r => !r.isLoading).length} of {generatedResults.length} completed
+                                            </p>
+                                        </div>
+
+                                        {/* Download All ZIP Button */}
+                                        {generatedResults.filter(r => !r.isLoading).length > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={handleDownloadAllZip}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    padding: '10px 18px',
+                                                    background: isDarkMode
+                                                        ? 'rgba(124, 77, 255, 0.15)'
+                                                        : 'rgba(124, 77, 255, 0.1)',
+                                                    border: '1px solid rgba(124, 77, 255, 0.3)',
+                                                    borderRadius: '10px',
+                                                    color: '#7c4dff',
+                                                    fontSize: '13px',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(124, 77, 255, 0.25)';
+                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = isDarkMode
+                                                        ? 'rgba(124, 77, 255, 0.15)'
+                                                        : 'rgba(124, 77, 255, 0.1)';
+                                                    e.currentTarget.style.transform = 'translateY(0)';
+                                                }}
+                                            >
+                                                <Archive size={16} />
+                                                Download All (ZIP)
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* CSS for animations */}
+                                    <style>{`
                                     @keyframes spin {
                                         from { transform: rotate(0deg); }
                                         to { transform: rotate(360deg); }
@@ -481,258 +689,299 @@ const AdRecreationPage: React.FC = () => {
                                     .spinner-icon {
                                         animation: spin 1s linear infinite;
                                     }
-                                    .card-image-wrapper:hover .card-hover-overlay {
+                                    .ad-card:hover .card-hover-overlay {
                                         opacity: 1 !important;
                                     }
+                                    .ad-card {
+                                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                                    }
+                                    .ad-card:hover {
+                                        transform: translateY(-4px);
+                                        box-shadow: 0 8px 32px rgba(124, 77, 255, 0.15);
+                                    }
                                 `}</style>
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        flexWrap: 'wrap',
-                                        gap: '16px',
-                                        alignItems: 'flex-start',
-                                    }}
-                                >
-                                    {/* Sort by format: story first, then square, portrait, landscape */}
-                                    {[...generatedResults]
-                                        .sort((a, b) => {
-                                            const formatOrder: Record<string, number> = {
-                                                'story': 0,
-                                                'square': 1,
-                                                'portrait': 2,
-                                                'landscape': 3,
-                                            };
-                                            return (formatOrder[a.format] ?? 99) - (formatOrder[b.format] ?? 99);
-                                        })
-                                        .map(result => {
-                                            const getCardWidth = (format: string) => {
-                                                switch (format) {
-                                                    case 'story': return '200px';
-                                                    case 'square': return '250px';
-                                                    case 'portrait': return '220px';
-                                                    case 'landscape': return '320px';
-                                                    default: return '250px';
-                                                }
-                                            };
-                                            const getAspectRatio = (format: string) => {
-                                                switch (format) {
-                                                    case 'story': return '9/16';
-                                                    case 'square': return '1/1';
-                                                    case 'portrait': return '4/5';
-                                                    case 'landscape': return '16/9';
-                                                    default: return '1/1';
-                                                }
-                                            };
-                                            const getAngleLabel = (angleId: string) => {
-                                                const angle = MARKETING_ANGLES.find(a => a.id === angleId);
-                                                return angle ? `${angle.icon} ${angle.label}` : angleId;
-                                            };
 
-                                            return (
-                                                <div
-                                                    key={result.id}
-                                                    style={{
-                                                        width: getCardWidth(result.format),
-                                                        background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#fff',
-                                                        borderRadius: '12px',
-                                                        overflow: 'hidden',
-                                                        border: '1px solid rgba(124, 77, 255, 0.2)',
-                                                        flexShrink: 0,
-                                                    }}
-                                                >
-                                                    {/* Image Container */}
+                                    {/* Grouped by Angle */}
+                                    {Object.entries(grouped).map(([angleId, results]) => (
+                                        <div key={angleId} style={{ marginBottom: '32px' }}>
+                                            {/* Angle Section Header */}
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '10px',
+                                                marginBottom: '16px',
+                                                paddingBottom: '10px',
+                                                borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                                            }}>
+                                                <span style={{
+                                                    fontSize: '16px',
+                                                    fontWeight: 600,
+                                                    color: isDarkMode ? '#fff' : '#1a1a2e',
+                                                }}>
+                                                    {getAngleLabel(angleId)}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '11px',
+                                                    padding: '2px 8px',
+                                                    background: 'rgba(124, 77, 255, 0.15)',
+                                                    borderRadius: '12px',
+                                                    color: '#7c4dff',
+                                                    fontWeight: 500,
+                                                }}>
+                                                    {results.filter(r => !r.isLoading).length}/{results.length}
+                                                </span>
+                                            </div>
+
+                                            {/* Cards for this angle */}
+                                            <div style={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: '14px',
+                                                alignItems: 'flex-start',
+                                            }}>
+                                                {results.map(result => (
                                                     <div
+                                                        key={result.id}
+                                                        className="ad-card"
                                                         style={{
-                                                            position: 'relative',
-                                                            aspectRatio: getAspectRatio(result.format),
+                                                            width: getCardWidth(result.format),
+                                                            background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#fff',
+                                                            borderRadius: '12px',
                                                             overflow: 'hidden',
-                                                            background: result.isLoading
-                                                                ? 'linear-gradient(135deg, rgba(124, 77, 255, 0.2) 0%, rgba(68, 138, 255, 0.2) 100%)'
-                                                                : '#1a1a2e',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
+                                                            border: favoriteIds.has(result.id)
+                                                                ? '2px solid rgba(255, 59, 128, 0.5)'
+                                                                : '1px solid rgba(124, 77, 255, 0.15)',
+                                                            flexShrink: 0,
+                                                            position: 'relative',
                                                         }}
                                                     >
-                                                        {result.isLoading ? (
-                                                            <div style={{ textAlign: 'center' }}>
-                                                                <Loader2
-                                                                    size={32}
-                                                                    className="spinner-icon"
-                                                                    style={{ color: '#7c4dff', marginBottom: '8px' }}
-                                                                />
-                                                                <div style={{
-                                                                    fontSize: '12px',
-                                                                    color: isDarkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'
-                                                                }}>
-                                                                    Generating...
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="card-image-wrapper" style={{ position: 'relative', width: '100%', height: '100%' }}>
-                                                                <img
-                                                                    src={result.imageUrl}
-                                                                    alt={result.headline}
-                                                                    style={{
-                                                                        width: '100%',
-                                                                        height: '100%',
-                                                                        objectFit: 'cover',
-                                                                    }}
-                                                                />
-                                                                {/* Bottom text overlay with hover icons */}
-                                                                <div
-                                                                    style={{
-                                                                        position: 'absolute',
-                                                                        bottom: 0,
-                                                                        left: 0,
-                                                                        right: 0,
-                                                                        padding: '12px',
-                                                                        background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
-                                                                    }}
-                                                                >
-                                                                    {/* Text content */}
-                                                                    <div style={{
-                                                                        fontSize: '14px',
-                                                                        fontWeight: 600,
-                                                                        color: '#fff',
-                                                                        marginBottom: '4px'
-                                                                    }}>
-                                                                        {result.headline}
-                                                                    </div>
+                                                        {/* Image Container */}
+                                                        <div
+                                                            style={{
+                                                                position: 'relative',
+                                                                aspectRatio: getAspectRatio(result.format),
+                                                                overflow: 'hidden',
+                                                                background: result.isLoading || regeneratingIds.has(result.id)
+                                                                    ? 'linear-gradient(135deg, rgba(124, 77, 255, 0.15) 0%, rgba(68, 138, 255, 0.15) 100%)'
+                                                                    : '#1a1a2e',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                            }}
+                                                        >
+                                                            {(result.isLoading || regeneratingIds.has(result.id)) ? (
+                                                                <div style={{ textAlign: 'center' }}>
+                                                                    <Loader2
+                                                                        size={28}
+                                                                        className="spinner-icon"
+                                                                        style={{ color: '#7c4dff', marginBottom: '6px' }}
+                                                                    />
                                                                     <div style={{
                                                                         fontSize: '11px',
-                                                                        color: 'rgba(255,255,255,0.7)',
-                                                                        marginBottom: '6px'
+                                                                        color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'
                                                                     }}>
-                                                                        {result.subtext}
-                                                                    </div>
-
-                                                                    {/* CTA and Hover Icons Row */}
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'space-between',
-                                                                    }}>
-                                                                        <div style={{
-                                                                            display: 'inline-block',
-                                                                            padding: '4px 10px',
-                                                                            background: '#7c4dff',
-                                                                            borderRadius: '4px',
-                                                                            fontSize: '10px',
-                                                                            fontWeight: 600,
-                                                                            color: '#fff',
-                                                                        }}>
-                                                                            {result.cta}
-                                                                        </div>
-
-                                                                        {/* Hover Icons - appear on hover */}
-                                                                        <div
-                                                                            className="card-hover-overlay"
-                                                                            style={{
-                                                                                display: 'flex',
-                                                                                gap: '8px',
-                                                                                opacity: 0,
-                                                                                transition: 'opacity 0.2s ease',
-                                                                            }}
-                                                                        >
-                                                                            {/* Eye Button - Preview */}
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setLightboxImage(result.imageUrl)}
-                                                                                style={{
-                                                                                    width: '32px',
-                                                                                    height: '32px',
-                                                                                    borderRadius: '50%',
-                                                                                    background: 'rgba(255, 255, 255, 0.2)',
-                                                                                    border: '1.5px solid rgba(255, 255, 255, 0.5)',
-                                                                                    display: 'flex',
-                                                                                    alignItems: 'center',
-                                                                                    justifyContent: 'center',
-                                                                                    cursor: 'pointer',
-                                                                                    transition: 'all 0.2s ease',
-                                                                                }}
-                                                                                onMouseEnter={(e) => {
-                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)';
-                                                                                    e.currentTarget.style.transform = 'scale(1.1)';
-                                                                                }}
-                                                                                onMouseLeave={(e) => {
-                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                                                                                    e.currentTarget.style.transform = 'scale(1)';
-                                                                                }}
-                                                                            >
-                                                                                <Eye size={16} color="#fff" />
-                                                                            </button>
-
-                                                                            {/* Download Button */}
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => handleDownloadImage(
-                                                                                    result.imageUrl,
-                                                                                    `${result.headline.replace(/[^a-zA-Z0-9]/g, '_')}_${result.id}.png`
-                                                                                )}
-                                                                                style={{
-                                                                                    width: '32px',
-                                                                                    height: '32px',
-                                                                                    borderRadius: '50%',
-                                                                                    background: 'rgba(255, 255, 255, 0.2)',
-                                                                                    border: '1.5px solid rgba(255, 255, 255, 0.5)',
-                                                                                    display: 'flex',
-                                                                                    alignItems: 'center',
-                                                                                    justifyContent: 'center',
-                                                                                    cursor: 'pointer',
-                                                                                    transition: 'all 0.2s ease',
-                                                                                }}
-                                                                                onMouseEnter={(e) => {
-                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)';
-                                                                                    e.currentTarget.style.transform = 'scale(1.1)';
-                                                                                }}
-                                                                                onMouseLeave={(e) => {
-                                                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                                                                                    e.currentTarget.style.transform = 'scale(1)';
-                                                                                }}
-                                                                            >
-                                                                                <Download size={16} color="#fff" />
-                                                                            </button>
-                                                                        </div>
+                                                                        {regeneratingIds.has(result.id) ? 'Regenerating...' : `V${result.variationIndex || '?'}`}
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                            ) : (
+                                                                <>
+                                                                    <img
+                                                                        src={result.imageUrl}
+                                                                        alt={result.headline}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            height: '100%',
+                                                                            objectFit: 'cover',
+                                                                        }}
+                                                                    />
 
-                                                    {/* Angle Badge + Format */}
-                                                    <div
-                                                        style={{
-                                                            padding: '10px 12px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'space-between',
-                                                            borderTop: '1px solid rgba(124, 77, 255, 0.1)',
-                                                        }}
-                                                    >
-                                                        <span style={{
-                                                            fontSize: '11px',
-                                                            opacity: 0.7,
-                                                            color: isDarkMode ? '#fff' : '#1a1a2e'
-                                                        }}>
-                                                            {getAngleLabel(result.angle)}
-                                                        </span>
-                                                        <span style={{
-                                                            fontSize: '10px',
-                                                            padding: '2px 6px',
-                                                            background: 'rgba(124, 77, 255, 0.15)',
-                                                            borderRadius: '4px',
-                                                            color: '#7c4dff',
-                                                        }}>
-                                                            {result.format.toUpperCase()}
-                                                        </span>
+                                                                    {/* Variation Badge (top-left) */}
+                                                                    <div style={{
+                                                                        position: 'absolute',
+                                                                        top: '8px',
+                                                                        left: '8px',
+                                                                        padding: '2px 7px',
+                                                                        background: 'rgba(0,0,0,0.6)',
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '10px',
+                                                                        color: '#fff',
+                                                                        fontWeight: 500,
+                                                                        backdropFilter: 'blur(4px)',
+                                                                    }}>
+                                                                        V{result.variationIndex || '?'}
+                                                                    </div>
+
+                                                                    {/* Favorite heart (top-right, always visible) */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => { e.stopPropagation(); handleToggleFavorite(result.id); }}
+                                                                        style={{
+                                                                            position: 'absolute',
+                                                                            top: '8px',
+                                                                            right: '8px',
+                                                                            width: '28px',
+                                                                            height: '28px',
+                                                                            borderRadius: '50%',
+                                                                            background: favoriteIds.has(result.id)
+                                                                                ? 'rgba(255, 59, 128, 0.85)'
+                                                                                : 'rgba(0, 0, 0, 0.4)',
+                                                                            border: 'none',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            cursor: 'pointer',
+                                                                            transition: 'all 0.2s ease',
+                                                                            backdropFilter: 'blur(4px)',
+                                                                        }}
+                                                                    >
+                                                                        <Heart
+                                                                            size={14}
+                                                                            color="#fff"
+                                                                            fill={favoriteIds.has(result.id) ? '#fff' : 'none'}
+                                                                        />
+                                                                    </button>
+
+                                                                    {/* Bottom overlay with text + action buttons (on hover) */}
+                                                                    <div
+                                                                        className="card-hover-overlay"
+                                                                        style={{
+                                                                            position: 'absolute',
+                                                                            bottom: 0,
+                                                                            left: 0,
+                                                                            right: 0,
+                                                                            padding: '40px 10px 10px',
+                                                                            background: 'linear-gradient(transparent, rgba(0,0,0,0.9))',
+                                                                            opacity: 0,
+                                                                            transition: 'opacity 0.25s ease',
+                                                                        }}
+                                                                    >
+                                                                        {/* Text */}
+                                                                        <div style={{
+                                                                            fontSize: '12px',
+                                                                            fontWeight: 600,
+                                                                            color: '#fff',
+                                                                            marginBottom: '2px',
+                                                                            overflow: 'hidden',
+                                                                            textOverflow: 'ellipsis',
+                                                                            whiteSpace: 'nowrap',
+                                                                        }}>
+                                                                            {result.headline}
+                                                                        </div>
+
+                                                                        {/* Action Buttons Row */}
+                                                                        <div style={{
+                                                                            display: 'flex',
+                                                                            gap: '6px',
+                                                                            marginTop: '6px',
+                                                                        }}>
+                                                                            {/* Preview */}
+                                                                            <button type="button" onClick={() => setLightboxImage(result.imageUrl)}
+                                                                                title="Preview"
+                                                                                style={{
+                                                                                    width: '30px', height: '30px', borderRadius: '50%',
+                                                                                    background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
+                                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                                    cursor: 'pointer', transition: 'all 0.15s ease',
+                                                                                }}
+                                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.35)'; }}
+                                                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                                                                            >
+                                                                                <Eye size={14} color="#fff" />
+                                                                            </button>
+
+                                                                            {/* Download */}
+                                                                            <button type="button"
+                                                                                onClick={() => handleDownloadImage(result.imageUrl, `${result.headline.replace(/[^a-zA-Z0-9]/g, '_')}_v${result.variationIndex}.png`)}
+                                                                                title="Download"
+                                                                                style={{
+                                                                                    width: '30px', height: '30px', borderRadius: '50%',
+                                                                                    background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
+                                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                                    cursor: 'pointer', transition: 'all 0.15s ease',
+                                                                                }}
+                                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.35)'; }}
+                                                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                                                                            >
+                                                                                <Download size={14} color="#fff" />
+                                                                            </button>
+
+                                                                            {/* Regenerate */}
+                                                                            {result.generationId && (
+                                                                                <button type="button"
+                                                                                    onClick={() => handleRegenerate(result)}
+                                                                                    title="Regenerate"
+                                                                                    style={{
+                                                                                        width: '30px', height: '30px', borderRadius: '50%',
+                                                                                        background: 'rgba(124, 77, 255, 0.3)', border: '1px solid rgba(124, 77, 255, 0.5)',
+                                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                                        cursor: 'pointer', transition: 'all 0.15s ease',
+                                                                                    }}
+                                                                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124, 77, 255, 0.5)'; }}
+                                                                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124, 77, 255, 0.3)'; }}
+                                                                                >
+                                                                                    <RefreshCw size={14} color="#fff" />
+                                                                                </button>
+                                                                            )}
+
+                                                                            {/* Delete */}
+                                                                            <button type="button"
+                                                                                onClick={() => handleDeleteImage(result.id)}
+                                                                                title="Delete"
+                                                                                style={{
+                                                                                    width: '30px', height: '30px', borderRadius: '50%',
+                                                                                    background: 'rgba(255, 59, 48, 0.2)', border: '1px solid rgba(255, 59, 48, 0.4)',
+                                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                                    cursor: 'pointer', transition: 'all 0.15s ease',
+                                                                                }}
+                                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 59, 48, 0.4)'; }}
+                                                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 59, 48, 0.2)'; }}
+                                                                            >
+                                                                                <Trash2 size={14} color="#fff" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Footer: Format badge */}
+                                                        <div
+                                                            style={{
+                                                                padding: '8px 10px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'space-between',
+                                                                borderTop: '1px solid rgba(124, 77, 255, 0.08)',
+                                                            }}
+                                                        >
+                                                            <span style={{
+                                                                fontSize: '10px',
+                                                                opacity: 0.6,
+                                                                color: isDarkMode ? '#fff' : '#1a1a2e'
+                                                            }}>
+                                                                {result.format.toUpperCase()}
+                                                            </span>
+                                                            {result.cta && !result.isLoading && (
+                                                                <span style={{
+                                                                    fontSize: '9px',
+                                                                    padding: '2px 6px',
+                                                                    background: 'rgba(124, 77, 255, 0.12)',
+                                                                    borderRadius: '4px',
+                                                                    color: '#7c4dff',
+                                                                    fontWeight: 500,
+                                                                }}>
+                                                                    {result.cta}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
-                        ) : (analysisJson || isAnalyzed) ? (
+                            );
+                        })() : (analysisJson || isAnalyzed) ? (
                             <AnalysisStage
                                 data={analysisJson}
                                 conceptId={conceptId || undefined}

@@ -168,6 +168,32 @@ export async function getGenerationStatus(generationId: string): Promise<Generat
 }
 
 /**
+ * Regenerates a specific variation of a generation.
+ * @param generationId - The generation ID
+ * @param variationIndex - The variation index to regenerate (1-based)
+ * @returns Promise<GenerationResult>
+ */
+export async function regenerateVariation(generationId: string, variationIndex: number): Promise<GenerationResult> {
+    console.log(`🔄 Regenerating variation ${variationIndex} for generation: ${generationId}`);
+
+    try {
+        const response = await axiosClient.post<{
+            success: boolean;
+            message: string;
+            generation: GenerationResult;
+        }>(`/api/ad-recreation/${generationId}/regenerate`, {
+            variation_index: variationIndex,
+        });
+
+        console.log('✅ Variation regenerated:', response.data.generation.result_images?.length, 'images');
+        return response.data.generation;
+    } catch (error: any) {
+        console.error('❌ Regenerate API Error:', error.response?.data);
+        throw new Error(error.response?.data?.message || 'Regeneration failed');
+    }
+}
+
+/**
  * Gets all generations for the current user.
  * @returns Promise<GenerationResult[]>
  */
