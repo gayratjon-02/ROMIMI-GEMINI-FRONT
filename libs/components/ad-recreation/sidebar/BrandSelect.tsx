@@ -37,7 +37,7 @@ const transformBrand = (apiBrand: AdBrand): Brand => ({
     id: apiBrand.id,
     name: apiBrand.name,
     logo: getBrandEmoji(apiBrand.name),
-    logo_url: apiBrand.logo_url,
+    logo_url: apiBrand.assets?.logo_light || apiBrand.assets?.logo_dark,
 });
 
 const BrandSelect: React.FC<BrandSelectProps> = ({

@@ -2,13 +2,18 @@
 // Service layer for Ad Recreation Brand API calls
 import axiosClient from '@/libs/server/axios-client';
 
+export interface BrandAssets {
+    logo_light?: string;
+    logo_dark?: string;
+}
+
 export interface AdBrand {
     id: string;
     name: string;
     industry?: string;
     website?: string;
     currency?: string;
-    assets?: any;
+    assets?: BrandAssets;
     brand_playbook?: any;
     created_at?: string;
     updated_at?: string;
