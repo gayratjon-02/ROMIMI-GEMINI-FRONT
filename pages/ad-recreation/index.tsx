@@ -27,7 +27,7 @@ import ProductUploadSection from '@/libs/components/homePage/ProductUploadSectio
 import ProductDropdown from '@/libs/components/homePage/ProductDropdown';
 import HeroImageSelector, { detectHeroZone, collectProductImages } from '@/libs/components/ad-recreation/sidebar/HeroImageSelector';
 import { useProductContext } from '@/libs/context/ProductContext';
-import { getAllProducts } from '@/libs/server/HomePage/product';
+
 import { Product } from '@/libs/types/homepage/product';
 
 // Gallery Components
@@ -124,47 +124,94 @@ const AdRecreationPage: React.FC = () => {
         };
     }, []);
 
-    // Fetch analyzed products for the dropdown
+    // ── Ad-Recreation-Only Product Catalog (localStorage-backed) ──
+    const AD_REC_PRODUCTS_KEY = 'ad-recreation-product-ids';
+
+    // Helper: get stored product IDs from localStorage
+    const getStoredProductIds = (): string[] => {
+        try {
+            const raw = localStorage.getItem(AD_REC_PRODUCTS_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+    };
+
+    // Helper: save product IDs to localStorage
+    const saveProductIds = (ids: string[]) => {
+        localStorage.setItem(AD_REC_PRODUCTS_KEY, JSON.stringify(ids));
+    };
+
+    // On mount: load persisted ad-recreation products by their IDs
     useEffect(() => {
-        const fetchProducts = async () => {
+        const loadPersistedProducts = async () => {
+            const storedIds = getStoredProductIds();
+            if (storedIds.length === 0) return;
+
+            setCatalogLoading(true);
             try {
-                setCatalogLoading(true);
-                const res = await getAllProducts(undefined, 1, 100);
-                setCatalogProducts((res.items || []).filter((p: Product) => p.analyzed_product_json));
+                const { getProduct } = await import('@/libs/server/HomePage/product');
+                const results = await Promise.allSettled(
+                    storedIds.map(id => getProduct(id))
+                );
+                const loaded: Product[] = results
+                    .filter((r): r is PromiseFulfilledResult<Product> => r.status === 'fulfilled')
+                    .map(r => r.value)
+                    .filter(p => p.analyzed_product_json);
+                setCatalogProducts(loaded);
+
+                // Clean up any IDs that no longer exist
+                const validIds = loaded.map(p => p.id);
+                if (validIds.length !== storedIds.length) {
+                    saveProductIds(validIds);
+                }
             } catch {
-                setCatalogProducts([]);
+                // silent
             } finally {
                 setCatalogLoading(false);
             }
         };
-        fetchProducts();
+        loadPersistedProducts();
     }, []);
 
-    // Refetch catalog (called after sidebar upload+analyze to include new product)
-    const refreshCatalog = async () => {
-        try {
-            const res = await getAllProducts(undefined, 1, 100);
-            setCatalogProducts((res.items || []).filter((p: Product) => p.analyzed_product_json));
-        } catch {
-            // silent
-        }
-    };
-
-    // Auto-sync: when product is analyzed via sidebar, auto-select in dropdown
+    // Auto-sync: when product is analyzed via sidebar, add to local catalog instantly
     const prevProductIdRef = React.useRef<string | null>(null);
     useEffect(() => {
         if (productId && productId !== prevProductIdRef.current) {
             prevProductIdRef.current = productId;
-            const syncProduct = async () => {
-                console.log(`📦 Auto-syncing product from sidebar: ${productId}`);
-                await new Promise(r => setTimeout(r, 500));
-                await refreshCatalog();
+
+            // Build Product object from fullAnalysisResponse (available immediately)
+            if (fullAnalysisResponse) {
+                const newProduct: Product = {
+                    id: fullAnalysisResponse.product_id || productId,
+                    user_id: '',
+                    name: fullAnalysisResponse.name || 'Analyzed Product',
+                    category: fullAnalysisResponse.category || fullAnalysisResponse.analysis?.general_info?.category || 'Uncategorized',
+                    front_image_url: fullAnalysisResponse.front_image_url,
+                    back_image_url: fullAnalysisResponse.back_image_url,
+                    reference_images: fullAnalysisResponse.reference_images || [],
+                    analyzed_product_json: fullAnalysisResponse.analysis,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                };
+
+                // Add to catalog (avoid duplicates)
+                setCatalogProducts(prev => {
+                    const exists = prev.some(p => p.id === newProduct.id);
+                    const updated = exists ? prev.map(p => p.id === newProduct.id ? newProduct : p) : [...prev, newProduct];
+                    return updated;
+                });
+
+                // Persist to localStorage
+                const currentIds = getStoredProductIds();
+                if (!currentIds.includes(productId)) {
+                    saveProductIds([...currentIds, productId]);
+                }
+
+                // Auto-select in dropdown
                 setActiveProductId(productId);
-                console.log(`✅ Product auto-selected in dropdown: ${productId}`);
-            };
-            syncProduct();
+                console.log(`✅ Product instantly added & selected: ${newProduct.name} (${productId})`);
+            }
         }
-    }, [productId]);
+    }, [productId, fullAnalysisResponse]);
 
     // Auto-detect hero zone when concept analysis changes
     useEffect(() => {
