@@ -147,13 +147,31 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
 
         setIsLoading(true);
         try {
-            // Only analyze - NO brand creation yet
-            const result = await analyzeBrandOnly({
+            const analyzePayload = {
                 name: name.trim(),
                 website: website.trim(),
                 file: inputTab === 'file' ? file || undefined : undefined,
                 text_content: inputTab === 'text' ? textContent.trim() : undefined,
+            };
+            console.log('=== ANALYZE BRAND REQUEST ===');
+            console.log('Payload:', {
+                name: analyzePayload.name,
+                website: analyzePayload.website,
+                hasFile: !!analyzePayload.file,
+                fileName: analyzePayload.file?.name,
+                fileSize: analyzePayload.file?.size,
+                fileType: analyzePayload.file?.type,
+                text_content: analyzePayload.text_content,
+                inputTab,
             });
+            console.log('Light Logo:', lightLogo ? { name: lightLogo.name, size: lightLogo.size } : null);
+            console.log('Dark Logo:', darkLogo ? { name: darkLogo.name, size: darkLogo.size } : null);
+
+            // Only analyze - NO brand creation yet
+            const result = await analyzeBrandOnly(analyzePayload);
+
+            console.log('=== ANALYZE BRAND RESPONSE ===');
+            console.log('Playbook:', result.playbook);
 
             // Move to Step 2 with playbook (no brandId yet)
             setPlaybook(result.playbook);
@@ -188,6 +206,15 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         try {
             const parsedPlaybook = JSON.parse(playbookJson);
 
+            console.log('=== SAVE BRAND REQUEST ===');
+            console.log('Name:', name.trim());
+            console.log('Website:', website.trim());
+            console.log('Industry:', industry.trim());
+            console.log('Currency:', currency);
+            console.log('Playbook:', parsedPlaybook);
+            console.log('Light Logo:', lightLogo ? { name: lightLogo.name, size: lightLogo.size } : 'NOT PROVIDED');
+            console.log('Dark Logo:', darkLogo ? { name: darkLogo.name, size: darkLogo.size } : 'NOT PROVIDED');
+
             // NOW create brand with the edited playbook
             const brand = await confirmAndCreateBrand(
                 name.trim(),
@@ -197,10 +224,17 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
                 parsedPlaybook
             );
 
+            console.log('=== BRAND CREATED ===');
+            console.log('Brand ID:', brand.id);
+            console.log('Brand:', brand);
+
             // Upload logo assets if provided
             if (lightLogo && darkLogo) {
                 try {
+                    console.log('=== UPLOADING BRAND ASSETS ===');
                     const updatedBrand = await uploadBrandAssets(brand.id, lightLogo, darkLogo);
+                    console.log('=== ASSETS UPLOADED ===');
+                    console.log('Updated Brand:', updatedBrand);
                     onCreated(updatedBrand);
                 } catch (logoErr) {
                     console.warn('Brand created but logo upload failed:', logoErr);
