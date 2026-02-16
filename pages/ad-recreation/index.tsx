@@ -669,6 +669,21 @@ const AdRecreationPage: React.FC = () => {
                             />
                         </div>
 
+                        {/* Product Upload — analyze creates product, auto-selects in dropdown */}
+                        <ProductUploadSection
+                            isDarkMode={isDarkMode}
+                            frontImage={frontImage}
+                            backImage={backImage}
+                            referenceImages={referenceImages}
+                            onFrontImageChange={setFrontImage}
+                            onBackImageChange={setBackImage}
+                            onReferenceImagesChange={setReferenceImages}
+                            onAnalyze={handleAnalyze}
+                            isAnalyzing={isAnalyzing}
+                            isAnalyzed={isAnalyzed}
+                            frontImageUrl={fullAnalysisResponse?.front_image_url}
+                            backImageUrl={fullAnalysisResponse?.back_image_url}
+                        />
 
                         <AdUploader
                             onUploadSuccess={handleUploadSuccess}
