@@ -57,8 +57,9 @@ const AdRecreationPage: React.FC = () => {
         frontImage, backImage, referenceImages,
         setFrontImage, setBackImage, setReferenceImages,
         isAnalyzing, isAnalyzed,
-        productJSON, productId,
-        fullAnalysisResponse,
+        productJSON, setProductJSON,
+        productId, setProductId,
+        fullAnalysisResponse, setFullAnalysisResponse,
         handleAnalyze,
         handleProductSelect,
     } = useProductContext();
@@ -716,21 +717,57 @@ const AdRecreationPage: React.FC = () => {
                             />
                         </div>
 
-                        {/* Product Upload — analyze creates product, auto-selects in dropdown */}
-                        <ProductUploadSection
-                            isDarkMode={isDarkMode}
-                            frontImage={frontImage}
-                            backImage={backImage}
-                            referenceImages={referenceImages}
-                            onFrontImageChange={setFrontImage}
-                            onBackImageChange={setBackImage}
-                            onReferenceImagesChange={setReferenceImages}
-                            onAnalyze={handleAnalyze}
-                            isAnalyzing={isAnalyzing}
-                            isAnalyzed={isAnalyzed}
-                            frontImageUrl={fullAnalysisResponse?.front_image_url}
-                            backImageUrl={fullAnalysisResponse?.back_image_url}
-                        />
+                        {/* Product Upload / New Product Button */}
+                        {!activeProductId ? (
+                            <ProductUploadSection
+                                isDarkMode={isDarkMode}
+                                frontImage={frontImage}
+                                backImage={backImage}
+                                referenceImages={referenceImages}
+                                onFrontImageChange={setFrontImage}
+                                onBackImageChange={setBackImage}
+                                onReferenceImagesChange={setReferenceImages}
+                                onAnalyze={handleAnalyze}
+                                isAnalyzing={isAnalyzing}
+                                isAnalyzed={isAnalyzed}
+                                frontImageUrl={fullAnalysisResponse?.front_image_url}
+                                backImageUrl={fullAnalysisResponse?.back_image_url}
+                            />
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    setActiveProductId(null);
+                                    setFrontImage(null);
+                                    setBackImage(null);
+                                    setReferenceImages([]);
+                                    setProductJSON(null);
+                                    setFullAnalysisResponse(null);
+                                    // Also clear local state if any
+                                }}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    marginTop: '8px',
+                                    background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    border: '1px dashed rgba(124, 77, 255, 0.4)',
+                                    borderRadius: '8px',
+                                    color: '#7c4dff',
+                                    fontSize: '13px',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M12 5v14M5 12h14" />
+                                </svg>
+                                Upload New Product
+                            </button>
+                        )}
 
                         <AdUploader
                             onUploadSuccess={handleUploadSuccess}
