@@ -1,6 +1,6 @@
 // libs/components/ad-recreation/sidebar/AngleSelector.tsx
 // Dropdown/Accordion style with 22 angles grouped by category
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
@@ -51,6 +51,7 @@ export const MARKETING_ANGLES: Angle[] = [
 ];
 
 const MAX_ANGLES = 6;
+const AUTO_CLOSE_DELAY = 4000; // 4 seconds
 
 interface AngleSelectorProps {
     selected: string[];
@@ -64,6 +65,8 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
     isDarkMode,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Group angles by category
     const groupedAngles = MARKETING_ANGLES.reduce((acc, angle) => {
@@ -94,17 +97,61 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
         return labels.join(', ');
     };
 
+    // Clear any pending close timer
+    const clearCloseTimer = useCallback(() => {
+        if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+    }, []);
+
+    // Start 4s auto-close timer when mouse leaves
+    const handleMouseLeave = useCallback(() => {
+        if (!isExpanded) return;
+        clearCloseTimer();
+        closeTimerRef.current = setTimeout(() => {
+            setIsExpanded(false);
+        }, AUTO_CLOSE_DELAY);
+    }, [isExpanded, clearCloseTimer]);
+
+    // Cancel timer when mouse re-enters
+    const handleMouseEnter = useCallback(() => {
+        clearCloseTimer();
+    }, [clearCloseTimer]);
+
+    // Click outside → close immediately
+    useEffect(() => {
+        if (!isExpanded) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                clearCloseTimer();
+                setIsExpanded(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isExpanded, clearCloseTimer]);
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => clearCloseTimer();
+    }, [clearCloseTimer]);
+
     return (
         <div
+            ref={containerRef}
             className={styles.section}
-            onMouseEnter={() => setIsExpanded(true)}
-            onMouseLeave={() => setIsExpanded(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             style={{ position: 'relative' }}
         >
             <label className={styles.sectionLabel}>Marketing Angles</label>
 
-            {/* Dropdown Header - Shows summary */}
+            {/* Dropdown Header - Click to toggle */}
             <div
+                onClick={() => setIsExpanded(prev => !prev)}
                 style={{
                     display: 'flex',
                     justifyContent: 'space-between',
