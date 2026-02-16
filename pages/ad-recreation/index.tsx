@@ -241,10 +241,11 @@ const AdRecreationPage: React.FC = () => {
         console.log(`📊 Placeholders created: ${placeholders.length}`);
 
         try {
-            // P0: Generate one combo at a time (4 variations per combo)
-            let completedResults: PlaceholderResult[] = [];
-            let completed = 0;
+            let imagesDone = 0;
             const newGenIdMap: Record<string, string> = {};
+
+            // Track placeholder index: which placeholder slot to fill next
+            let placeholderIdx = 0;
 
             for (const angleId of selectedAngles) {
                 for (const formatId of selectedFormats) {
@@ -258,6 +259,9 @@ const AdRecreationPage: React.FC = () => {
 
                     console.log(`📤 Generating: angle=${angleId}, format=${formatId}`);
 
+                    // Track which placeholder slots belong to this combo
+                    const comboStartIdx = placeholderIdx;
+
                     try {
                         const result = await generateAdVariations(payload);
                         const resultImages = (result as any).result_images || [];
@@ -269,8 +273,9 @@ const AdRecreationPage: React.FC = () => {
                             newGenIdMap[`${angleId}_${formatId}`] = genId;
                         }
 
-                        // Process ALL variations (P0: backend sends 4)
-                        for (const img of resultImages) {
+                        // Process each variation and update state immediately per image
+                        for (let i = 0; i < resultImages.length; i++) {
+                            const img = resultImages[i];
                             let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
 
                             if (img.base64 && img.base64.length > 0) {
@@ -280,8 +285,9 @@ const AdRecreationPage: React.FC = () => {
                                 imageUrl = img.url;
                             }
 
-                            completedResults.push({
-                                id: img.id || `gen-${completed}-${img.variation_index}`,
+                            const slotIdx = comboStartIdx + i;
+                            const completedResult: PlaceholderResult = {
+                                id: img.id || `gen-${angleId}-${formatId}-${img.variation_index}`,
                                 angle: angleId,
                                 format: formatId,
                                 imageUrl: imageUrl,
@@ -290,14 +296,33 @@ const AdRecreationPage: React.FC = () => {
                                 subtext: generatedCopy.subheadline || '',
                                 isLoading: false,
                                 generationId: genId,
-                                variationIndex: img.variation_index || 1,
+                                variationIndex: img.variation_index || (i + 1),
+                            };
+
+                            imagesDone++;
+                            const currentDone = imagesDone;
+
+                            // Update individual slot using functional state update
+                            setGeneratedResults(prev => {
+                                const updated = [...prev];
+                                if (slotIdx < updated.length) {
+                                    updated[slotIdx] = completedResult;
+                                }
+                                return updated;
                             });
+                            setCompletedCount(currentDone);
+                            setGenerationProgress((currentDone / expected) * 100);
+
+                            // Small delay between images to let React render each one
+                            if (i < resultImages.length - 1) {
+                                await new Promise(r => setTimeout(r, 80));
+                            }
                         }
 
-                        // If no images but has copy
+                        // If no images but has copy, fill remaining slots
                         if (resultImages.length === 0 && generatedCopy.headline) {
-                            completedResults.push({
-                                id: `gen-${completed}`,
+                            const fallbackResult: PlaceholderResult = {
+                                id: `gen-${angleId}-${formatId}-fallback`,
                                 angle: angleId,
                                 format: formatId,
                                 imageUrl: 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Copy+Only',
@@ -305,34 +330,49 @@ const AdRecreationPage: React.FC = () => {
                                 cta: generatedCopy.cta || 'Shop Now',
                                 subtext: generatedCopy.subheadline || '',
                                 isLoading: false,
+                            };
+                            setGeneratedResults(prev => {
+                                const updated = [...prev];
+                                if (comboStartIdx < updated.length) {
+                                    updated[comboStartIdx] = fallbackResult;
+                                }
+                                return updated;
                             });
+                            imagesDone++;
+                            setCompletedCount(imagesDone);
+                            setGenerationProgress((imagesDone / expected) * 100);
                         }
 
-                        completed++;
-                        setCompletedCount(completed);
-                        setGenerationProgress((completed / expected) * 100);
-
-                        // Update results progressively
-                        const updatedResults = [...placeholders];
-                        completedResults.forEach((cr, idx) => {
-                            if (idx < updatedResults.length) {
-                                updatedResults[idx] = cr;
-                            }
-                        });
-                        setGeneratedResults(updatedResults);
+                        // Move placeholder index forward by 4 (slots per combo)
+                        placeholderIdx += 4;
 
                     } catch (err) {
                         console.error(`❌ Failed for angle=${angleId}, format=${formatId}:`, err);
-                        completed++;
-                        setCompletedCount(completed);
+                        // Mark the 4 placeholder slots for this combo as failed
+                        setGeneratedResults(prev => {
+                            const updated = [...prev];
+                            for (let i = 0; i < 4; i++) {
+                                const idx = comboStartIdx + i;
+                                if (idx < updated.length && updated[idx].isLoading) {
+                                    updated[idx] = {
+                                        ...updated[idx],
+                                        isLoading: false,
+                                        imageUrl: 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Failed',
+                                        headline: 'Generation Failed',
+                                        cta: '',
+                                    };
+                                }
+                            }
+                            return updated;
+                        });
+                        imagesDone += 4;
+                        placeholderIdx += 4;
+                        setCompletedCount(imagesDone);
+                        setGenerationProgress((imagesDone / expected) * 100);
                     }
                 }
             }
 
-            // Final update
-            if (completedResults.length > 0) {
-                setGeneratedResults(completedResults);
-            }
             setGenerationIdMap(prev => ({ ...prev, ...newGenIdMap }));
             setGenerationProgress(100);
 
