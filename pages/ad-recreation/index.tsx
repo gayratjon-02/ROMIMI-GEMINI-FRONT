@@ -493,18 +493,18 @@ const AdRecreationPage: React.FC = () => {
                 }
             }
 
-            console.log(`🚀 Launching ${requests.length} generation requests with Socket.IO real-time...`);
+            console.log(`🚀 Launching ${requests.length} parallel generation requests...`);
 
             // Execute all requests in parallel
-            // The backend now returns immediately with generation ID (fire-and-forget)
-            // Socket.IO will deliver images one by one
+            // The backend awaits full generation. Socket.IO events fire during it for real-time display.
+            // HTTP response returns the complete result with all images.
             await Promise.all(requests.map(async (req) => {
                 const { payload, angleId, formatId, startIndex } = req;
                 console.log(`📤 Generating: angle=${angleId}, format=${formatId}`);
 
                 try {
                     const result = await generateAdVariations(payload);
-                    console.log('📥 [SOCKET MODE] Generation response:', result);
+                    console.log('📥 Generation response received:', result);
 
                     // Extract generation data from the response
                     const generation = (result as any);
@@ -568,9 +568,8 @@ const AdRecreationPage: React.FC = () => {
                             setCompletedCount(prev => prev + 1);
                             setGenerationProgress(prev => prev + 1);
                         }
-                        setIsGenerating(false);
                     }
-                    // Otherwise: Socket.IO will handle the updates via visual_completed events
+                    // Socket.IO events also fire for enhanced real-time display
 
                 } catch (err) {
                     console.error(`❌ Failed batch ${angleId}/${formatId}:`, err);
@@ -598,9 +597,9 @@ const AdRecreationPage: React.FC = () => {
         } catch (error: any) {
             console.error('❌ FATAL GENERATION ERROR:', error);
             setErrorMessage(error.message || 'Generation process failed. Please try again.');
+        } finally {
+            setIsGenerating(false);
         }
-        // Note: isGenerating is now set to false by the Socket.IO onComplete callback
-        // or by the immediate response handler above
     };
 
     const handleLogout = () => {
