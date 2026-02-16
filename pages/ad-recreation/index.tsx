@@ -25,6 +25,7 @@ import AngleSelector, { MARKETING_ANGLES } from '@/libs/components/ad-recreation
 import FormatSelector, { OUTPUT_FORMATS } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
 import ProductUploadSection from '@/libs/components/homePage/ProductUploadSection';
 import ProductDropdown from '@/libs/components/homePage/ProductDropdown';
+import HeroImageSelector, { detectHeroZone, collectProductImages } from '@/libs/components/ad-recreation/sidebar/HeroImageSelector';
 import { useProductContext } from '@/libs/context/ProductContext';
 import { getAllProducts } from '@/libs/server/HomePage/product';
 import { Product } from '@/libs/types/homepage/product';
@@ -73,6 +74,11 @@ const AdRecreationPage: React.FC = () => {
     const [conceptId, setConceptId] = useState<string | null>(null);
     const [analysisJson, setAnalysisJson] = useState<any>(null);
     const [inspirationImageUrl, setInspirationImageUrl] = useState<string | null>(null);
+
+    // Hero Image Selection state
+    const [selectedHeroImage, setSelectedHeroImage] = useState<string | null>(null);
+    const [heroZoneId, setHeroZoneId] = useState<string | null>(null);
+    const [heroZoneLabel, setHeroZoneLabel] = useState<string | null>(null);
 
     const [selectedAngles, setSelectedAngles] = useState<string[]>([]);
     const [selectedFormats, setSelectedFormats] = useState<string[]>(['story']);
@@ -134,6 +140,39 @@ const AdRecreationPage: React.FC = () => {
         fetchProducts();
     }, []);
 
+    // Auto-detect hero zone when concept analysis changes
+    useEffect(() => {
+        if (analysisJson) {
+            const zone = detectHeroZone(analysisJson);
+            if (zone) {
+                setHeroZoneId(zone.id);
+                setHeroZoneLabel(zone.label);
+                console.log(`🎯 Hero zone detected: "${zone.id}" (${zone.label})`);
+            } else {
+                setHeroZoneId(null);
+                setHeroZoneLabel(null);
+            }
+            // Reset hero image selection when concept changes
+            setSelectedHeroImage(null);
+        } else {
+            setHeroZoneId(null);
+            setHeroZoneLabel(null);
+            setSelectedHeroImage(null);
+        }
+    }, [analysisJson]);
+
+    // Collect product images for hero selector
+    const heroProductImages = React.useMemo(() => {
+        // Note: referenceImages from context is File[] (upload state), not URLs.
+        // Image URLs come from fullAnalysisResponse which is already handled inside collectProductImages.
+        return collectProductImages(
+            fullAnalysisResponse?.front_image_url || (typeof frontImage === 'string' ? frontImage : null),
+            fullAnalysisResponse?.back_image_url || (typeof backImage === 'string' ? backImage : null),
+            fullAnalysisResponse?.reference_images || null,
+            fullAnalysisResponse,
+        );
+    }, [fullAnalysisResponse, frontImage, backImage]);
+
     // ============================================
     // HANDLERS
     // ============================================
@@ -142,6 +181,7 @@ const AdRecreationPage: React.FC = () => {
         setConceptId(data.conceptId);
         setAnalysisJson(data.analysisJson);
         setInspirationImageUrl(data.imageUrl);
+        setSelectedHeroImage(null); // Reset hero selection on new concept
         console.log('Concept analyzed:', data.conceptId);
     };
 
@@ -280,6 +320,12 @@ const AdRecreationPage: React.FC = () => {
                         marketing_angle_id: angleId,
                         format_id: formatId,
                         ...(productId ? { product_id: productId } : {}),
+                        ...(selectedHeroImage && heroZoneId ? {
+                            mapped_assets: {
+                                hero_zone_id: heroZoneId,
+                                selected_image_url: selectedHeroImage,
+                            },
+                        } : {}),
                     };
 
                     console.log(`📤 Generating: angle=${angleId}, format=${formatId}`);
@@ -535,7 +581,10 @@ const AdRecreationPage: React.FC = () => {
         return groups;
     };
 
-    const canGenerate = conceptId && selectedAngles.length > 0 && selectedFormats.length > 0;
+    // Hero image required when a hero zone exists and product is available
+    const heroRequired = heroZoneId && heroProductImages.length > 0;
+    const canGenerate = conceptId && selectedAngles.length > 0 && selectedFormats.length > 0
+        && (!heroRequired || selectedHeroImage);
     const lightClass = !isDarkMode ? styles.light : '';
 
     // ============================================
@@ -611,6 +660,18 @@ const AdRecreationPage: React.FC = () => {
                             onUploadSuccess={handleUploadSuccess}
                             isDarkMode={isDarkMode}
                         />
+
+                        {/* Hero Image Selector — shown when concept has a hero zone & product exists */}
+                        {heroZoneId && heroProductImages.length > 0 && (
+                            <HeroImageSelector
+                                productImages={heroProductImages}
+                                selectedHeroImage={selectedHeroImage}
+                                onSelect={setSelectedHeroImage}
+                                heroZoneId={heroZoneId}
+                                heroZoneLabel={heroZoneLabel || undefined}
+                                isDarkMode={isDarkMode}
+                            />
+                        )}
 
                         {/* Angle Selector */}
                         <AngleSelector

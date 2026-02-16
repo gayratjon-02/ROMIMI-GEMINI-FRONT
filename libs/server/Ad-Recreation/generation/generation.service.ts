@@ -19,6 +19,10 @@ export interface GenerationPayload {
     marketing_angle_id: string; // e.g., "problem_solution", "social_proof"
     format_id: string;          // e.g., "story", "square", "portrait"
     product_id?: string;        // Optional UUID - product images sent to Gemini as reference
+    mapped_assets?: {           // Hero image mapping - user selects which product image fills the hero zone
+        hero_zone_id: string;
+        selected_image_url: string;
+    };
 }
 
 export interface AdCopyResult {
