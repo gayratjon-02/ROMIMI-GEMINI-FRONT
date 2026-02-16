@@ -669,36 +669,6 @@ const AdRecreationPage: React.FC = () => {
                             />
                         </div>
 
-                        {/* Product Upload (shared with Product Visuals) */}
-                        <ProductUploadSection
-                            isDarkMode={isDarkMode}
-                            frontImage={frontImage}
-                            backImage={backImage}
-                            referenceImages={referenceImages}
-                            onFrontImageChange={setFrontImage}
-                            onBackImageChange={setBackImage}
-                            onReferenceImagesChange={setReferenceImages}
-                            onAnalyze={handleAnalyze}
-                            isAnalyzing={isAnalyzing}
-                            isAnalyzed={isAnalyzed}
-                            frontImageUrl={fullAnalysisResponse?.front_image_url}
-                            backImageUrl={fullAnalysisResponse?.back_image_url}
-                        />
-
-                        {/* Show analyzed product name if available */}
-                        {productJSON && (
-                            <div style={{
-                                padding: '8px 12px',
-                                margin: '0 0 12px',
-                                borderRadius: '8px',
-                                background: isDarkMode ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.08)',
-                                border: '1px solid rgba(34,197,94,0.3)',
-                                fontSize: '12px',
-                                color: isDarkMode ? '#86efac' : '#16a34a',
-                            }}>
-                                ✅ Product: <strong>{productJSON.type}</strong>
-                            </div>
-                        )}
 
                         <AdUploader
                             onUploadSuccess={handleUploadSuccess}
