@@ -150,13 +150,13 @@ const AdRecreationPage: React.FC = () => {
         }
     };
 
-    // Auto-sync: when product is analyzed via sidebar, set it as active and refresh dropdown
+    // Auto-sync: when product is analyzed via sidebar, auto-select in dropdown
+    const prevProductIdRef = React.useRef<string | null>(null);
     useEffect(() => {
-        if (productId && !activeProductId) {
-            // Wait for catalog to refresh FIRST, then set productId as active
+        if (productId && productId !== prevProductIdRef.current) {
+            prevProductIdRef.current = productId;
             const syncProduct = async () => {
                 console.log(`📦 Auto-syncing product from sidebar: ${productId}`);
-                // Small delay to let backend finalize the product record
                 await new Promise(r => setTimeout(r, 500));
                 await refreshCatalog();
                 setActiveProductId(productId);
@@ -164,7 +164,7 @@ const AdRecreationPage: React.FC = () => {
             };
             syncProduct();
         }
-    }, [productId, activeProductId]);
+    }, [productId]);
 
     // Auto-detect hero zone when concept analysis changes
     useEffect(() => {
