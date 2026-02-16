@@ -153,9 +153,16 @@ const AdRecreationPage: React.FC = () => {
     // Auto-sync: when product is analyzed via sidebar, set it as active and refresh dropdown
     useEffect(() => {
         if (productId && !activeProductId) {
-            setActiveProductId(productId);
-            refreshCatalog();
-            console.log(`📦 Auto-selected product from sidebar: ${productId}`);
+            // Wait for catalog to refresh FIRST, then set productId as active
+            const syncProduct = async () => {
+                console.log(`📦 Auto-syncing product from sidebar: ${productId}`);
+                // Small delay to let backend finalize the product record
+                await new Promise(r => setTimeout(r, 500));
+                await refreshCatalog();
+                setActiveProductId(productId);
+                console.log(`✅ Product auto-selected in dropdown: ${productId}`);
+            };
+            syncProduct();
         }
     }, [productId, activeProductId]);
 
