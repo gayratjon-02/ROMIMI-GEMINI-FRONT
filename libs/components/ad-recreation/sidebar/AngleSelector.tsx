@@ -178,11 +178,11 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
                 <div
                     className={styles.dropdownContent}
                     style={{
-                        marginTop: '8px',
+                        marginTop: '4px',
                         background: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                         border: '1px solid rgba(124, 77, 255, 0.2)',
                         borderRadius: '8px',
-                        maxHeight: '300px',
+                        maxHeight: '500px',
                         overflowY: 'auto',
                     }}
                 >
