@@ -1,0 +1,239 @@
+// ProductDropdown - Collection > Category > Product dropdown
+.productDropdown {
+  position: relative;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(79, 70, 229, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.hasSelection {
+    color: #a5a0ff;
+    border-color: rgba(79, 70, 229, 0.25);
+    background: rgba(79, 70, 229, 0.08);
+  }
+
+  .light & {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.7);
+
+    &:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(79, 70, 229, 0.25);
+      color: rgba(0, 0, 0, 0.9);
+    }
+
+    &.hasSelection {
+      color: #4f46e5;
+      border-color: rgba(79, 70, 229, 0.2);
+      background: rgba(79, 70, 229, 0.06);
+    }
+  }
+}
+
+.triggerIcon {
+  flex-shrink: 0;
+  opacity: 0.8;
+
+  svg {
+    display: block;
+  }
+}
+
+.triggerLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.triggerArrow {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+
+  svg {
+    display: block;
+  }
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  background: rgba(20, 22, 25, 0.98);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  border-radius: 12px;
+  z-index: 1000;
+  animation: slideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(79, 70, 229, 0.15);
+
+  .light & {
+    background: rgba(255, 255, 255, 0.99);
+    border-color: rgba(79, 70, 229, 0.15);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(79, 70, 229, 0.1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading,
+.empty {
+  padding: 16px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+
+  .light & {
+    color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+.list {
+  padding: 8px 0;
+}
+
+.categoryGroup {
+  margin-bottom: 4px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.categoryHeader {
+  padding: 8px 14px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.45);
+
+  .light & {
+    color: rgba(0, 0, 0, 0.45);
+  }
+}
+
+.productItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+
+  &:hover {
+    background: rgba(79, 70, 229, 0.15);
+    color: #a5a0ff;
+  }
+
+  &.active {
+    background: rgba(79, 70, 229, 0.25);
+    color: #b8b3ff;
+  }
+
+  .light & {
+    color: rgba(0, 0, 0, 0.8);
+
+    &:hover {
+      background: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+    }
+
+    &.active {
+      background: rgba(79, 70, 229, 0.15);
+      color: #4f46e5;
+    }
+  }
+}
+
+.productThumb {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.productThumbPlaceholder {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.35);
+
+  .light & {
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.35);
+  }
+
+  svg {
+    display: block;
+  }
+}
+
+.productName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

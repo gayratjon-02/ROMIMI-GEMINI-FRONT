@@ -943,6 +943,7 @@ function Home() {
             refreshTrigger={brandRefreshTrigger}
             onBrandSelect={handleBrandSelect}
             onCollectionSelect={handleCollectionSelect}
+            selectedCollectionId={selectedCollection?.id ?? null}
             onBrandCreated={handleBrandCreated}
             onLibrarySelect={handleLibrarySelect}
             libraryRefreshTrigger={libraryRefreshTrigger}
