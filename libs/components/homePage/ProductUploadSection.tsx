@@ -15,6 +15,8 @@ interface ProductUploadSectionProps {
     onAnalyze: (forceReanalyze?: boolean) => void;
     isAnalyzing?: boolean;
     isAnalyzed?: boolean;
+    frontImageUrl?: string | null;
+    backImageUrl?: string | null;
 }
 
 const MAX_REFERENCE_IMAGES = 10;
@@ -30,6 +32,8 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
     onAnalyze,
     isAnalyzing = false,
     isAnalyzed = false,
+    frontImageUrl = null,
+    backImageUrl = null,
 }) => {
     const [dragOverFront, setDragOverFront] = useState(false);
     const [dragOverBack, setDragOverBack] = useState(false);
@@ -93,9 +97,10 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
         type: 'front' | 'back',
         image: File | null,
         isDragOver: boolean,
-        inputRef: React.RefObject<HTMLInputElement | null>
+        inputRef: React.RefObject<HTMLInputElement | null>,
+        imageUrl?: string | null,
     ) => {
-        const preview = image ? URL.createObjectURL(image) : null;
+        const preview = image ? URL.createObjectURL(image) : (imageUrl || null);
 
         return (
             <div className={styles.uploadZoneWrapper}>
@@ -103,7 +108,7 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
                     {type === 'front' ? 'FRONT' : 'BACK'}
                 </label>
                 <div
-                    className={`${styles.uploadZone} ${isDragOver ? styles.dragOver : ''} ${image ? styles.hasImage : ''}`}
+                    className={`${styles.uploadZone} ${isDragOver ? styles.dragOver : ''} ${(image || imageUrl) ? styles.hasImage : ''}`}
                     onDragOver={handleDragOver}
                     onDragEnter={() => type === 'front' ? setDragOverFront(true) : setDragOverBack(true)}
                     onDragLeave={() => type === 'front' ? setDragOverFront(false) : setDragOverBack(false)}
@@ -141,8 +146,8 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
         );
     };
 
-    // Can analyze if at least one image is uploaded
-    const canAnalyze = (frontImage || backImage) && !isAnalyzing;
+    // Can analyze if at least one image is uploaded or selected from catalog
+    const canAnalyze = (frontImage || backImage || frontImageUrl || backImageUrl) && !isAnalyzing;
 
     return (
         <div className={`${styles.container} ${isDarkMode ? styles.dark : styles.light}`}>
@@ -154,8 +159,8 @@ const ProductUploadSection: React.FC<ProductUploadSectionProps> = ({
 
             {/* Front & Back Images */}
             <div className={styles.uploadGrid}>
-                {renderUploadZone('front', frontImage, dragOverFront, frontInputRef)}
-                {renderUploadZone('back', backImage, dragOverBack, backInputRef)}
+                {renderUploadZone('front', frontImage, dragOverFront, frontInputRef, frontImageUrl)}
+                {renderUploadZone('back', backImage, dragOverBack, backInputRef, backImageUrl)}
             </div>
 
             {/* Reference Images Section */}

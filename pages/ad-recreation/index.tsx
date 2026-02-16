@@ -24,7 +24,10 @@ import AdUploader from '@/libs/components/ad-recreation/sidebar/AdUploader';
 import AngleSelector, { MARKETING_ANGLES } from '@/libs/components/ad-recreation/sidebar/AngleSelector';
 import FormatSelector, { OUTPUT_FORMATS } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
 import ProductUploadSection from '@/libs/components/homePage/ProductUploadSection';
+import ProductDropdown from '@/libs/components/homePage/ProductDropdown';
 import { useProductContext } from '@/libs/context/ProductContext';
+import { getAllProducts } from '@/libs/server/HomePage/product';
+import { Product } from '@/libs/types/homepage/product';
 
 // Gallery Components
 import EmptyState from '@/libs/components/ad-recreation/gallery/EmptyState';
@@ -56,6 +59,7 @@ const AdRecreationPage: React.FC = () => {
         productJSON, productId,
         fullAnalysisResponse,
         handleAnalyze,
+        handleProductSelect,
     } = useProductContext();
 
     // ============================================
@@ -96,6 +100,11 @@ const AdRecreationPage: React.FC = () => {
     // Lightbox state for full-size image preview
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+    // Product catalog state
+    const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
+    const [catalogLoading, setCatalogLoading] = useState(false);
+    const [activeProductId, setActiveProductId] = useState<string | null>(null);
+
     // Load user info on mount
     useEffect(() => {
         const userInfo = getUserInfo();
@@ -107,6 +116,22 @@ const AdRecreationPage: React.FC = () => {
                 clearInterval(pollingRef.current);
             }
         };
+    }, []);
+
+    // Fetch analyzed products for the dropdown
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                setCatalogLoading(true);
+                const res = await getAllProducts(undefined, 1, 100);
+                setCatalogProducts((res.items || []).filter((p: Product) => p.analyzed_product_json));
+            } catch {
+                setCatalogProducts([]);
+            } finally {
+                setCatalogLoading(false);
+            }
+        };
+        fetchProducts();
     }, []);
 
     // ============================================
@@ -534,6 +559,23 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                         />
 
+                        {/* Product Selection Dropdown */}
+                        <div style={{ marginBottom: '12px' }}>
+                            <label className={styles.sectionLabel}>Product</label>
+                            <ProductDropdown
+                                products={catalogProducts}
+                                isLoading={catalogLoading}
+                                selectedProductId={activeProductId}
+                                selectedCollectionId={null}
+                                onProductSelect={(product) => {
+                                    setActiveProductId(product.id);
+                                    handleProductSelect(product);
+                                }}
+                                isDarkMode={isDarkMode}
+                                placeholder="Select Product"
+                            />
+                        </div>
+
                         {/* Product Upload (shared with Product Visuals) */}
                         <ProductUploadSection
                             isDarkMode={isDarkMode}
@@ -546,6 +588,8 @@ const AdRecreationPage: React.FC = () => {
                             onAnalyze={handleAnalyze}
                             isAnalyzing={isAnalyzing}
                             isAnalyzed={isAnalyzed}
+                            frontImageUrl={fullAnalysisResponse?.front_image_url}
+                            backImageUrl={fullAnalysisResponse?.back_image_url}
                         />
 
                         {/* Show analyzed product name if available */}
