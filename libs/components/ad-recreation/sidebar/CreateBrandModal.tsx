@@ -145,6 +145,12 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
             return;
         }
 
+        // Must have at least one logo
+        if (!lightLogo && !darkLogo) {
+            setError('Please upload at least one brand logo');
+            return;
+        }
+
         setIsLoading(true);
         try {
             const analyzePayload = {
@@ -546,7 +552,7 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
                         {/* Brand Assets - Logo Upload */}
                         <div className={styles.modalField}>
                             <label className={styles.modalLabel}>
-                                Brand Logos <span style={{ color: isDarkMode ? '#888' : '#999', fontSize: '11px', fontWeight: 400 }}>(optional)</span>
+                                Brand Logos <span className={styles.required}>*</span>
                             </label>
                             <div style={{ display: 'flex', gap: '12px' }}>
                                 {/* Light Logo */}
