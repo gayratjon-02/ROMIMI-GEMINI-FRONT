@@ -40,10 +40,12 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(product);
     });
+    // Sort products within each category by name
+    Object.values(groups).forEach(arr => arr.sort((a, b) => a.name.localeCompare(b.name)));
     return groups;
   }, [filteredProducts]);
 
-  const categories = useMemo(() => Object.keys(productsByCategory), [productsByCategory]);
+  const categories = useMemo(() => Object.keys(productsByCategory).sort((a, b) => a.localeCompare(b)), [productsByCategory]);
 
   const selectedProduct = useMemo(
     () => products.find((p) => p.id === selectedProductId),
