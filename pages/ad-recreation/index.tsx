@@ -140,6 +140,25 @@ const AdRecreationPage: React.FC = () => {
         fetchProducts();
     }, []);
 
+    // Refetch catalog (called after sidebar upload+analyze to include new product)
+    const refreshCatalog = async () => {
+        try {
+            const res = await getAllProducts(undefined, 1, 100);
+            setCatalogProducts((res.items || []).filter((p: Product) => p.analyzed_product_json));
+        } catch {
+            // silent
+        }
+    };
+
+    // Auto-sync: when product is analyzed via sidebar, set it as active and refresh dropdown
+    useEffect(() => {
+        if (productId && !activeProductId) {
+            setActiveProductId(productId);
+            refreshCatalog();
+            console.log(`📦 Auto-selected product from sidebar: ${productId}`);
+        }
+    }, [productId, activeProductId]);
+
     // Auto-detect hero zone when concept analysis changes
     useEffect(() => {
         if (analysisJson) {
@@ -281,6 +300,12 @@ const AdRecreationPage: React.FC = () => {
             setErrorMessage('Please upload an inspiration ad first');
             return;
         }
+        // Strict product validation
+        const effectiveProductId = activeProductId || productId;
+        if (!effectiveProductId) {
+            setErrorMessage('Please select or upload a product first');
+            return;
+        }
         if (selectedAngles.length === 0) {
             setErrorMessage('Please select at least one marketing angle');
             return;
@@ -319,7 +344,7 @@ const AdRecreationPage: React.FC = () => {
                         concept_id: conceptId,
                         marketing_angle_id: angleId,
                         format_id: formatId,
-                        ...(productId ? { product_id: productId } : {}),
+                        product_id: effectiveProductId,
                         ...(selectedHeroImage && heroZoneId ? {
                             mapped_assets: {
                                 hero_zone_id: heroZoneId,
@@ -581,10 +606,22 @@ const AdRecreationPage: React.FC = () => {
         return groups;
     };
 
-    // Hero image required when a hero zone exists and product is available
+    // Strict product dependency: product is REQUIRED for generation
+    const effectiveProductId = activeProductId || productId;
     const heroRequired = heroZoneId && heroProductImages.length > 0;
-    const canGenerate = conceptId && selectedAngles.length > 0 && selectedFormats.length > 0
+    const canGenerate = !!effectiveProductId && !!conceptId && selectedAngles.length > 0 && selectedFormats.length > 0
         && (!heroRequired || selectedHeroImage);
+
+    // Compute disabled reason for tooltip
+    const getDisabledReason = (): string | null => {
+        if (!effectiveProductId) return 'Please select or upload a product first';
+        if (!conceptId) return 'Please upload an inspiration ad';
+        if (selectedAngles.length === 0) return 'Please select a marketing angle';
+        if (selectedFormats.length === 0) return 'Please select an output format';
+        if (heroRequired && !selectedHeroImage) return 'Please select a hero image';
+        return null;
+    };
+    const disabledReason = getDisabledReason();
     const lightClass = !isDarkMode ? styles.light : '';
 
     // ============================================
@@ -1237,40 +1274,42 @@ const AdRecreationPage: React.FC = () => {
                         )}
                 </div >
 
-                {/* Right: Generate Button */}
-                < button
-                    onClick={handleGenerate}
-                    disabled={!canGenerate || isGenerating}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '12px 24px',
-                        background: canGenerate && !isGenerating
-                            ? 'linear-gradient(135deg, #7c4dff 0%, #448aff 100%)'
-                            : 'rgba(124, 77, 255, 0.3)',
-                        border: 'none',
-                        borderRadius: '10px',
-                        color: '#fff',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        cursor: canGenerate && !isGenerating ? 'pointer' : 'not-allowed',
-                        opacity: canGenerate && !isGenerating ? 1 : 0.6,
-                        transition: 'all 0.2s ease',
-                    }}
-                >
-                    {
-                        isGenerating ? (
-                            <>
-                                <Loader2 size={16} className="spinner-icon" />
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                ✨ Generate Ad
-                            </>
-                        )}
-                </button >
+                {/* Right: Generate Button with Tooltip */}
+                <div style={{ position: 'relative' }} title={disabledReason || undefined}>
+                    <button
+                        onClick={handleGenerate}
+                        disabled={!canGenerate || isGenerating}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '12px 24px',
+                            background: canGenerate && !isGenerating
+                                ? 'linear-gradient(135deg, #7c4dff 0%, #448aff 100%)'
+                                : 'rgba(124, 77, 255, 0.3)',
+                            border: 'none',
+                            borderRadius: '10px',
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: canGenerate && !isGenerating ? 'pointer' : 'not-allowed',
+                            opacity: canGenerate && !isGenerating ? 1 : 0.6,
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        {
+                            isGenerating ? (
+                                <>
+                                    <Loader2 size={16} className="spinner-icon" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    ✨ Generate Ad
+                                </>
+                            )}
+                    </button>
+                </div>
             </div >
 
             {/* Lightbox Modal for Full-Size Image Preview */}
