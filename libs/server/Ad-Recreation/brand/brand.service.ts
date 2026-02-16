@@ -77,6 +77,8 @@ export interface AnalyzeBrandData {
     website: string;
     text_content?: string;
     file?: File;
+    logo_light?: File;
+    logo_dark?: File;
 }
 
 /**
@@ -172,6 +174,12 @@ export async function analyzeBrandOnly(data: AnalyzeBrandData): Promise<AnalyzeO
     }
     if (data.text_content) {
         formData.append('text_content', data.text_content);
+    }
+    if (data.logo_light) {
+        formData.append('logo_light', data.logo_light);
+    }
+    if (data.logo_dark) {
+        formData.append('logo_dark', data.logo_dark);
     }
 
     const response = await axiosClient.post<AnalyzeOnlyResponse>('/api/brands/analyze', formData);

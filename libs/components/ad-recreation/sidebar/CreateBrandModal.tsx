@@ -152,6 +152,8 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
                 website: website.trim(),
                 file: inputTab === 'file' ? file || undefined : undefined,
                 text_content: inputTab === 'text' ? textContent.trim() : undefined,
+                logo_light: lightLogo || undefined,
+                logo_dark: darkLogo || undefined,
             };
             console.log('=== ANALYZE BRAND REQUEST ===');
             console.log('Payload:', {
