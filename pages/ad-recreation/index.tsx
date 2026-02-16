@@ -15,6 +15,7 @@ import {
     regenerateVariation,
     GenerationResult
 } from '@/libs/server/Ad-Recreation/generation/generation.service';
+import { useGenerationSocket } from '@/libs/hooks/useGenerationSocket';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 // Sidebar Components
@@ -103,6 +104,71 @@ const AdRecreationPage: React.FC = () => {
 
     // Polling ref
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Socket.IO tracking refs (used in socket callbacks without stale closure)
+    const socketRequestMapRef = useRef<Record<string, { angleId: string; formatId: string; startIndex: number }>>({});
+    const socketCopyMapRef = useRef<Record<string, any>>({});
+
+    // ════════════════════════════════════════════════════════════
+    // SOCKET.IO: Real-time image streaming
+    // ════════════════════════════════════════════════════════════
+    const { isConnected: socketConnected } = useGenerationSocket(
+        currentGenerationId,
+        {
+            onVisualCompleted: useCallback((data: { status: string; image_url: string; index: number; type: string; generated_at: string; error?: string }) => {
+                console.log('🖼️ [PAGE] visual_completed callback:', data);
+
+                if (data.status === 'completed' && data.image_url) {
+                    // Replace the placeholder at the correct index
+                    setGeneratedResults(prev => {
+                        const next = [...prev];
+                        const idx = data.index;
+                        if (idx >= 0 && idx < next.length) {
+                            next[idx] = {
+                                ...next[idx],
+                                id: `gen-socket-${data.index}-${Date.now()}`,
+                                imageUrl: data.image_url,
+                                isLoading: false,
+                            };
+                        }
+                        return next;
+                    });
+                    setCompletedCount(prev => prev + 1);
+                    setGenerationProgress(prev => prev + 1);
+                } else if (data.status === 'failed') {
+                    setGeneratedResults(prev => {
+                        const next = [...prev];
+                        const idx = data.index;
+                        if (idx >= 0 && idx < next.length) {
+                            next[idx] = {
+                                ...next[idx],
+                                isLoading: false,
+                                headline: 'Generation Failed',
+                                cta: 'Retry',
+                                imageUrl: 'https://placehold.co/1080x1080/ff3b30/FFF?text=Failed',
+                            };
+                        }
+                        return next;
+                    });
+                    setCompletedCount(prev => prev + 1);
+                }
+            }, []),
+            onProgress: useCallback((data: { progress_percent: number; completed: number; total: number }) => {
+                console.log(`📊 [PAGE] progress: ${data.progress_percent}%`);
+            }, []),
+            onComplete: useCallback((data: { status: string; completed: number; total: number; visuals: any[] }) => {
+                console.log('🏁 [PAGE] generation_complete:', data);
+                setIsGenerating(false);
+                setCurrentGenerationId(null); // Disconnect socket
+            }, []),
+            onConnected: useCallback(() => {
+                console.log('✅ [PAGE] Socket.IO connected for generation');
+            }, []),
+            onError: useCallback((error: Error) => {
+                console.error('❌ [PAGE] Socket.IO error:', error);
+            }, []),
+        }
+    );
 
     // Lightbox state for full-size image preview
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -427,72 +493,85 @@ const AdRecreationPage: React.FC = () => {
                 }
             }
 
-            console.log(`🚀 Launching ${requests.length} parallel generation requests...`);
+            console.log(`🚀 Launching ${requests.length} generation requests with Socket.IO real-time...`);
 
             // Execute all requests in parallel
+            // The backend now returns immediately with generation ID (fire-and-forget)
+            // Socket.IO will deliver images one by one
             await Promise.all(requests.map(async (req) => {
                 const { payload, angleId, formatId, startIndex } = req;
                 console.log(`📤 Generating: angle=${angleId}, format=${formatId}`);
 
                 try {
                     const result = await generateAdVariations(payload);
-                    const resultImages = (result as any).result_images || [];
-                    const generatedCopy = (result as any).generated_copy || {};
-                    const genId = (result as any).id || '';
+                    console.log('📥 [SOCKET MODE] Generation response:', result);
 
-                    // Update generation ID map safely
+                    // Extract generation data from the response
+                    const generation = (result as any);
+                    const genId = generation?.id || '';
+                    const generatedCopy = generation?.generated_copy || {};
+
+                    // Store generation ID for regeneration
                     if (genId) {
                         setGenerationIdMap(prev => ({
                             ...prev,
                             [`${angleId}_${formatId}`]: genId
                         }));
+
+                        // Connect to Socket.IO for real-time image updates
+                        console.log(`🔗 [SOCKET MODE] Setting generation ID for Socket.IO: ${genId}`);
+                        setCurrentGenerationId(genId);
+
+                        // Store request mapping for socket callbacks
+                        socketRequestMapRef.current[genId] = { angleId, formatId, startIndex };
+                        socketCopyMapRef.current[genId] = generatedCopy;
                     }
 
-                    // If no images returned but execution succeeded (shouldn't happen ideally)
-                    if (resultImages.length === 0 && generatedCopy.headline) {
-                        // Fallback logic for copy-only result
-                        // (Implement if needed, otherwise skip)
-                    }
+                    // Check if the response already contains result images
+                    // (happens if generation completed within the 2s timeout)
+                    const resultImages = generation?.result_images || [];
+                    if (resultImages.length > 0) {
+                        console.log(`📥 [IMMEDIATE] Got ${resultImages.length} images immediately (fast generation)`);
+                        for (let i = 0; i < resultImages.length; i++) {
+                            const img = resultImages[i];
+                            let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
 
-                    // Process each variation and update state immediately per image
-                    for (let i = 0; i < resultImages.length; i++) {
-                        const img = resultImages[i];
-                        let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
-
-                        if (img.base64 && img.base64.length > 0) {
-                            const mimeType = img.mimeType || 'image/png';
-                            imageUrl = `data:${mimeType};base64,${img.base64}`;
-                        } else if (img.url) {
-                            imageUrl = img.url;
-                        }
-
-                        const slotIdx = startIndex + i;
-                        const completedResult: PlaceholderResult = {
-                            id: img.id || `gen-${angleId}-${formatId}-${img.variation_index}`,
-                            angle: angleId,
-                            format: formatId,
-                            imageUrl: imageUrl,
-                            headline: generatedCopy.headline || 'Your Ad',
-                            cta: generatedCopy.cta || 'Shop Now',
-                            subtext: generatedCopy.subheadline || '',
-                            isLoading: false,
-                            generationId: genId,
-                            variationIndex: img.variation_index || (i + 1),
-                        };
-
-                        // Real-time update: replace specific placeholder
-                        setGeneratedResults(prev => {
-                            const next = [...prev];
-                            // Safety check
-                            if (next[slotIdx]) {
-                                next[slotIdx] = completedResult;
+                            if (img.base64 && img.base64.length > 0) {
+                                const mimeType = img.mimeType || 'image/png';
+                                imageUrl = `data:${mimeType};base64,${img.base64}`;
+                            } else if (img.url) {
+                                imageUrl = img.url;
                             }
-                            return next;
-                        });
 
-                        setCompletedCount(prev => prev + 1);
-                        setGenerationProgress(prev => prev + 1);
+                            const slotIdx = startIndex + i;
+                            const completedResult: PlaceholderResult = {
+                                id: img.id || `gen-${angleId}-${formatId}-${img.variation_index}`,
+                                angle: angleId,
+                                format: formatId,
+                                imageUrl: imageUrl,
+                                headline: generatedCopy.headline || 'Your Ad',
+                                cta: generatedCopy.cta || 'Shop Now',
+                                subtext: generatedCopy.subheadline || '',
+                                isLoading: false,
+                                generationId: genId,
+                                variationIndex: img.variation_index || (i + 1),
+                            };
+
+                            setGeneratedResults(prev => {
+                                const next = [...prev];
+                                if (next[slotIdx]) {
+                                    next[slotIdx] = completedResult;
+                                }
+                                return next;
+                            });
+
+                            setCompletedCount(prev => prev + 1);
+                            setGenerationProgress(prev => prev + 1);
+                        }
+                        setIsGenerating(false);
                     }
+                    // Otherwise: Socket.IO will handle the updates via visual_completed events
+
                 } catch (err) {
                     console.error(`❌ Failed batch ${angleId}/${formatId}:`, err);
                     // Mark these specific placeholders as failed
@@ -511,7 +590,7 @@ const AdRecreationPage: React.FC = () => {
                             }
                             return next;
                         });
-                        setCompletedCount(prev => prev + 1); // Count as done even if failed to clear progress
+                        setCompletedCount(prev => prev + 1);
                     }
                 }
             }));
@@ -519,10 +598,9 @@ const AdRecreationPage: React.FC = () => {
         } catch (error: any) {
             console.error('❌ FATAL GENERATION ERROR:', error);
             setErrorMessage(error.message || 'Generation process failed. Please try again.');
-        } finally {
-            setIsGenerating(false);
-            // Don't reset completed count immediately so user sees "Done"
         }
+        // Note: isGenerating is now set to false by the Socket.IO onComplete callback
+        // or by the immediate response handler above
     };
 
     const handleLogout = () => {

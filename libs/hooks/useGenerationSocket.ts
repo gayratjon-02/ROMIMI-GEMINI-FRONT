@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { getAuthToken } from '@/libs/server/HomePage/signup';
 
 interface VisualCompletedData {
@@ -38,7 +39,7 @@ export const useGenerationSocket = (
     generationId: string | null,
     callbacks: GenerationSocketCallbacks
 ) => {
-    const eventSourceRef = useRef<EventSource | null>(null);
+    const socketRef = useRef<Socket | null>(null);
     const callbacksRef = useRef(callbacks);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -50,117 +51,140 @@ export const useGenerationSocket = (
 
     useEffect(() => {
         if (!generationId) {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
+            if (socketRef.current) {
+                console.log('🧹 [Socket.IO] Disconnecting (no generationId)');
+                socketRef.current.disconnect();
+                socketRef.current = null;
             }
             setIsConnected(false);
             return;
         }
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        const token = getAuthToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001';
 
-        // Construct SSE URL with token
-        const sseUrl = `${apiUrl}/api/generations/${generationId}/stream?token=${token || ''}`;
-
-        console.log('🔗 [SSE] Connecting to:', sseUrl);
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('🔗 [Socket.IO] Connecting to:', `${apiUrl}/generations`);
+        console.log('🔗 [Socket.IO] Generation ID:', generationId);
+        console.log('═══════════════════════════════════════════════════════════');
 
         try {
-            const eventSource = new EventSource(sseUrl);
-            eventSourceRef.current = eventSource;
+            const socket = io(`${apiUrl}/generations`, {
+                transports: ['websocket', 'polling'],
+                timeout: 30000,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+            });
 
-            eventSource.onopen = () => {
-                console.log('✅ [SSE] Connection opened');
+            socketRef.current = socket;
+
+            socket.on('connect', () => {
+                console.log('✅ [Socket.IO] Connected! Socket ID:', socket.id);
                 setIsConnected(true);
                 setConnectionError(null);
                 callbacksRef.current.onConnected?.();
-            };
 
-            eventSource.onerror = (err) => {
-                console.error('❌ [SSE] Connection error:', err);
+                // Subscribe to the generation room
+                console.log('📤 [Socket.IO] Subscribing to generation:', generationId);
+                socket.emit('subscribe', { generationId });
+            });
+
+            socket.on('disconnect', (reason) => {
+                console.log('🔌 [Socket.IO] Disconnected:', reason);
                 setIsConnected(false);
-                // EventSource automatically retries, but we might want to log it
-                // setConnectionError('Connection lost');
-                // callbacksRef.current.onError?.(new Error('SSE Connection Error'));
-            };
+            });
 
-            // Listen for all messages (default event type)
-            eventSource.onmessage = (event) => {
-                try {
-                    const parsedData = JSON.parse(event.data);
-                    console.log('📨 [SSE] Received event:', parsedData.type, parsedData);
+            socket.on('connect_error', (err) => {
+                console.error('❌ [Socket.IO] Connection error:', err.message);
+                setConnectionError(err.message);
+                callbacksRef.current.onError?.(err);
+            });
 
-                    switch (parsedData.type) {
-                        case 'visual_completed':
-                            if (parsedData.visual) {
-                                callbacksRef.current.onVisualCompleted?.({
-                                    type: parsedData.visual.type,
-                                    index: parsedData.visualIndex,
-                                    image_url: parsedData.visual.image_url,
-                                    generated_at: parsedData.visual.generated_at,
-                                    status: parsedData.visual.status as any,
-                                    prompt: parsedData.visual.prompt
-                                });
-                            }
-                            break;
+            // Listen for real-time image completion events
+            socket.on('visual_completed', (data: any) => {
+                console.log('═══════════════════════════════════════════════════════════');
+                console.log('📨 [Socket.IO] visual_completed received!');
+                console.log('   Index:', data.index);
+                console.log('   Status:', data.status);
+                console.log('   Image URL:', data.image_url);
+                console.log('   Type:', data.type);
+                console.log('═══════════════════════════════════════════════════════════');
 
-                        case 'generation_done':
-                        case 'generation_completed':
-                            callbacksRef.current.onComplete?.({
-                                status: parsedData.status as any,
-                                completed: parsedData.completed,
-                                total: parsedData.total,
-                                visuals: [] // Visuals are updated incrementally
-                            });
+                callbacksRef.current.onVisualCompleted?.({
+                    type: data.type,
+                    index: data.index,
+                    image_url: data.image_url,
+                    generated_at: data.generated_at,
+                    status: data.status,
+                    error: data.error,
+                    prompt: data.prompt,
+                });
+            });
 
-                            // Close connection on completion
-                            console.log('🏁 [SSE] Generation done, closing connection');
-                            eventSource.close();
-                            setIsConnected(false);
-                            break;
+            // Listen for progress updates
+            socket.on('generation_progress', (data: any) => {
+                console.log(`📊 [Socket.IO] Progress: ${data.progress_percent}% (${data.completed}/${data.total})`);
 
-                        case 'visual_processing':
-                            // Optional: handle processing state if needed
-                            // For now we just log it
-                            break;
+                callbacksRef.current.onProgress?.({
+                    progress_percent: data.progress_percent,
+                    completed: data.completed,
+                    total: data.total,
+                    elapsed_seconds: data.elapsed_seconds,
+                    estimated_remaining_seconds: data.estimated_remaining_seconds,
+                });
+            });
 
-                        case 'visual_failed':
-                            if (parsedData.visualIndex !== undefined) {
-                                callbacksRef.current.onVisualCompleted?.({
-                                    type: `visual_${parsedData.visualIndex}`, // Fallback type
-                                    index: parsedData.visualIndex,
-                                    image_url: '',
-                                    generated_at: new Date().toISOString(),
-                                    status: 'failed',
-                                    error: parsedData.error
-                                });
-                            }
-                            break;
-                    }
+            // Listen for generation completion
+            socket.on('generation_complete', (data: any) => {
+                console.log('═══════════════════════════════════════════════════════════');
+                console.log('🏁 [Socket.IO] generation_complete received!');
+                console.log('   Status:', data.status);
+                console.log('   Completed:', data.completed, '/', data.total);
+                console.log('═══════════════════════════════════════════════════════════');
 
-                } catch (e) {
-                    console.error('❌ [SSE] Failed to parse message:', e);
-                }
-            };
+                callbacksRef.current.onComplete?.({
+                    status: data.status,
+                    completed: data.completed,
+                    total: data.total,
+                    visuals: data.visuals || [],
+                });
+
+                // Unsubscribe and disconnect after completion
+                console.log('🧹 [Socket.IO] Generation done, cleaning up...');
+                socket.emit('unsubscribe', { generationId });
+            });
+
+            // Listen for visual processing state (optional)
+            socket.on('visual_processing', (data: any) => {
+                console.log(`⏳ [Socket.IO] Visual processing: index=${data.index}, type=${data.type}`);
+            });
 
         } catch (error: any) {
-            console.error('❌ [SSE] Setup failed:', error);
+            console.error('❌ [Socket.IO] Setup failed:', error);
             setConnectionError(error.message);
         }
 
         return () => {
-            console.log('🧹 [SSE] Cleaning up connection for:', generationId);
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
+            console.log('🧹 [Socket.IO] Cleaning up connection for:', generationId);
+            if (socketRef.current) {
+                socketRef.current.emit('unsubscribe', { generationId });
+                socketRef.current.disconnect();
+                socketRef.current = null;
             }
             setIsConnected(false);
         };
     }, [generationId]);
 
+    const disconnect = useCallback(() => {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
+        }
+        setIsConnected(false);
+    }, []);
+
     return {
         isConnected,
         connectionError,
+        disconnect,
     };
 };
