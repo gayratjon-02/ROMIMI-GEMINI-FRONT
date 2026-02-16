@@ -5,6 +5,7 @@ import { X, Loader2, Upload, FileText, ChevronLeft, Check, AlertCircle } from 'l
 import {
     analyzeBrandOnly,
     confirmAndCreateBrand,
+    uploadBrandAssets,
     AdBrand,
     BrandPlaybookJson,
 } from '@/libs/server/Ad-Recreation/brand/brand.service';
@@ -37,6 +38,8 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
     const [currency, setCurrency] = useState('GBP');
     const [file, setFile] = useState<File | null>(null);
     const [textContent, setTextContent] = useState('');
+    const [lightLogo, setLightLogo] = useState<File | null>(null);
+    const [darkLogo, setDarkLogo] = useState<File | null>(null);
 
     // Step 2 data (playbook only - no brand created yet)
     const [playbook, setPlaybook] = useState<BrandPlaybookJson | null>(null);
@@ -49,6 +52,8 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
 
     // Refs
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const lightLogoRef = useRef<HTMLInputElement>(null);
+    const darkLogoRef = useRef<HTMLInputElement>(null);
 
     // Reset form
     const resetForm = () => {
@@ -60,6 +65,8 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
         setCurrency('GBP');
         setFile(null);
         setTextContent('');
+        setLightLogo(null);
+        setDarkLogo(null);
         setPlaybook(null);
         setPlaybookJson('');
         setError(null);
@@ -190,8 +197,20 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
                 parsedPlaybook
             );
 
-            // Success - notify parent and close
-            onCreated(brand);
+            // Upload logo assets if provided
+            if (lightLogo && darkLogo) {
+                try {
+                    const updatedBrand = await uploadBrandAssets(brand.id, lightLogo, darkLogo);
+                    onCreated(updatedBrand);
+                } catch (logoErr) {
+                    console.warn('Brand created but logo upload failed:', logoErr);
+                    onCreated(brand);
+                }
+            } else {
+                onCreated(brand);
+            }
+
+            // Success - close
             resetForm();
             onClose();
         } catch (err) {
@@ -486,6 +505,114 @@ const CreateBrandModal: React.FC<CreateBrandModalProps> = ({
                                     style={{ resize: 'vertical', minHeight: '160px' }}
                                 />
                             )}
+                        </div>
+
+                        {/* Brand Assets - Logo Upload */}
+                        <div className={styles.modalField}>
+                            <label className={styles.modalLabel}>
+                                Brand Logos <span style={{ color: isDarkMode ? '#888' : '#999', fontSize: '11px', fontWeight: 400 }}>(optional)</span>
+                            </label>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                {/* Light Logo */}
+                                <div
+                                    onClick={() => lightLogoRef.current?.click()}
+                                    style={{
+                                        flex: 1,
+                                        border: `2px dashed ${lightLogo ? '#7c4dff' : (isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)')}`,
+                                        borderRadius: '10px',
+                                        padding: '14px 10px',
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        background: lightLogo
+                                            ? 'rgba(124, 77, 255, 0.08)'
+                                            : (isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                >
+                                    <input
+                                        ref={lightLogoRef}
+                                        type="file"
+                                        accept=".png,.svg,.jpg,.jpeg,.webp"
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) setLightLogo(f);
+                                        }}
+                                        style={{ display: 'none' }}
+                                    />
+                                    {lightLogo ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                            <img
+                                                src={URL.createObjectURL(lightLogo)}
+                                                alt="Light logo"
+                                                style={{ maxHeight: '36px', maxWidth: '80px', objectFit: 'contain', background: '#1a1a2e', borderRadius: '4px', padding: '4px' }}
+                                            />
+                                            <span style={{ color: isDarkMode ? '#aaa' : '#666', fontSize: '10px' }}>
+                                                {lightLogo.name}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                            <Upload size={20} color={isDarkMode ? '#555' : '#999'} />
+                                            <span style={{ color: isDarkMode ? '#888' : '#777', fontSize: '11px' }}>
+                                                Light Logo
+                                            </span>
+                                            <span style={{ color: isDarkMode ? '#555' : '#aaa', fontSize: '10px' }}>
+                                                For dark backgrounds
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Dark Logo */}
+                                <div
+                                    onClick={() => darkLogoRef.current?.click()}
+                                    style={{
+                                        flex: 1,
+                                        border: `2px dashed ${darkLogo ? '#7c4dff' : (isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)')}`,
+                                        borderRadius: '10px',
+                                        padding: '14px 10px',
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        background: darkLogo
+                                            ? 'rgba(124, 77, 255, 0.08)'
+                                            : (isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                >
+                                    <input
+                                        ref={darkLogoRef}
+                                        type="file"
+                                        accept=".png,.svg,.jpg,.jpeg,.webp"
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) setDarkLogo(f);
+                                        }}
+                                        style={{ display: 'none' }}
+                                    />
+                                    {darkLogo ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                            <img
+                                                src={URL.createObjectURL(darkLogo)}
+                                                alt="Dark logo"
+                                                style={{ maxHeight: '36px', maxWidth: '80px', objectFit: 'contain', background: '#f0f0f0', borderRadius: '4px', padding: '4px' }}
+                                            />
+                                            <span style={{ color: isDarkMode ? '#aaa' : '#666', fontSize: '10px' }}>
+                                                {darkLogo.name}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                            <Upload size={20} color={isDarkMode ? '#555' : '#999'} />
+                                            <span style={{ color: isDarkMode ? '#888' : '#777', fontSize: '11px' }}>
+                                                Dark Logo
+                                            </span>
+                                            <span style={{ color: isDarkMode ? '#555' : '#aaa', fontSize: '10px' }}>
+                                                For light backgrounds
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Actions */}

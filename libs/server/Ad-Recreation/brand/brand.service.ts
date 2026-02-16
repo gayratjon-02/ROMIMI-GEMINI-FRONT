@@ -219,6 +219,34 @@ export async function confirmAndCreateBrand(
  * @param playbook - The edited playbook JSON
  * @returns Promise with updated brand
  */
+/**
+ * Uploads brand logo assets (light + dark) after brand creation.
+ * @param brandId - The brand ID
+ * @param lightLogo - Light logo file (for dark backgrounds)
+ * @param darkLogo - Dark logo file (for light backgrounds)
+ * @returns Promise with updated brand including asset URLs
+ */
+export async function uploadBrandAssets(
+    brandId: string,
+    lightLogo: File,
+    darkLogo: File
+): Promise<AdBrand> {
+    const formData = new FormData();
+    formData.append('logo_light', lightLogo);
+    formData.append('logo_dark', darkLogo);
+
+    const response = await axiosClient.post<SingleBrandResponse>(
+        `/api/brands/${brandId}/assets`,
+        formData
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to upload brand assets');
+    }
+
+    return response.data.brand;
+}
+
 export async function updateBrandPlaybook(brandId: string, playbook: BrandPlaybookJson): Promise<AdBrand> {
     const response = await axiosClient.patch<{ success: boolean; message: string; brand: AdBrand }>(
         `/api/brands/${brandId}/playbook`,
