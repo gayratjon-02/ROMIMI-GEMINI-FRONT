@@ -1,4 +1,4 @@
-// ProductDropdown - Collection > Category > Product dropdown
+// ProductDropdown - Hierarchical Category > Product dropdown
 .productDropdown {
   position: relative;
   width: 100%;
@@ -118,6 +118,7 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -140,6 +141,136 @@
   padding: 8px 0;
 }
 
+// ─── Level Header (e.g., "Categories") ───
+.levelHeader {
+  padding: 8px 14px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.35);
+
+  .light & {
+    color: rgba(0, 0, 0, 0.35);
+  }
+}
+
+// ─── Category Item (Level 1) ───
+.categoryItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+
+  &:hover {
+    background: rgba(79, 70, 229, 0.15);
+    color: #a5a0ff;
+  }
+
+  .light & {
+    color: rgba(0, 0, 0, 0.8);
+
+    &:hover {
+      background: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+    }
+  }
+}
+
+.categoryIcon {
+  flex-shrink: 0;
+  opacity: 0.6;
+  color: #7c6fff;
+
+  svg {
+    display: block;
+  }
+
+  .light & {
+    color: #4f46e5;
+  }
+}
+
+.categoryName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoryCount {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  background: rgba(79, 70, 229, 0.2);
+  color: #a5a0ff;
+
+  .light & {
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+  }
+}
+
+.categoryArrow {
+  flex-shrink: 0;
+  opacity: 0.5;
+
+  svg {
+    display: block;
+  }
+}
+
+// ─── Back Button (Level 2 header) ───
+.backButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 4px;
+  background: rgba(79, 70, 229, 0.08);
+  border: none;
+  border-bottom: 1px solid rgba(79, 70, 229, 0.15);
+  color: #a5a0ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+
+  &:hover {
+    background: rgba(79, 70, 229, 0.15);
+  }
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .light & {
+    background: rgba(79, 70, 229, 0.05);
+    border-bottom-color: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+
+    &:hover {
+      background: rgba(79, 70, 229, 0.1);
+    }
+  }
+}
+
+// ─── Product Item (Level 2) ───
 .categoryGroup {
   margin-bottom: 4px;
 
