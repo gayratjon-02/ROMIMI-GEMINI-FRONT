@@ -967,8 +967,8 @@ const AdRecreationPage: React.FC = () => {
                                             </p>
                                         </div>
 
-                                        {/* Download All ZIP Button */}
-                                        {generatedResults.filter(r => !r.isLoading).length > 0 && (
+                                        {/* Download All ZIP Button — only when ALL are done */}
+                                        {generatedResults.length > 0 && generatedResults.every(r => !r.isLoading) && (
                                             <button
                                                 type="button"
                                                 onClick={handleDownloadAllZip}
