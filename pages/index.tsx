@@ -217,6 +217,44 @@ function Home() {
     }
   }, [visuals, isGenerating]);
 
+  // 🔄 Polling fallback: fetch generation status periodically during active generation
+  // Ensures images display even if Socket.IO connection drops
+  useEffect(() => {
+    if (!isGenerating || !generationId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const status = await pollGenerationStatus(generationId);
+        if (status.visuals && status.visuals.length > 0) {
+          // Only update if we have new completed visuals the socket missed
+          const currentCompleted = visuals.filter(v => v.status === 'completed').length;
+          const polledCompleted = status.visuals.filter(v => v.status === 'completed').length;
+          if (polledCompleted > currentCompleted) {
+            console.log(`🔄 [Poll] Found ${polledCompleted - currentCompleted} new completed visuals via polling`);
+            setVisuals(status.visuals);
+          }
+        }
+        if (status.isComplete) {
+          console.log('🔄 [Poll] Generation complete detected via polling');
+          setVisuals(status.visuals);
+          setIsGenerating(false);
+          setIsGeneratingImages(false);
+          setIsNewDAFlow(false);
+          setIsMerging(false);
+          setProgress(100);
+          if (selectedCollection?.id) {
+            setPreviousCollectionId(selectedCollection.id);
+          }
+          setLibraryRefreshTrigger(prev => prev + 1);
+        }
+      } catch (e) {
+        console.warn('🔄 [Poll] Failed:', e);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isGenerating, generationId]);
+
   // 🚀 CRITICAL: Initialize mergedPrompts state from generationResponse
   // This enables shot toggle sync and save-before-generate to work properly
   useEffect(() => {
@@ -850,6 +888,76 @@ function Home() {
     }
   }, [librarySelectedGeneration, selectedCollection, shotOptions, extractShotOptionsFromMergedPrompts]);
 
+  /**
+   * 🆕 Generate with new DA from modal picker (collection selected inside HomeMiddle)
+   */
+  const handleRegenerateWithNewDAFromModal = useCallback(async (collectionId: string) => {
+    if (!productId) {
+      alert('No product available for regeneration');
+      return;
+    }
+
+    // Phase 1: Merging
+    setIsNewDAFlow(true);
+    setIsMerging(true);
+
+    try {
+      console.log('🔀 Merging product with new DA (from modal):', collectionId);
+
+      const generation = await createGeneration({
+        product_id: productId,
+        collection_id: collectionId,
+        generation_type: 'product_visuals',
+        resolution: resolution === '4k' ? '4K' : '2K',
+        aspect_ratio: aspectRatio,
+      });
+
+      console.log('✅ Generation created:', generation.id);
+
+      const merged = await mergePrompts(generation.id, {
+        shot_options: shotOptions,
+        resolution: resolution === '4k' ? '4K' : '2K',
+        aspect_ratio: aspectRatio,
+      });
+
+      console.log('✅ Merge complete');
+
+      // Phase 1 complete
+      setIsMerging(false);
+
+      // Phase 2: Generate - show placeholder cards
+      const shotTypes = Object.keys(merged as Record<string, any>);
+      const placeholderVisuals = shotTypes.map(type => ({
+        type,
+        status: 'pending' as const,
+        image_url: undefined,
+        error: undefined,
+      }));
+      setVisuals(placeholderVisuals);
+
+      // Set generation state
+      setGenerationId(generation.id);
+      setGenerationResponse(generation);
+      setMergedPrompts(merged as any);
+      setPreviousCollectionId(collectionId);
+      setIsGenerating(true);
+      setIsGeneratingImages(true);
+      setGeneratingProgress(0);
+
+      // Execute generation
+      await executeGeneration(generation.id);
+      console.log('🚀 Generation started');
+
+    } catch (error: any) {
+      console.error('❌ Regeneration from modal failed:', error);
+      setIsMerging(false);
+      setIsNewDAFlow(false);
+      setIsGeneratingImages(false);
+      setIsGenerating(false);
+      alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
+    }
+  }, [productId, shotOptions, resolution, aspectRatio]);
+
   return (
     <div style={{
       display: 'flex',
@@ -1019,6 +1127,7 @@ function Home() {
               onSaveComplete={handleSaveComplete}
               libraryGeneration={librarySelectedGeneration}
               isLibraryLoading={isLibraryLoading}
+              onRegenerateWithNewDA={handleRegenerateWithNewDAFromModal}
             />
           </div>
 

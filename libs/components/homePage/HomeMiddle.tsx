@@ -32,7 +32,8 @@ import {
     updateMergedPrompts as updatePromptsAPI,
     mergePrompts,
 } from '@/libs/server/HomePage/merging';
-import { updateDAJSON, getCollection } from '@/libs/server/HomePage/collection';
+import { updateDAJSON, getCollection, getCollectionsByBrand } from '@/libs/server/HomePage/collection';
+import { Collection } from '@/libs/types/homepage/collection';
 
 interface HomeMiddleProps {
     isDarkMode?: boolean;
@@ -64,6 +65,7 @@ interface HomeMiddleProps {
     onSaveComplete?: () => void; // Called after save to trigger re-merge flow
     libraryGeneration?: Generation | null;
     isLibraryLoading?: boolean;
+    onRegenerateWithNewDA?: (collectionId: string) => void;
 }
 
 export interface ProductJSON {
@@ -909,6 +911,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     onSaveComplete,
     libraryGeneration,
     isLibraryLoading = false,
+    onRegenerateWithNewDA,
 }) => {
     // Visuals State - use parent values if provided, otherwise local state
     const [localVisuals, setLocalVisuals] = useState<VisualOutput[]>([]);
@@ -916,6 +919,12 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     const [localIsGenerating, setLocalIsGenerating] = useState(false);
     const [generationId, setGenerationId] = useState<string | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
+
+    // DA Picker Modal state
+    const [showDAPicker, setShowDAPicker] = useState(false);
+    const [daCollections, setDACollections] = useState<Collection[]>([]);
+    const [isDaLoading, setIsDaLoading] = useState(false);
+    const [selectedDAId, setSelectedDAId] = useState<string | null>(null);
 
     // Library view: when user clicked a product in Library, show THAT generation's visuals (not parentVisuals)
     const isLibraryView = !!libraryGeneration;
@@ -1072,6 +1081,30 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
         }
     };
 
+    // Open DA Picker - fetch brand's collections
+    const handleOpenDAPicker = useCallback(async () => {
+        if (!selectedBrand?.id) return;
+        setShowDAPicker(true);
+        setIsDaLoading(true);
+        setSelectedDAId(null);
+        try {
+            const collections = await getCollectionsByBrand(selectedBrand.id);
+            setDACollections(collections);
+        } catch (error) {
+            console.error('Failed to fetch collections:', error);
+            setDACollections([]);
+        } finally {
+            setIsDaLoading(false);
+        }
+    }, [selectedBrand?.id]);
+
+    // Confirm DA selection
+    const handleConfirmDA = useCallback(() => {
+        if (!selectedDAId || !onRegenerateWithNewDA) return;
+        setShowDAPicker(false);
+        onRegenerateWithNewDA(selectedDAId);
+    }, [selectedDAId, onRegenerateWithNewDA]);
+
     // WebSocket updates are handled by parent component (pages/index.tsx)
     // and passed via parentVisuals prop - no duplicate subscription needed
 
@@ -1106,18 +1139,29 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             {completedCount}/{visuals.length} completed
                         </span>
                     </div>
-                    <button
-                        className={styles.downloadBtn}
-                        onClick={handleDownloadAll}
-                        disabled={isDownloading}
-                    >
-                        {isDownloading ? (
-                            <Loader2 size={18} className={styles.spin} />
-                        ) : (
-                            <Download size={18} />
+                    <div className={styles.headerActions}>
+                        {onRegenerateWithNewDA && selectedBrand && (
+                            <button
+                                className={styles.generateNewDABtn}
+                                onClick={handleOpenDAPicker}
+                            >
+                                <Sparkles size={18} />
+                                Generate with New DA
+                            </button>
                         )}
-                        {isDownloading ? 'Downloading...' : 'Download All'}
-                    </button>
+                        <button
+                            className={styles.downloadBtn}
+                            onClick={handleDownloadAll}
+                            disabled={isDownloading}
+                        >
+                            {isDownloading ? (
+                                <Loader2 size={18} className={styles.spin} />
+                            ) : (
+                                <Download size={18} />
+                            )}
+                            {isDownloading ? 'Downloading...' : 'Download All'}
+                        </button>
+                    </div>
                 </motion.div>
             )}
 
@@ -1181,6 +1225,100 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             <h3>Analyzing Product...</h3>
                             <p>This may take a moment</p>
                         </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* DA Picker Modal */}
+            <AnimatePresence>
+                {showDAPicker && (
+                    <motion.div
+                        className={styles.daPickerOverlay}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowDAPicker(false)}
+                    >
+                        <motion.div
+                            className={styles.daPickerModal}
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className={styles.daPickerHeader}>
+                                <h3>
+                                    <Layers size={20} />
+                                    Select DA Collection
+                                </h3>
+                                <button
+                                    className={styles.daPickerClose}
+                                    onClick={() => setShowDAPicker(false)}
+                                >
+                                    <Plus size={16} style={{ transform: 'rotate(45deg)' }} />
+                                </button>
+                            </div>
+
+                            <div className={styles.daPickerList}>
+                                {isDaLoading ? (
+                                    <div className={styles.daPickerLoading}>
+                                        <Loader2 size={24} className={styles.spin} />
+                                        <span>Loading collections...</span>
+                                    </div>
+                                ) : daCollections.length === 0 ? (
+                                    <div className={styles.daPickerEmpty}>
+                                        No DA collections found for this brand.
+                                    </div>
+                                ) : (
+                                    daCollections.map((col) => {
+                                        const isCurrent = col.id === selectedCollection?.id;
+                                        const isSelected = col.id === selectedDAId;
+                                        return (
+                                            <div
+                                                key={col.id}
+                                                className={`${styles.daPickerItem} ${isSelected ? styles.selected : ''} ${isCurrent ? styles.currentDA : ''}`}
+                                                onClick={() => !isCurrent && setSelectedDAId(col.id)}
+                                            >
+                                                <div className={styles.daPickerItemIcon}>
+                                                    {col.da_reference_image_url ? (
+                                                        <img src={col.da_reference_image_url} alt={col.name} />
+                                                    ) : (
+                                                        <Layers size={20} />
+                                                    )}
+                                                </div>
+                                                <div className={styles.daPickerItemInfo}>
+                                                    <h4>{col.name}</h4>
+                                                    <p>{col.description || col.code}</p>
+                                                </div>
+                                                {isCurrent && (
+                                                    <span className={styles.daPickerItemBadge}>Current</span>
+                                                )}
+                                                {isSelected && (
+                                                    <CheckCircle2 size={18} color="#8b5cf6" />
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            <div className={styles.daPickerFooter}>
+                                <button
+                                    className={styles.daPickerCancelBtn}
+                                    onClick={() => setShowDAPicker(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className={styles.daPickerConfirmBtn}
+                                    onClick={handleConfirmDA}
+                                    disabled={!selectedDAId}
+                                >
+                                    <Sparkles size={16} />
+                                    Generate
+                                </button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
