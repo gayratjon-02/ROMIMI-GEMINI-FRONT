@@ -74,6 +74,7 @@ const AdRecreationPage: React.FC = () => {
     const [selectedAngles, setSelectedAngles] = useState<string[]>([]);
     const [selectedFormats, setSelectedFormats] = useState<string[]>(['story']);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isMerging, setIsMerging] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [generationProgress, setGenerationProgress] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -289,11 +290,29 @@ const AdRecreationPage: React.FC = () => {
         }
     };
 
-    // Download image handler
+    // Download image handler — works with both base64 data URLs and regular URLs
     const handleDownloadImage = async (imageUrl: string, fileName: string) => {
         try {
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
+            let blob: Blob;
+
+            if (imageUrl.startsWith('data:')) {
+                // Handle base64 data URLs directly
+                const [header, base64Data] = imageUrl.split(',');
+                const mimeMatch = header.match(/data:(.*?);/);
+                const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+                const byteString = atob(base64Data);
+                const arrayBuffer = new ArrayBuffer(byteString.length);
+                const uint8Array = new Uint8Array(arrayBuffer);
+                for (let i = 0; i < byteString.length; i++) {
+                    uint8Array[i] = byteString.charCodeAt(i);
+                }
+                blob = new Blob([arrayBuffer], { type: mimeType });
+            } else {
+                // Fetch from URL (S3, local, etc.)
+                const response = await fetch(imageUrl);
+                blob = await response.blob();
+            }
+
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -352,14 +371,17 @@ const AdRecreationPage: React.FC = () => {
         setCompletedCount(0);
         setGenerationProgress(0);
 
-        // Create placeholders immediately
-        const placeholders = createPlaceholders();
-        setGeneratedResults(placeholders);
-        setShowResults(true);
+        // Phase 1: Show merging spinner overlay (no cards yet)
+        setIsMerging(true);
         setIsGenerating(true);
+        setShowResults(false);
+        setGeneratedResults([]);
 
         console.log(`📊 Expected images: ${expected}`);
-        console.log(`📊 Placeholders created: ${placeholders.length}`);
+        console.log(`🔄 Phase 1: Merging data...`);
+
+        // Track whether we've transitioned to Phase 2
+        let hasTransitioned = false;
 
         try {
             // Prepare all requests first
@@ -408,6 +430,16 @@ const AdRecreationPage: React.FC = () => {
                 try {
                     const result = await generateAdVariations(payload);
                     console.log('📥 Generation response received:', result);
+
+                    // Phase 2: Transition from merging spinner to cards
+                    if (!hasTransitioned) {
+                        hasTransitioned = true;
+                        console.log('🎨 Phase 2: Showing cards...');
+                        const placeholders = createPlaceholders();
+                        setGeneratedResults(placeholders);
+                        setShowResults(true);
+                        setIsMerging(false);
+                    }
 
                     // Extract generation data from the response
                     const generation = (result as any);
@@ -497,11 +529,18 @@ const AdRecreationPage: React.FC = () => {
                 }
             }));
 
+            // If no request succeeded to transition, force transition
+            if (!hasTransitioned) {
+                setIsMerging(false);
+                setShowResults(true);
+            }
+
         } catch (error: any) {
             console.error('❌ FATAL GENERATION ERROR:', error);
             setErrorMessage(error.message || 'Generation process failed. Please try again.');
         } finally {
             setIsGenerating(false);
+            setIsMerging(false);
         }
     };
 
@@ -766,8 +805,65 @@ const AdRecreationPage: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Content */}
-                        {(showResults || isGenerating) ? (() => {
+                        {/* Phase 1: Merging Overlay */}
+                        {isMerging && (
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: '400px',
+                                gap: '24px',
+                            }}>
+                                {/* Animated spinner ring */}
+                                <div style={{
+                                    width: '72px',
+                                    height: '72px',
+                                    borderRadius: '50%',
+                                    border: '3px solid rgba(124, 77, 255, 0.15)',
+                                    borderTopColor: '#7c4dff',
+                                    animation: 'spin 1s linear infinite',
+                                }} />
+                                <div style={{ textAlign: 'center' }}>
+                                    <h3 style={{
+                                        fontSize: '18px',
+                                        fontWeight: 600,
+                                        color: isDarkMode ? '#fff' : '#1a1a2e',
+                                        marginBottom: '8px',
+                                    }}>
+                                        Preparing your ad...
+                                    </h3>
+                                    <p style={{
+                                        fontSize: '14px',
+                                        color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+                                        maxWidth: '320px',
+                                    }}>
+                                        Merging brand, product, and concept data for Gemini
+                                    </p>
+                                </div>
+                                {/* Animated dots */}
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {[0, 1, 2].map(i => (
+                                        <div key={i} style={{
+                                            width: '8px',
+                                            height: '8px',
+                                            borderRadius: '50%',
+                                            background: '#7c4dff',
+                                            animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                                        }} />
+                                    ))}
+                                </div>
+                                <style>{`
+                                    @keyframes pulse {
+                                        0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+                                        40% { opacity: 1; transform: scale(1.2); }
+                                    }
+                                `}</style>
+                            </div>
+                        )}
+
+                        {/* Phase 2: Cards */}
+                        {!isMerging && (showResults || isGenerating) ? (() => {
                             const grouped = getResultsGroupedByAngle();
                             const getCardWidth = (format: string) => {
                                 switch (format) {
@@ -1251,7 +1347,11 @@ const AdRecreationPage: React.FC = () => {
                 {/* Center: Status */}
                 < div style={{ flex: 1, textAlign: 'center' }}>
                     {
-                        isGenerating ? (
+                        isMerging ? (
+                            <span style={{ color: '#7c4dff', fontSize: '14px' }} >
+                                ⏳ Preparing...
+                            </span >
+                        ) : isGenerating ? (
                             <span style={{ color: '#7c4dff', fontSize: '14px' }} >
                                 Generating {completedCount}/{totalExpected}...
                             </span >
