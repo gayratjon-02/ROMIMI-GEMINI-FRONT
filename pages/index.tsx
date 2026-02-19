@@ -27,6 +27,7 @@ import {
   pollGenerationStatus,
 } from '@/libs/server/HomePage/generate';
 import { useGenerationSocket } from '@/libs/hooks/useGenerationSocket';
+import SelectDAModal from '@/libs/components/modals/SelectDAModal';
 
 // Mock DA Analysis for fallback
 const mockDAAnalysis: DAJSON = {
@@ -130,6 +131,9 @@ function Home() {
   const [libraryRefreshTrigger, setLibraryRefreshTrigger] = useState(0);
   // NEW: Loading state for Library selection
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+
+  // DA picker modal state (shown when user clicks "Generate with new")
+  const [showDAModal, setShowDAModal] = useState(false);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -681,13 +685,9 @@ function Home() {
     setProgress(0);
   }, []);
 
-  // Handle Generate with new - reset generation state so Merge button reappears
+  // Handle Generate with new - open DA picker modal
   const handleGenerateWithNew = useCallback(() => {
-    setMergedPrompts({});
-    setGenerationResponse(null);
-    setVisuals([]);
-    setProgress(0);
-    setGenerationId(null);
+    setShowDAModal(true);
   }, []);
 
   const isAnalyzed = !!productJSON; // also available as ctx.isAnalyzed
@@ -967,6 +967,12 @@ function Home() {
     }
   }, [productId, shotOptions, resolution, aspectRatio]);
 
+  // Handle DA selection from modal: close modal and start regeneration
+  const handleDAModalSelect = useCallback(async (collectionId: string) => {
+    setShowDAModal(false);
+    await handleRegenerateWithNewDAFromModal(collectionId);
+  }, [handleRegenerateWithNewDAFromModal]);
+
   return (
     <div style={{
       display: 'flex',
@@ -1178,6 +1184,14 @@ function Home() {
           />
         </div>
       </div>
+
+      {/* DA Picker Modal */}
+      <SelectDAModal
+        isOpen={showDAModal}
+        onClose={() => setShowDAModal(false)}
+        onSelect={handleDAModalSelect}
+        currentCollectionId={selectedCollection?.id}
+      />
 
       {/* Responsive CSS */}
       <style jsx>{`
