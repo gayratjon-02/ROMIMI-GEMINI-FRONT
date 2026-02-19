@@ -9,6 +9,16 @@ export interface AdProductAnalysisResult {
 }
 
 /**
+ * Updates the analyzed_product_json for an existing ad product.
+ * Endpoint: PATCH /api/ad-recreation/products/:id
+ */
+export async function updateAdProductAnalysis(productId: string, analysis: object): Promise<void> {
+    await axiosClient.patch(`/api/ad-recreation/products/${productId}`, {
+        analyzed_product_json: analysis,
+    });
+}
+
+/**
  * Uploads a single reference product image and analyzes it with Claude.
  * Returns the product_id to use in generation.
  *

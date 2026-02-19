@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Save, Loader2, AlertCircle, Package, Palette } from 'lucide-react';
 import { updateConceptAnalysis } from '@/libs/server/Ad-Recreation/inspiration/inspiration.service';
+import { updateAdProductAnalysis } from '@/libs/server/Ad-Recreation/products/ad-product.service';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 interface AnalysisStageProps {
@@ -12,6 +13,8 @@ interface AnalysisStageProps {
     isDarkMode?: boolean;
     productJSON?: any;                  // Product analysis JSON (from ProductContext)
     fullAnalysisResponse?: any;         // Full analysis response (from ProductContext)
+    productId?: string;                 // Ad product ID for saving product JSON changes
+    onProductUpdate?: (newData: any) => void; // Callback when product JSON is saved
 }
 
 type ActiveTab = 'concept' | 'product';
@@ -23,6 +26,8 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({
     isDarkMode = true,
     productJSON,
     fullAnalysisResponse,
+    productId,
+    onProductUpdate,
 }) => {
     const [activeTab, setActiveTab] = useState<ActiveTab>('concept');
     const [editedConceptJson, setEditedConceptJson] = useState('');
@@ -106,6 +111,44 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({
         }
     };
 
+    const handleSaveProduct = async () => {
+        let parsedJson: object;
+        try {
+            parsedJson = JSON.parse(editedProductJson);
+        } catch {
+            setErrorMessage('Invalid JSON format. Please check your syntax.');
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+            return;
+        }
+
+        if (!productId) {
+            setErrorMessage('Cannot save: missing product ID');
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+            return;
+        }
+
+        setIsSaving(true);
+        setErrorMessage('');
+
+        try {
+            await updateAdProductAnalysis(productId, parsedJson);
+            setSaveStatus('success');
+            if (onProductUpdate) {
+                onProductUpdate(parsedJson);
+            }
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (err: any) {
+            console.error('Product save failed:', err);
+            setErrorMessage(err.message || 'Failed to save changes');
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const currentJson = activeTab === 'concept' ? editedConceptJson : editedProductJson;
     const setCurrentJson = activeTab === 'concept' ? setEditedConceptJson : setEditedProductJson;
 
@@ -173,6 +216,25 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({
                                     )}
                                 </button>
                             )}
+                            {activeTab === 'product' && (
+                                <button
+                                    onClick={handleSaveProduct}
+                                    className={styles.saveButton}
+                                    disabled={isSaving || !productId}
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <Loader2 size={14} className={styles.spinner} />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={14} />
+                                            Save Changes
+                                        </>
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -182,7 +244,6 @@ const AnalysisStage: React.FC<AnalysisStageProps> = ({
                         onChange={(e) => setCurrentJson(e.target.value)}
                         spellCheck={false}
                         placeholder="{ }"
-                        readOnly={activeTab === 'product'}
                     />
                 </div>
             </div>

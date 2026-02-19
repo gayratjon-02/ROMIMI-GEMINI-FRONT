@@ -1146,7 +1146,7 @@ const AdRecreationPage: React.FC = () => {
                                     ))}
                                 </div>
                             );
-                        })() : (analysisJson) ? (
+                        })() : (analysisJson || adProductAnalysis) ? (
                             <AnalysisStage
                                 data={analysisJson}
                                 conceptId={conceptId || undefined}
@@ -1154,6 +1154,8 @@ const AdRecreationPage: React.FC = () => {
                                 isDarkMode={isDarkMode}
                                 productJSON={adProductAnalysis}
                                 fullAnalysisResponse={null}
+                                productId={adProductId || undefined}
+                                onProductUpdate={(newData) => setAdProductAnalysis(newData)}
                             />
                         ) : (
                             <EmptyState isDarkMode={isDarkMode} />
