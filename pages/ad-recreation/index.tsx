@@ -24,12 +24,8 @@ import ModeToggle from '@/libs/components/ad-recreation/sidebar/ModeToggle';
 import AdUploader from '@/libs/components/ad-recreation/sidebar/AdUploader';
 import AngleSelector, { MARKETING_ANGLES } from '@/libs/components/ad-recreation/sidebar/AngleSelector';
 import FormatSelector, { OUTPUT_FORMATS } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
-import ProductUploadSection from '@/libs/components/homePage/ProductUploadSection';
-import ProductDropdown from '@/libs/components/homePage/ProductDropdown';
+import AdProductUploadSection from '@/libs/components/ad-recreation/sidebar/AdProductUploadSection';
 import HeroImageSelector, { detectHeroZone, collectProductImages } from '@/libs/components/ad-recreation/sidebar/HeroImageSelector';
-import { useProductContext } from '@/libs/context/ProductContext';
-
-import { Product } from '@/libs/types/homepage/product';
 
 // Gallery Components
 import EmptyState from '@/libs/components/ad-recreation/gallery/EmptyState';
@@ -53,24 +49,17 @@ const AdRecreationPage: React.FC = () => {
     const theme = useTheme();
     const isDarkMode = theme.palette.mode === 'dark';
 
-    // Shared product context (persists across Product Visuals ↔ Ad Recreation)
-    const {
-        frontImage, backImage, referenceImages,
-        setFrontImage, setBackImage, setReferenceImages,
-        isAnalyzing, isAnalyzed,
-        productJSON, setProductJSON,
-        productId, setProductId,
-        fullAnalysisResponse, setFullAnalysisResponse,
-        handleAnalyze,
-        handleProductSelect,
-    } = useProductContext();
-
     // ============================================
     // STATE
     // ============================================
     const [user, setUser] = useState<UserInfo | null>(null);
     const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
     const [activeMode, setActiveMode] = useState<'single' | 'batch'>('single');
+
+    // Ad Recreation product state (single reference image, independent of Product Visuals context)
+    const [adProductId, setAdProductId] = useState<string | null>(null);
+    const [adProductImageUrl, setAdProductImageUrl] = useState<string | null>(null);
+    const [adProductAnalysis, setAdProductAnalysis] = useState<Record<string, any> | null>(null);
 
     // Inspiration/Concept state
     const [conceptId, setConceptId] = useState<string | null>(null);
@@ -173,11 +162,6 @@ const AdRecreationPage: React.FC = () => {
     // Lightbox state for full-size image preview
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-    // Product catalog state
-    const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
-    const [catalogLoading, setCatalogLoading] = useState(false);
-    const [activeProductId, setActiveProductId] = useState<string | null>(null);
-
     // Load user info on mount
     useEffect(() => {
         const userInfo = getUserInfo();
@@ -191,94 +175,13 @@ const AdRecreationPage: React.FC = () => {
         };
     }, []);
 
-    // ── Ad-Recreation-Only Product Catalog (localStorage-backed) ──
-    const AD_REC_PRODUCTS_KEY = 'ad-recreation-product-ids';
-
-    // Helper: get stored product IDs from localStorage
-    const getStoredProductIds = (): string[] => {
-        try {
-            const raw = localStorage.getItem(AD_REC_PRODUCTS_KEY);
-            return raw ? JSON.parse(raw) : [];
-        } catch { return []; }
-    };
-
-    // Helper: save product IDs to localStorage
-    const saveProductIds = (ids: string[]) => {
-        localStorage.setItem(AD_REC_PRODUCTS_KEY, JSON.stringify(ids));
-    };
-
-    // On mount: load persisted ad-recreation products by their IDs
-    useEffect(() => {
-        const loadPersistedProducts = async () => {
-            const storedIds = getStoredProductIds();
-            if (storedIds.length === 0) return;
-
-            setCatalogLoading(true);
-            try {
-                const { getProduct } = await import('@/libs/server/HomePage/product');
-                const results = await Promise.allSettled(
-                    storedIds.map(id => getProduct(id))
-                );
-                const loaded: Product[] = results
-                    .filter((r): r is PromiseFulfilledResult<Product> => r.status === 'fulfilled')
-                    .map(r => r.value)
-                    .filter(p => p.analyzed_product_json);
-                setCatalogProducts(loaded);
-
-                // Clean up any IDs that no longer exist
-                const validIds = loaded.map(p => p.id);
-                if (validIds.length !== storedIds.length) {
-                    saveProductIds(validIds);
-                }
-            } catch {
-                // silent
-            } finally {
-                setCatalogLoading(false);
-            }
-        };
-        loadPersistedProducts();
+    // Ad product analysis callback — called by AdProductUploadSection on success
+    const handleAdProductAnalyzed = useCallback((productId: string, imageUrl: string, analysis: Record<string, any>) => {
+        setAdProductId(productId);
+        setAdProductImageUrl(imageUrl);
+        setAdProductAnalysis(analysis);
+        console.log(`✅ Ad product analyzed: ${productId}`);
     }, []);
-
-    // Auto-sync: when product is analyzed via sidebar, add to local catalog instantly
-    const prevProductIdRef = React.useRef<string | null>(null);
-    useEffect(() => {
-        if (productId && productId !== prevProductIdRef.current) {
-            prevProductIdRef.current = productId;
-
-            // Build Product object from fullAnalysisResponse (available immediately)
-            if (fullAnalysisResponse) {
-                const newProduct: Product = {
-                    id: fullAnalysisResponse.product_id || productId,
-                    user_id: '',
-                    name: fullAnalysisResponse.name || 'Analyzed Product',
-                    category: fullAnalysisResponse.category || fullAnalysisResponse.analysis?.general_info?.category || 'Uncategorized',
-                    front_image_url: fullAnalysisResponse.front_image_url,
-                    back_image_url: fullAnalysisResponse.back_image_url,
-                    reference_images: fullAnalysisResponse.reference_images || [],
-                    analyzed_product_json: fullAnalysisResponse.analysis,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                };
-
-                // Add to catalog (avoid duplicates)
-                setCatalogProducts(prev => {
-                    const exists = prev.some(p => p.id === newProduct.id);
-                    const updated = exists ? prev.map(p => p.id === newProduct.id ? newProduct : p) : [...prev, newProduct];
-                    return updated;
-                });
-
-                // Persist to localStorage
-                const currentIds = getStoredProductIds();
-                if (!currentIds.includes(productId)) {
-                    saveProductIds([...currentIds, productId]);
-                }
-
-                // Auto-select in dropdown
-                setActiveProductId(productId);
-                console.log(`✅ Product instantly added & selected: ${newProduct.name} (${productId})`);
-            }
-        }
-    }, [productId, fullAnalysisResponse]);
 
     // Auto-detect hero zone when concept analysis changes
     useEffect(() => {
@@ -301,17 +204,10 @@ const AdRecreationPage: React.FC = () => {
         }
     }, [analysisJson]);
 
-    // Collect product images for hero selector
+    // Collect product images for hero selector (use analyzed ad product image)
     const heroProductImages = React.useMemo(() => {
-        // Note: referenceImages from context is File[] (upload state), not URLs.
-        // Image URLs come from fullAnalysisResponse which is already handled inside collectProductImages.
-        return collectProductImages(
-            fullAnalysisResponse?.front_image_url || (typeof frontImage === 'string' ? frontImage : null),
-            fullAnalysisResponse?.back_image_url || (typeof backImage === 'string' ? backImage : null),
-            fullAnalysisResponse?.reference_images || null,
-            fullAnalysisResponse,
-        );
-    }, [fullAnalysisResponse, frontImage, backImage]);
+        return collectProductImages(adProductImageUrl, null, null, null);
+    }, [adProductImageUrl]);
 
     // ============================================
     // HANDLERS
@@ -422,9 +318,9 @@ const AdRecreationPage: React.FC = () => {
             return;
         }
         // Strict product validation
-        const effectiveProductId = activeProductId || productId;
+        const effectiveProductId = adProductId;
         if (!effectiveProductId) {
-            setErrorMessage('Please select or upload a product first');
+            setErrorMessage('Please upload and analyze a product image first');
             return;
         }
         if (selectedAngles.length === 0) {
@@ -728,15 +624,14 @@ const AdRecreationPage: React.FC = () => {
         return groups;
     };
 
-    // Strict product dependency: product is REQUIRED for generation
-    const effectiveProductId = activeProductId || productId;
+    // Product is REQUIRED for generation
     const heroRequired = heroZoneId && heroProductImages.length > 0;
     // Relaxed validation to allow button click -> show specific error in handleGenerate
-    const canGenerate = !!effectiveProductId && !!conceptId;
+    const canGenerate = !!adProductId && !!conceptId;
 
     // Compute disabled reason for tooltip
     const getDisabledReason = (): string | null => {
-        if (!effectiveProductId) return 'Please select or upload a product first';
+        if (!adProductId) return 'Please upload a product image first';
         if (!conceptId) return 'Please upload an inspiration ad';
         if (selectedAngles.length === 0) return 'Please select a marketing angle';
         if (selectedFormats.length === 0) return 'Please select an output format';
@@ -767,74 +662,19 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                         />
 
-                        {/* Product Selection Dropdown */}
-                        <div style={{ marginBottom: '12px' }}>
-                            <label className={styles.sectionLabel}>Product</label>
-                            <ProductDropdown
-                                products={catalogProducts}
-                                isLoading={catalogLoading}
-                                selectedProductId={activeProductId}
-                                selectedCollectionId={null}
-                                onProductSelect={(product) => {
-                                    setActiveProductId(product.id);
-                                    handleProductSelect(product);
-                                }}
-                                isDarkMode={isDarkMode}
-                                placeholder="Select Product"
-                            />
-                        </div>
-
-                        {/* Product Upload / New Product Button */}
-                        {!activeProductId ? (
-                            <ProductUploadSection
-                                isDarkMode={isDarkMode}
-                                frontImage={frontImage}
-                                backImage={backImage}
-                                referenceImages={referenceImages}
-                                onFrontImageChange={setFrontImage}
-                                onBackImageChange={setBackImage}
-                                onReferenceImagesChange={setReferenceImages}
-                                onAnalyze={handleAnalyze}
-                                isAnalyzing={isAnalyzing}
-                                isAnalyzed={isAnalyzed}
-                                frontImageUrl={fullAnalysisResponse?.front_image_url}
-                                backImageUrl={fullAnalysisResponse?.back_image_url}
-                            />
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    setActiveProductId(null);
-                                    setFrontImage(null);
-                                    setBackImage(null);
-                                    setReferenceImages([]);
-                                    setProductJSON(null);
-                                    setFullAnalysisResponse(null);
-                                    // Also clear local state if any
-                                }}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    marginTop: '8px',
-                                    background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                    border: '1px dashed rgba(124, 77, 255, 0.4)',
-                                    borderRadius: '8px',
-                                    color: '#7c4dff',
-                                    fontSize: '13px',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    transition: 'all 0.2s',
-                                }}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 5v14M5 12h14" />
-                                </svg>
-                                Upload New Product
-                            </button>
-                        )}
+                        {/* Single Reference Product Image Upload + Analysis */}
+                        <AdProductUploadSection
+                            isDarkMode={isDarkMode}
+                            onAnalyzed={handleAdProductAnalyzed}
+                            productId={adProductId}
+                            imageUrl={adProductImageUrl}
+                            onReset={() => {
+                                setAdProductId(null);
+                                setAdProductImageUrl(null);
+                                setAdProductAnalysis(null);
+                                setSelectedHeroImage(null);
+                            }}
+                        />
 
                         <AdUploader
                             onUploadSuccess={handleUploadSuccess}
@@ -1306,14 +1146,14 @@ const AdRecreationPage: React.FC = () => {
                                     ))}
                                 </div>
                             );
-                        })() : (analysisJson || isAnalyzed) ? (
+                        })() : (analysisJson) ? (
                             <AnalysisStage
                                 data={analysisJson}
                                 conceptId={conceptId || undefined}
                                 onUpdate={setAnalysisJson}
                                 isDarkMode={isDarkMode}
-                                productJSON={productJSON}
-                                fullAnalysisResponse={fullAnalysisResponse}
+                                productJSON={adProductAnalysis}
+                                fullAnalysisResponse={null}
                             />
                         ) : (
                             <EmptyState isDarkMode={isDarkMode} />
