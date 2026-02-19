@@ -681,6 +681,15 @@ function Home() {
     setProgress(0);
   }, []);
 
+  // Handle Generate with new - reset generation state so Merge button reappears
+  const handleGenerateWithNew = useCallback(() => {
+    setMergedPrompts({});
+    setGenerationResponse(null);
+    setVisuals([]);
+    setProgress(0);
+    setGenerationId(null);
+  }, []);
+
   const isAnalyzed = !!productJSON; // also available as ctx.isAnalyzed
   const hasDA = !!daJSON;
 
@@ -1165,6 +1174,7 @@ function Home() {
             hasCompletedGeneration={hasCompletedGeneration}
             isMerging={isMerging}
             isNewDAFlow={isNewDAFlow}
+            onGenerateWithNew={handleGenerateWithNew}
           />
         </div>
       </div>

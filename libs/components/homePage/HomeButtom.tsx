@@ -14,6 +14,7 @@ import {
     Check,
     Play,
     Loader2,
+    RefreshCw,
 } from 'lucide-react';
 import {
     ShotOptions,
@@ -57,6 +58,8 @@ interface HomeBottomProps {
     hasCompletedGeneration?: boolean;
     isMerging?: boolean;
     isNewDAFlow?: boolean;
+    // Generate with new button (shown after generation completes)
+    onGenerateWithNew?: () => void;
 }
 
 const SHOT_TYPE_CONFIGS: ShotTypeConfig[] = [
@@ -127,6 +130,7 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
     hasCompletedGeneration = false,
     isMerging = false,
     isNewDAFlow = false,
+    onGenerateWithNew,
 }) => {
     // Count enabled shots
     const enabledCount = useMemo(() => {
@@ -410,6 +414,17 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                     >
                         <Sparkles size={16} />
                         <span>{generateButtonText}</span>
+                    </button>
+                )}
+
+                {/* Generate with new button - shown after generation completes */}
+                {hasCompletedGeneration && onGenerateWithNew && (
+                    <button
+                        className={`${styles.generateBtn} ${styles.ready}`}
+                        onClick={onGenerateWithNew}
+                    >
+                        <RefreshCw size={16} />
+                        <span>Generate with new</span>
                     </button>
                 )}
             </div>
