@@ -209,6 +209,13 @@ const AdRecreationPage: React.FC = () => {
         return collectProductImages(adProductImageUrl, null, null, null);
     }, [adProductImageUrl]);
 
+    // Auto-select the single hero image when there is only one product image
+    useEffect(() => {
+        if (heroProductImages.length === 1 && heroZoneId) {
+            setSelectedHeroImage(heroProductImages[0].url);
+        }
+    }, [heroProductImages, heroZoneId]);
+
     // ============================================
     // HANDLERS
     // ============================================

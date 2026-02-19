@@ -2205,7 +2205,7 @@
 .editorTextarea {
   flex: 1;
   width: 100%;
-  min-height: 600px;
+  min-height: calc(100vh - 260px);
   padding: 16px;
   margin: 0;
   border: none;
