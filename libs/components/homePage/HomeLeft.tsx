@@ -49,6 +49,8 @@ interface HomeLeftProps {
   libraryRefreshTrigger?: number;
   /** NEW: Callback when user selects a product from the Product Catalog */
   onProductSelect?: (product: Product) => void;
+  /** Block sidebar interactions during generation/merging */
+  isBlocked?: boolean;
 }
 
 const HomeLeft: React.FC<HomeLeftProps> = ({
@@ -78,6 +80,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   onLibrarySelect,
   libraryRefreshTrigger = 0,
   onProductSelect,
+  isBlocked = false,
 }) => {
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState('product-visuals');
@@ -377,6 +380,9 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   return (
     <>
       <div className={`${styles.sidebar} ${!isDarkMode ? styles.light : ''} ${isOpen ? styles.open : ''}`}>
+        {/* Blocking overlay during generation/merging */}
+        {isBlocked && <div className={styles.blockedOverlay} />}
+
         {/* Logo */}
         <div className={styles.logo}>
           ROMIMI

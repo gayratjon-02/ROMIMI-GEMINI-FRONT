@@ -410,8 +410,9 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                     </button>
                 )}
 
-                {/* Merge Prompts Button (only before generation completes, not during new DA flow) */}
-                {!isNewDAFlow && !hasCompletedGeneration && !hasMergedPrompts && !isRegenerationAvailable && (
+                {/* Merge Prompts Button — hidden when product analyzed but no DA yet
+                    (in that case "Generate with new" shows instead) */}
+                {!isNewDAFlow && !hasCompletedGeneration && !hasMergedPrompts && !isRegenerationAvailable && (!isAnalyzed || hasDA) && (
                     <button
                         className={`${styles.generateBtn} ${canGenerate ? styles.ready : styles.disabled}`}
                         onClick={handleGenerate}
@@ -422,14 +423,18 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                     </button>
                 )}
 
-                {/* Generate with new button - shown after generation completes */}
-                {hasCompletedGeneration && onGenerateWithNew && (
+                {/* Generate with new button — shown:
+                    1. After generation completes / library view
+                    2. When product is analyzed but no DA is selected yet */}
+                {((hasCompletedGeneration) ||
+                  (!isNewDAFlow && !hasCompletedGeneration && isAnalyzed && !hasDA && !hasMergedPrompts && !isRegenerationAvailable)) &&
+                  onGenerateWithNew && (
                     <button
                         className={`${styles.generateBtn} ${styles.ready}`}
                         onClick={onGenerateWithNew}
                     >
                         <RefreshCw size={16} />
-                        <span>Generate with new</span>
+                        <span>Generate with new DA</span>
                     </button>
                 )}
 

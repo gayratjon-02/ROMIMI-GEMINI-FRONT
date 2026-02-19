@@ -1,5 +1,18 @@
 // HomeLeft Sidebar Styles
+
+// Blocking overlay - covers entire sidebar during generation/merging
+.blockedOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  border-radius: inherit;
+  cursor: not-allowed;
+}
+
 .sidebar {
+  position: relative;
   height: 100vh;
   width: 280px;
   background: #1a1a1a;

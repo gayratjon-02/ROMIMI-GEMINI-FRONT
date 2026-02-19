@@ -1107,6 +1107,7 @@ function Home() {
             mergedPrompts={mergedPrompts}
             onPromptsChange={handlePromptsChange}
             onProductSelect={handleProductSelect}
+            isBlocked={isGenerating || isMerging}
           />
         </div>
 
