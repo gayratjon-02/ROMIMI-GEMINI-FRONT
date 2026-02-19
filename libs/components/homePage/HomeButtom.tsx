@@ -60,6 +60,9 @@ interface HomeBottomProps {
     isNewDAFlow?: boolean;
     // Generate with new button (shown after generation completes)
     onGenerateWithNew?: () => void;
+    // Pending generation: DA selected, waiting for user to click Generate
+    hasPendingGeneration?: boolean;
+    onExecutePendingGeneration?: () => void;
 }
 
 const SHOT_TYPE_CONFIGS: ShotTypeConfig[] = [
@@ -131,6 +134,8 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
     isMerging = false,
     isNewDAFlow = false,
     onGenerateWithNew,
+    hasPendingGeneration = false,
+    onExecutePendingGeneration,
 }) => {
     // Count enabled shots
     const enabledCount = useMemo(() => {
@@ -425,6 +430,21 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
                     >
                         <RefreshCw size={16} />
                         <span>Generate with new</span>
+                    </button>
+                )}
+
+                {/* Generate button - shown after DA is selected from modal */}
+                {hasPendingGeneration && onExecutePendingGeneration && (
+                    <button
+                        className={`${styles.generateBtn} ${styles.ready}`}
+                        onClick={onExecutePendingGeneration}
+                        style={{
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
+                        }}
+                    >
+                        <Play size={16} />
+                        <span>Generate</span>
                     </button>
                 )}
             </div>

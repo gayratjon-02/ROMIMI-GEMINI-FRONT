@@ -134,6 +134,8 @@ function Home() {
 
   // DA picker modal state (shown when user clicks "Generate with new")
   const [showDAModal, setShowDAModal] = useState(false);
+  // Pending DA selected from modal — generation starts only when user clicks Generate
+  const [pendingNewDAId, setPendingNewDAId] = useState<string | null>(null);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -344,6 +346,7 @@ function Home() {
     setMergedPrompts({});
     setGenerationResponse(null);
     setProgress(0);
+    setPendingNewDAId(null);
     // Delegate product data mapping to context
     contextProductSelect(product);
   }, [contextProductSelect]);
@@ -976,11 +979,19 @@ function Home() {
     }
   }, [productId, shotOptions, resolution, aspectRatio]);
 
-  // Handle DA selection from modal: close modal and start regeneration
-  const handleDAModalSelect = useCallback(async (collectionId: string) => {
+  // Handle DA selection from modal: store pending DA, generation starts only on Generate click
+  const handleDAModalSelect = useCallback((collectionId: string) => {
     setShowDAModal(false);
-    await handleRegenerateWithNewDAFromModal(collectionId);
-  }, [handleRegenerateWithNewDAFromModal]);
+    setPendingNewDAId(collectionId);
+  }, []);
+
+  // Execute pending generation when user clicks Generate in bottom bar
+  const handleExecutePendingGeneration = useCallback(async () => {
+    if (!pendingNewDAId) return;
+    const id = pendingNewDAId;
+    setPendingNewDAId(null);
+    await handleRegenerateWithNewDAFromModal(id);
+  }, [pendingNewDAId, handleRegenerateWithNewDAFromModal]);
 
   return (
     <div style={{
@@ -1190,6 +1201,8 @@ function Home() {
             isMerging={isMerging}
             isNewDAFlow={isNewDAFlow}
             onGenerateWithNew={handleGenerateWithNew}
+            hasPendingGeneration={!!pendingNewDAId}
+            onExecutePendingGeneration={handleExecutePendingGeneration}
           />
         </div>
       </div>

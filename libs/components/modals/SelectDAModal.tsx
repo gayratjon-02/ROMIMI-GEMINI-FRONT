@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, Loader2 } from 'lucide-react';
+import { X, Check, Sparkles, Loader2 } from 'lucide-react'; // Loader2 used in loading state
 import { getAllCollections } from '@/libs/server/HomePage/collection';
 import { Collection } from '@/libs/types/homepage/collection';
 import styles from '@/scss/styles/Modals/SelectDAModal.module.scss';
@@ -23,12 +23,10 @@ const SelectDAModal: React.FC<SelectDAModalProps> = ({
     const [collections, setCollections] = useState<Collection[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setSelectedId(null);
-            setIsGenerating(false);
             setIsLoading(true);
             getAllCollections()
                 .then(setCollections)
@@ -39,7 +37,6 @@ const SelectDAModal: React.FC<SelectDAModalProps> = ({
 
     const handleConfirm = () => {
         if (!selectedId) return;
-        setIsGenerating(true);
         onSelect(selectedId);
     };
 
@@ -127,21 +124,12 @@ const SelectDAModal: React.FC<SelectDAModalProps> = ({
                                 Cancel
                             </button>
                             <button
-                                className={`${styles.generateBtn} ${selectedId && !isGenerating ? styles.active : ''}`}
+                                className={`${styles.generateBtn} ${selectedId ? styles.active : ''}`}
                                 onClick={handleConfirm}
-                                disabled={!selectedId || isGenerating}
+                                disabled={!selectedId}
                             >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 size={15} className={styles.spinner} />
-                                        <span>Starting...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles size={15} />
-                                        <span>Generate</span>
-                                    </>
-                                )}
+                                <Check size={15} />
+                                <span>Select</span>
                             </button>
                         </div>
                     </motion.div>
