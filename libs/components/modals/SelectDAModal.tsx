@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, Loader2 } from 'lucide-react'; // Loader2 used in loading state
+import { X, Check, Sparkles, Loader2, Plus } from 'lucide-react';
 import { getAllCollections } from '@/libs/server/HomePage/collection';
 import { Collection } from '@/libs/types/homepage/collection';
 import styles from '@/scss/styles/Modals/SelectDAModal.module.scss';
+import CreateCollectionWizard from '@/libs/components/modals/CreateCollectionWizard';
 
 interface SelectDAModalProps {
     isOpen: boolean;
@@ -23,21 +24,32 @@ const SelectDAModal: React.FC<SelectDAModalProps> = ({
     const [collections, setCollections] = useState<Collection[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [showCreateWizard, setShowCreateWizard] = useState(false);
+
+    const fetchCollections = () => {
+        setIsLoading(true);
+        getAllCollections()
+            .then(setCollections)
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
+    };
 
     useEffect(() => {
         if (isOpen) {
             setSelectedId(null);
-            setIsLoading(true);
-            getAllCollections()
-                .then(setCollections)
-                .catch(console.error)
-                .finally(() => setIsLoading(false));
+            fetchCollections();
         }
     }, [isOpen]);
 
     const handleConfirm = () => {
         if (!selectedId) return;
         onSelect(selectedId);
+    };
+
+    const handleCollectionCreated = (collection: Collection) => {
+        setShowCreateWizard(false);
+        fetchCollections();
+        setSelectedId(collection.id);
     };
 
     return (
@@ -120,21 +132,38 @@ const SelectDAModal: React.FC<SelectDAModalProps> = ({
 
                         {/* Footer */}
                         <div className={styles.footer}>
-                            <button className={styles.cancelBtn} onClick={onClose}>
-                                Cancel
-                            </button>
                             <button
-                                className={`${styles.generateBtn} ${selectedId ? styles.active : ''}`}
-                                onClick={handleConfirm}
-                                disabled={!selectedId}
+                                className={styles.newDABtn}
+                                onClick={() => setShowCreateWizard(true)}
                             >
-                                <Check size={15} />
-                                <span>Select</span>
+                                <Plus size={14} />
+                                <span>New DA</span>
                             </button>
+
+                            <div className={styles.footerRight}>
+                                <button className={styles.cancelBtn} onClick={onClose}>
+                                    Cancel
+                                </button>
+                                <button
+                                    className={`${styles.generateBtn} ${selectedId ? styles.active : ''}`}
+                                    onClick={handleConfirm}
+                                    disabled={!selectedId}
+                                >
+                                    <Check size={15} />
+                                    <span>Select</span>
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </motion.div>
             )}
+
+            {/* Create New DA Wizard */}
+            <CreateCollectionWizard
+                isOpen={showCreateWizard}
+                onClose={() => setShowCreateWizard(false)}
+                onCollectionCreated={handleCollectionCreated}
+            />
         </AnimatePresence>
     );
 };

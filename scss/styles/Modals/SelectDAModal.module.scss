@@ -217,11 +217,38 @@
 .footer {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 10px;
     padding: 16px 24px 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
+}
+
+.footerRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.newDABtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    border: 1px dashed rgba(139, 92, 246, 0.4);
+    background: rgba(139, 92, 246, 0.07);
+    color: rgba(139, 92, 246, 0.85);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+        border-color: rgba(139, 92, 246, 0.75);
+        background: rgba(139, 92, 246, 0.14);
+        color: #a78bfa;
+    }
 }
 
 .cancelBtn {
