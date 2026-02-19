@@ -1249,7 +1249,7 @@ const AdRecreationPage: React.FC = () => {
                                     ))}
                                 </div>
                             );
-                        })() : (analysisJson || adProductAnalysis) ? (
+                        })() : (!isMerging && (analysisJson || adProductAnalysis)) ? (
                             <AnalysisStage
                                 data={analysisJson}
                                 conceptId={conceptId || undefined}
