@@ -721,6 +721,15 @@ function Home() {
     !isGeneratingImages // Not currently generating
   );
 
+  // Library images are being displayed (show "Generate with new" button)
+  const isLibraryView = Boolean(
+    librarySelectedGeneration &&
+    librarySelectedGeneration.status === 'completed' &&
+    !isLibraryLoading &&
+    !isGenerating &&
+    !isMerging
+  );
+
   /**
    * 🆕 Helper: Extract shot options from merged prompts
    */
@@ -1176,8 +1185,8 @@ function Home() {
             regenerationContext={
               isLibraryRegenerationAvailable ? 'library' : 'current'
             }
-            // Hide buttons after generation completes
-            hasCompletedGeneration={hasCompletedGeneration}
+            // Hide buttons after generation completes (also true for library view)
+            hasCompletedGeneration={hasCompletedGeneration || isLibraryView}
             isMerging={isMerging}
             isNewDAFlow={isNewDAFlow}
             onGenerateWithNew={handleGenerateWithNew}
@@ -1190,7 +1199,7 @@ function Home() {
         isOpen={showDAModal}
         onClose={() => setShowDAModal(false)}
         onSelect={handleDAModalSelect}
-        currentCollectionId={selectedCollection?.id}
+        currentCollectionId={librarySelectedGeneration?.collection_id || selectedCollection?.id}
       />
 
       {/* Responsive CSS */}
