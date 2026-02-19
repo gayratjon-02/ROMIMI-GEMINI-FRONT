@@ -66,6 +66,7 @@ interface HomeMiddleProps {
     libraryGeneration?: Generation | null;
     isLibraryLoading?: boolean;
     onRegenerateWithNewDA?: (collectionId: string) => void;
+    isMerging?: boolean;
 }
 
 export interface ProductJSON {
@@ -912,6 +913,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
     libraryGeneration,
     isLibraryLoading = false,
     onRegenerateWithNewDA,
+    isMerging = false,
 }) => {
     // Visuals State - use parent values if provided, otherwise local state
     const [localVisuals, setLocalVisuals] = useState<VisualOutput[]>([]);
@@ -1336,6 +1338,25 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                         <div className={styles.analyzingContent}>
                             <Loader2 size={48} className={styles.spin} />
                             <h3>Loading Visuals...</h3>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Merging Overlay - shown while merging product + DA prompts */}
+            <AnimatePresence>
+                {isMerging && (
+                    <motion.div
+                        className={styles.analyzingOverlay}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{ zIndex: 60 }}
+                    >
+                        <div className={styles.analyzingContent}>
+                            <Loader2 size={48} className={styles.spin} />
+                            <h3>Merging prompts...</h3>
+                            <p>Combining product & design aesthetic</p>
                         </div>
                     </motion.div>
                 )}

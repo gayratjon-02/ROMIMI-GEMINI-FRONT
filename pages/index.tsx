@@ -1163,6 +1163,7 @@ function Home() {
               libraryGeneration={librarySelectedGeneration}
               isLibraryLoading={isLibraryLoading}
               onRegenerateWithNewDA={handleRegenerateWithNewDAFromModal}
+              isMerging={isMerging}
             />
           </div>
 
