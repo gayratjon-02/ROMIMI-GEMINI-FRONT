@@ -9,6 +9,7 @@ import { Loader2, Eye, Download, X, Heart, RefreshCw, Trash2, Archive } from 'lu
 import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
 import { logout, getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
+import { getBrandAngles } from '@/libs/server/Ad-Recreation/brand/brand.service';
 import {
     generateAdVariations,
     getGenerationStatus,
@@ -71,6 +72,7 @@ const AdRecreationPage: React.FC = () => {
     const [heroZoneId, setHeroZoneId] = useState<string | null>(null);
     const [heroZoneLabel, setHeroZoneLabel] = useState<string | null>(null);
 
+    const [brandAngles, setBrandAngles] = useState<any[]>(MARKETING_ANGLES); // Holds predefined + custom
     const [selectedAngles, setSelectedAngles] = useState<string[]>([]);
     const [selectedFormats, setSelectedFormats] = useState<string[]>(['story']);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -184,6 +186,24 @@ const AdRecreationPage: React.FC = () => {
         console.log(`✅ Ad product analyzed: ${productId}`);
     }, []);
 
+    // Fetch custom angles when a brand is selected
+    useEffect(() => {
+        const fetchAngles = async () => {
+            if (selectedBrandId) {
+                const angles = await getBrandAngles(selectedBrandId);
+                // The API returns all angles, but if it fails we fallback to predefined
+                if (angles && angles.length > 0) {
+                    setBrandAngles(angles);
+                } else {
+                    setBrandAngles(MARKETING_ANGLES);
+                }
+            } else {
+                setBrandAngles(MARKETING_ANGLES);
+            }
+        };
+        fetchAngles();
+    }, [selectedBrandId]);
+
     // Auto-detect hero zone when concept analysis changes
     useEffect(() => {
         if (analysisJson) {
@@ -258,7 +278,7 @@ const AdRecreationPage: React.FC = () => {
 
         for (const angleId of selectedAngles) {
             for (const formatId of selectedFormats) {
-                const angle = MARKETING_ANGLES.find(a => a.id === angleId);
+                const angle = brandAngles.find(a => a.id === angleId) || MARKETING_ANGLES.find(a => a.id === angleId);
                 for (let v = 0; v < 4; v++) {
                     placeholders.push({
                         id: `placeholder-${index}`,
@@ -384,150 +404,149 @@ const AdRecreationPage: React.FC = () => {
         let hasTransitioned = false;
 
         try {
-            // Prepare all requests first
-            const requests: Array<{
-                payload: any,
-                angleId: string,
-                formatId: string,
-                startIndex: number
-            }> = [];
+            // We no longer need parallel requests. The backend now natively supports
+            // arrays of angles and formats.
+            const payload = {
+                brand_id: selectedBrandId,
+                concept_id: conceptId,
+                marketing_angle_ids: selectedAngles,
+                format_ids: selectedFormats,
+                product_id: effectiveProductId,
+                ...(selectedHeroImage && heroZoneId ? {
+                    mapped_assets: {
+                        hero_zone_id: heroZoneId,
+                        selected_image_url: selectedHeroImage,
+                    },
+                } : {}),
+            };
 
-            let placeholderIdx = 0;
-            for (const angleId of selectedAngles) {
-                for (const formatId of selectedFormats) {
-                    const payload = {
-                        brand_id: selectedBrandId,
-                        concept_id: conceptId,
-                        marketing_angle_id: angleId,
-                        format_id: formatId,
-                        product_id: effectiveProductId,
-                        ...(selectedHeroImage && heroZoneId ? {
-                            mapped_assets: {
-                                hero_zone_id: heroZoneId,
-                                selected_image_url: selectedHeroImage,
-                            },
-                        } : {}),
-                    };
-                    requests.push({
-                        payload,
-                        angleId,
-                        formatId,
-                        startIndex: placeholderIdx
-                    });
-                    placeholderIdx += 4; // Increment by 4 for next batch
+            console.log(`🚀 Launching SINGLE generation request for ${selectedAngles.length} angles x ${selectedFormats.length} formats...`);
+
+            try {
+                // Phase 2: Transition from merging spinner to cards
+                if (!hasTransitioned) {
+                    hasTransitioned = true;
+                    console.log('🎨 Phase 2: Showing cards...');
+                    const placeholders = createPlaceholders();
+                    setGeneratedResults(placeholders);
+                    setShowResults(true);
+                    setIsMerging(false);
                 }
-            }
 
-            console.log(`🚀 Launching ${requests.length} parallel generation requests...`);
+                // Make the SINGLE API call
+                const result = await generateAdVariations(payload);
+                console.log('📥 Generation response received:', result);
 
-            // Execute all requests in parallel
-            // The backend awaits full generation. Socket.IO events fire during it for real-time display.
-            // HTTP response returns the complete result with all images.
-            await Promise.all(requests.map(async (req) => {
-                const { payload, angleId, formatId, startIndex } = req;
-                console.log(`📤 Generating: angle=${angleId}, format=${formatId}`);
+                // Extract generation data from the response
+                const generation = (result as any);
+                const genId = generation?.id || '';
+                const generatedCopy = generation?.generated_copy || {};
 
-                try {
-                    const result = await generateAdVariations(payload);
-                    console.log('📥 Generation response received:', result);
-
-                    // Phase 2: Transition from merging spinner to cards
-                    if (!hasTransitioned) {
-                        hasTransitioned = true;
-                        console.log('🎨 Phase 2: Showing cards...');
-                        const placeholders = createPlaceholders();
-                        setGeneratedResults(placeholders);
-                        setShowResults(true);
-                        setIsMerging(false);
-                    }
-
-                    // Extract generation data from the response
-                    const generation = (result as any);
-                    const genId = generation?.id || '';
-                    const generatedCopy = generation?.generated_copy || {};
-
-                    // Store generation ID for regeneration
-                    if (genId) {
-                        setGenerationIdMap(prev => ({
-                            ...prev,
-                            [`${angleId}_${formatId}`]: genId
-                        }));
-
-                        // Connect to Socket.IO for real-time image updates
-                        console.log(`🔗 [SOCKET MODE] Setting generation ID for Socket.IO: ${genId}`);
-                        setCurrentGenerationId(genId);
-
-                        // Store request mapping for socket callbacks
-                        socketRequestMapRef.current[genId] = { angleId, formatId, startIndex };
-                        socketCopyMapRef.current[genId] = generatedCopy;
-                    }
-
-                    // Check if the response already contains result images
-                    // (happens if generation completed within the 2s timeout)
-                    const resultImages = generation?.result_images || [];
-                    if (resultImages.length > 0) {
-                        console.log(`📥 [IMMEDIATE] Got ${resultImages.length} images immediately (fast generation)`);
-                        for (let i = 0; i < resultImages.length; i++) {
-                            const img = resultImages[i];
-                            let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
-
-                            if (img.base64 && img.base64.length > 0) {
-                                const mimeType = img.mimeType || 'image/png';
-                                imageUrl = `data:${mimeType};base64,${img.base64}`;
-                            } else if (img.url) {
-                                imageUrl = img.url;
-                            }
-
-                            const slotIdx = startIndex + i;
-                            const completedResult: PlaceholderResult = {
-                                id: img.id || `gen-${angleId}-${formatId}-${img.variation_index}`,
-                                angle: angleId,
-                                format: formatId,
-                                imageUrl: imageUrl,
-                                headline: generatedCopy.headline || 'Your Ad',
-                                cta: generatedCopy.cta || 'Shop Now',
-                                subtext: generatedCopy.subheadline || '',
-                                isLoading: false,
-                                generationId: genId,
-                                variationIndex: img.variation_index || (i + 1),
-                            };
-
-                            setGeneratedResults(prev => {
-                                const next = [...prev];
-                                if (next[slotIdx]) {
-                                    next[slotIdx] = completedResult;
-                                }
-                                return next;
-                            });
-
-                            setCompletedCount(prev => prev + 1);
-                            setGenerationProgress(prev => prev + 1);
+                // Store generation ID for regeneration
+                if (genId) {
+                    // Update the Map for all chosen formats & angles
+                    const newMap = { ...generationIdMap };
+                    for (const angleId of selectedAngles) {
+                        for (const formatId of selectedFormats) {
+                            newMap[`${angleId}_${formatId}`] = genId;
                         }
                     }
-                    // Socket.IO events also fire for enhanced real-time display
+                    setGenerationIdMap(newMap);
 
-                } catch (err) {
-                    console.error(`❌ Failed batch ${angleId}/${formatId}:`, err);
-                    // Mark these specific placeholders as failed
-                    for (let i = 0; i < 4; i++) {
-                        const slotIdx = startIndex + i;
+                    // Connect to Socket.IO for real-time image updates
+                    console.log(`🔗 [SOCKET MODE] Setting generation ID for Socket.IO: ${genId}`);
+                    setCurrentGenerationId(genId);
+
+                    // Store request mapping for socket callbacks
+                    // For the single request, we track generating from index 0
+                    socketRequestMapRef.current[genId] = { angleId: selectedAngles[0], formatId: selectedFormats[0], startIndex: 0 };
+                    socketCopyMapRef.current[genId] = generatedCopy;
+                }
+
+                // Check if the response already contains result images
+                // (happens if generation completed within the 2s timeout)
+                const resultImages = generation?.result_images || [];
+                if (resultImages.length > 0) {
+                    console.log(`📥 [IMMEDIATE] Got ${resultImages.length} images immediately (fast generation)`);
+
+                    // We must sort or identify the result images to map to placeholders correctly.
+                    // The backend assigns angle and format properties to the returned images.
+                    for (let i = 0; i < resultImages.length; i++) {
+                        const img = resultImages[i];
+                        let imageUrl = 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Generated+Ad';
+
+                        if (img.base64 && img.base64.length > 0) {
+                            const mimeType = img.mimeType || 'image/png';
+                            imageUrl = `data:${mimeType};base64,${img.base64}`;
+                        } else if (img.url) {
+                            imageUrl = img.url;
+                        }
+
+                        // Determine the slot index in the placeholder grid based on the angle and format loops
+                        let slotIdx = 0;
+                        let found = false;
+                        for (const a of selectedAngles) {
+                            for (const f of selectedFormats) {
+                                for (let v = 0; v < 4; v++) {
+                                    // Assuming the result images array returns sequential index 0 to expected-1
+                                    if (img.angle === a && img.format === f && img.variation_index === (v + 1)) {
+                                        found = true;
+                                        break;
+                                    }
+                                    if (!found) slotIdx++;
+                                }
+                                if (found) break;
+                            }
+                            if (found) break;
+                        }
+
+                        if (!found && img.index !== undefined) {
+                            slotIdx = img.index; // Fallback to provided sequential index
+                        }
+
+                        const completedResult: PlaceholderResult = {
+                            id: img.id || `gen-${img.angle}-${img.format}-${img.variation_index}`,
+                            angle: img.angle,
+                            format: img.format,
+                            imageUrl: imageUrl,
+                            // Use specific ad copy if nested under angle/format else fallback to top-level
+                            headline: generatedCopy.headline || 'Your Ad',
+                            cta: generatedCopy.cta || 'Shop Now',
+                            subtext: generatedCopy.subheadline || '',
+                            isLoading: false,
+                            generationId: genId,
+                            variationIndex: img.variation_index || (i % 4 + 1), // Approximate variation index
+                        };
+
                         setGeneratedResults(prev => {
                             const next = [...prev];
                             if (next[slotIdx]) {
-                                next[slotIdx] = {
-                                    ...next[slotIdx],
-                                    isLoading: false,
-                                    headline: 'Generation Failed',
-                                    cta: 'Retry',
-                                    imageUrl: 'https://placehold.co/1080x1080/ff3b30/FFF?text=Failed'
-                                };
+                                next[slotIdx] = completedResult;
+                            } else {
+                                // If mapping fails, append it visually
+                                next.push(completedResult);
                             }
                             return next;
                         });
+
                         setCompletedCount(prev => prev + 1);
+                        setGenerationProgress(prev => prev + 1);
                     }
                 }
-            }));
+                // Socket.IO events also fire for enhanced real-time display
+
+            } catch (err) {
+                console.error(`❌ Failed batch generation:`, err);
+                // Mark ALL placeholders as failed
+                setGeneratedResults(prev => prev.map(p => ({
+                    ...p,
+                    isLoading: false,
+                    headline: 'Generation Failed',
+                    cta: 'Retry',
+                    imageUrl: 'https://placehold.co/1080x1080/ff3b30/FFF?text=Failed'
+                })));
+                setCompletedCount(expected); // Trick progress bar to fill with failure
+            }
 
             // If no request succeeded to transition, force transition
             if (!hasTransitioned) {
@@ -623,7 +642,7 @@ const AdRecreationPage: React.FC = () => {
 
             for (let i = 0; i < completedResults.length; i++) {
                 const result = completedResults[i];
-                const angleName = MARKETING_ANGLES.find(a => a.id === result.angle)?.label || result.angle;
+                const angleName = brandAngles.find(a => a.id === result.angle)?.label || MARKETING_ANGLES.find(a => a.id === result.angle)?.label || result.angle;
                 const fileName = `${angleName}_${result.format}_v${result.variationIndex || 1}.png`.replace(/[^a-zA-Z0-9._-]/g, '_');
 
                 try {
@@ -744,6 +763,8 @@ const AdRecreationPage: React.FC = () => {
                             selected={selectedAngles}
                             onChange={handleAngleToggle}
                             isDarkMode={isDarkMode}
+                            dynamicAngles={brandAngles}
+                            brandId={selectedBrandId}
                         />
                     </div>
                 </div>

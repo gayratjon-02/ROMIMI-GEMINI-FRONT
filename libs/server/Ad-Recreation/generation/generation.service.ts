@@ -16,8 +16,8 @@ import axiosClient from '@/libs/server/axios-client';
 export interface GenerationPayload {
     brand_id: string;           // UUID - product data auto-fetched on backend
     concept_id: string;         // UUID
-    marketing_angle_id: string; // e.g., "problem_solution", "social_proof"
-    format_id: string;          // e.g., "story", "square", "portrait"
+    marketing_angle_ids: string[]; // Array of angle IDs e.g., ["problem_solution", "social_proof"]
+    format_ids: string[];          // Array of format IDs e.g., ["story", "square"]
     product_id: string;        // UUID - REQUIRED - product images sent to Gemini as reference
     mapped_assets?: {           // Hero image mapping - user selects which product image fills the hero zone
         hero_zone_id: string;

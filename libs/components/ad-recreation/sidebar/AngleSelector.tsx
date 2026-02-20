@@ -14,6 +14,8 @@ export interface Angle {
     desc: string;
     icon: string;
     category: string;
+    name?: string; // Support for custom brand angles
+    description?: string; // Support for custom brand angles
 }
 
 export const MARKETING_ANGLES: Angle[] = [
@@ -57,19 +59,30 @@ interface AngleSelectorProps {
     selected: string[];
     onChange: (id: string) => void;
     isDarkMode: boolean;
+    dynamicAngles?: Angle[]; // From API (predefined + custom)
+    brandId?: string | null;
 }
 
 const AngleSelector: React.FC<AngleSelectorProps> = ({
     selected,
     onChange,
     isDarkMode,
+    dynamicAngles = MARKETING_ANGLES,
+    brandId,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Custom Angle Modal State
+    const [isAddingCustom, setIsAddingCustom] = useState(false);
+    const [customName, setCustomName] = useState('');
+    const [customDesc, setCustomDesc] = useState('');
+    const [customHook, setCustomHook] = useState('');
+    const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
+
     // Group angles by category
-    const groupedAngles = MARKETING_ANGLES.reduce((acc, angle) => {
+    const groupedAngles = dynamicAngles.reduce((acc, angle) => {
         if (!acc[angle.category]) {
             acc[angle.category] = [];
         }
@@ -138,6 +151,36 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
     useEffect(() => {
         return () => clearCloseTimer();
     }, [clearCloseTimer]);
+
+    const handleCreateCustomAngle = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!brandId || !customName || !customDesc || !customHook) return;
+
+        setIsSubmittingCustom(true);
+        try {
+            const { addCustomAngle } = await import('@/libs/server/Ad-Recreation/brand/brand.service');
+            await addCustomAngle(brandId, {
+                name: customName,
+                description: customDesc,
+                hook: customHook,
+            });
+            // Reset form and close modal
+            setCustomName('');
+            setCustomDesc('');
+            setCustomHook('');
+            setIsAddingCustom(false);
+            // We don't need to manually update dynamicAngles here because
+            // the parent (index.tsx) could potentially re-fetch, OR the user
+            // can just see it on the next load. For immediate UI feedback, 
+            // the parent should re-fetch angles. We'll show an alert for P0.
+            alert('Custom angle added successfully. It will appear when you re-select the brand.');
+        } catch (error) {
+            console.error('Failed to create custom angle:', error);
+            alert('Failed to add custom angle.');
+        } finally {
+            setIsSubmittingCustom(false);
+        }
+    };
 
     return (
         <div
@@ -252,12 +295,12 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
                                         </div>
 
                                         {/* Icon */}
-                                        <span style={{ fontSize: '16px' }}>{angle.icon}</span>
+                                        <span style={{ fontSize: '16px' }}>{angle.icon || '🏷️'}</span>
 
                                         {/* Label & Desc */}
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '13px', fontWeight: 500 }}>
-                                                {angle.label}
+                                                {angle.label || angle.name}
                                             </div>
                                             <div
                                                 style={{
@@ -266,7 +309,7 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
                                                     marginTop: '2px',
                                                 }}
                                             >
-                                                {angle.desc}
+                                                {angle.desc || angle.description}
                                             </div>
                                         </div>
                                     </button>
@@ -274,6 +317,152 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
                             })}
                         </div>
                     ))}
+
+                    {/* Add Custom Angle Button */}
+                    {brandId && (
+                        <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(124, 77, 255, 0.2)' }}>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    clearCloseTimer(); // Stop auto-close
+                                    setIsAddingCustom(true);
+                                }}
+                                style={{
+                                    width: '100%',
+                                    padding: '8px',
+                                    background: 'rgba(124, 77, 255, 0.1)',
+                                    color: '#7c4dff',
+                                    border: '1px dashed rgba(124, 77, 255, 0.5)',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: 500,
+                                }}
+                            >
+                                + Add Custom Angle for Brand
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Modal for adding custom angle */}
+            {isAddingCustom && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 9999,
+                    }}
+                    onClick={() => setIsAddingCustom(false)}
+                >
+                    <div
+                        style={{
+                            background: isDarkMode ? '#1a1a2e' : '#fff',
+                            padding: '24px',
+                            borderRadius: '12px',
+                            width: '400px',
+                            maxWidth: '90vw',
+                            border: '1px solid rgba(124, 77, 255, 0.3)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h3 style={{ margin: '0 0 16px', color: isDarkMode ? '#fff' : '#1a1a2e' }}>Create Custom Angle</h3>
+                        <form onSubmit={handleCreateCustomAngle}>
+                            <div style={{ marginBottom: '12px' }}>
+                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: isDarkMode ? '#ccc' : '#666' }}>Name</label>
+                                <input
+                                    required
+                                    value={customName}
+                                    onChange={e => setCustomName(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#f5f5f7',
+                                        border: '1px solid rgba(124, 77, 255, 0.2)',
+                                        borderRadius: '6px',
+                                        color: isDarkMode ? '#fff' : '#1a1a2e',
+                                    }}
+                                    placeholder="e.g., Seasonal Promo"
+                                />
+                            </div>
+                            <div style={{ marginBottom: '12px' }}>
+                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: isDarkMode ? '#ccc' : '#666' }}>Description</label>
+                                <input
+                                    required
+                                    value={customDesc}
+                                    onChange={e => setCustomDesc(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#f5f5f7',
+                                        border: '1px solid rgba(124, 77, 255, 0.2)',
+                                        borderRadius: '6px',
+                                        color: isDarkMode ? '#fff' : '#1a1a2e',
+                                    }}
+                                    placeholder="e.g., Focus on holiday discounts"
+                                />
+                            </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: isDarkMode ? '#ccc' : '#666' }}>Hook (First 3 seconds)</label>
+                                <textarea
+                                    required
+                                    value={customHook}
+                                    onChange={e => setCustomHook(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        background: isDarkMode ? 'rgba(255,255,255,0.05)' : '#f5f5f7',
+                                        border: '1px solid rgba(124, 77, 255, 0.2)',
+                                        borderRadius: '6px',
+                                        color: isDarkMode ? '#fff' : '#1a1a2e',
+                                        minHeight: '80px',
+                                        resize: 'vertical'
+                                    }}
+                                    placeholder="How to grab attention immediately..."
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingCustom(false)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: isDarkMode ? '#ccc' : '#666',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingCustom}
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: '#7c4dff',
+                                        color: '#fff',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        fontWeight: 500,
+                                        cursor: isSubmittingCustom ? 'wait' : 'pointer',
+                                        opacity: isSubmittingCustom ? 0.7 : 1
+                                    }}
+                                >
+                                    {isSubmittingCustom ? 'Saving...' : 'Save Angle'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

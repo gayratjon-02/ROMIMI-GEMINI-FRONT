@@ -61,6 +61,50 @@ export async function fetchAdBrandById(brandId: string): Promise<AdBrand | null>
 }
 
 /**
+ * Interface for a Custom Angle
+ */
+export interface CustomAngleData {
+    name: string;
+    description: string;
+    hook: string;
+}
+
+/**
+ * Fetches all predefined and custom angles for a brand.
+ * @param brandId - The brand ID
+ * @returns Promise<any[]> - Array of merged angles
+ */
+export async function getBrandAngles(brandId: string): Promise<any[]> {
+    try {
+        const response = await axiosClient.get<{ success: boolean; angles: any[] }>(`/api/brands/${brandId}/angles`);
+        if (!response.data.success) return [];
+        return response.data.angles || [];
+    } catch (error) {
+        console.error(`Failed to fetch angles for brand ${brandId}:`, error);
+        return [];
+    }
+}
+
+/**
+ * Creates a new custom angle for a brand.
+ * @param brandId - The brand ID
+ * @param data - The angle data
+ * @returns Promise<AdBrand> - The updated brand
+ */
+export async function addCustomAngle(brandId: string, data: CustomAngleData): Promise<AdBrand> {
+    const response = await axiosClient.post<{ success: boolean; message: string; brand: AdBrand }>(
+        `/api/brands/${brandId}/angles`,
+        data
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to create custom angle');
+    }
+
+    return response.data.brand;
+}
+
+/**
  * Interface for creating a new brand
  */
 export interface CreateBrandData {
