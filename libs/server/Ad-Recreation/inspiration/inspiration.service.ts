@@ -121,3 +121,21 @@ export async function updateConceptAnalysis(conceptId: string, analysisJson: obj
     console.log('Concept updated:', response.data.concept.id);
     return response.data.concept;
 }
+
+/**
+ * Fetches all previously analyzed concepts for the current user.
+ * @param tags - Optional comma-separated tags to filter
+ * @returns Promise<AdConceptAnalysis[]>
+ */
+export async function fetchAllConcepts(tags?: string): Promise<AdConceptAnalysis[]> {
+    try {
+        const params = tags ? `?tags=${encodeURIComponent(tags)}` : '';
+        const response = await axiosClient.get<{ success: boolean; concepts: AdConceptAnalysis[]; total: number }>(
+            `/api/concepts${params}`
+        );
+        return response.data.concepts || [];
+    } catch (error) {
+        console.error('Error fetching all concepts:', error);
+        return [];
+    }
+}

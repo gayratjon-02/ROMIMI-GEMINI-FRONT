@@ -10,6 +10,7 @@ import HomeTop from '@/libs/components/homePage/HomeTop';
 import { withAuth } from "@/libs/components/auth/withAuth";
 import { logout, getUserInfo, UserInfo } from '@/libs/server/HomePage/signup';
 import { getBrandAngles } from '@/libs/server/Ad-Recreation/brand/brand.service';
+import { fetchAllConcepts } from '@/libs/server/Ad-Recreation/inspiration/inspiration.service';
 import {
     generateAdVariations,
     getGenerationStatus,
@@ -27,6 +28,8 @@ import AngleSelector, { MARKETING_ANGLES } from '@/libs/components/ad-recreation
 import FormatSelector, { OUTPUT_FORMATS } from '@/libs/components/ad-recreation/sidebar/FormatSelector';
 import AdProductUploadSection from '@/libs/components/ad-recreation/sidebar/AdProductUploadSection';
 import HeroImageSelector, { detectHeroZone, collectProductImages } from '@/libs/components/ad-recreation/sidebar/HeroImageSelector';
+import AnalyzedProductSelector from '@/libs/components/ad-recreation/sidebar/AnalyzedProductSelector';
+import ConceptLibrary, { ConceptItem } from '@/libs/components/ad-recreation/sidebar/ConceptLibrary';
 
 // Gallery Components
 import EmptyState from '@/libs/components/ad-recreation/gallery/EmptyState';
@@ -93,6 +96,10 @@ const AdRecreationPage: React.FC = () => {
     const [generationIdMap, setGenerationIdMap] = useState<Record<string, string>>({});
     // P0: Regenerating variation IDs
     const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+
+    // Concept Library state
+    const [savedConcepts, setSavedConcepts] = useState<ConceptItem[]>([]);
+    const [isLoadingConcepts, setIsLoadingConcepts] = useState(false);
 
     // Polling ref
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -178,12 +185,39 @@ const AdRecreationPage: React.FC = () => {
         };
     }, []);
 
+    // Fetch saved concepts on mount
+    useEffect(() => {
+        const loadConcepts = async () => {
+            setIsLoadingConcepts(true);
+            try {
+                const concepts = await fetchAllConcepts();
+                setSavedConcepts(concepts as unknown as ConceptItem[]);
+            } catch (err) {
+                console.error('Failed to load concepts:', err);
+            } finally {
+                setIsLoadingConcepts(false);
+            }
+        };
+        loadConcepts();
+    }, []);
+
     // Ad product analysis callback — called by AdProductUploadSection on success
     const handleAdProductAnalyzed = useCallback((productId: string, imageUrl: string, analysis: Record<string, any>) => {
         setAdProductId(productId);
         setAdProductImageUrl(imageUrl);
         setAdProductAnalysis(analysis);
         console.log(`✅ Ad product analyzed: ${productId}`);
+    }, []);
+
+    // Select a previously analyzed product from history
+    const handleSelectAnalyzedProduct = useCallback((productId: string, imageUrl: string, analysis: Record<string, any>) => {
+        setAdProductId(productId);
+        setAdProductImageUrl(imageUrl);
+        setAdProductAnalysis(analysis);
+        // Reset generation results when product changes
+        setShowResults(false);
+        setGeneratedResults([]);
+        console.log(`✅ Loaded analyzed product from history: ${productId}`);
     }, []);
 
     // Fetch custom angles when a brand is selected
@@ -247,6 +281,22 @@ const AdRecreationPage: React.FC = () => {
         setInspirationImageUrl(data.imageUrl);
         setSelectedHeroImage(null); // Reset hero selection on new concept
         console.log('Concept analyzed:', data.conceptId);
+
+        // Refresh concept library after new upload
+        fetchAllConcepts().then(concepts => {
+            setSavedConcepts(concepts as unknown as ConceptItem[]);
+        });
+    };
+
+    // Handler: select a concept from the library
+    const handleSelectLibraryConcept = (concept: ConceptItem) => {
+        setConceptId(concept.id);
+        setAnalysisJson(concept.analysis_json);
+        setInspirationImageUrl(concept.original_image_url);
+        setSelectedHeroImage(null);
+        setShowResults(false);
+        setGeneratedResults([]);
+        console.log(`📚 Selected concept from library: ${concept.id}`);
     };
 
     const handleAngleToggle = (angleId: string) => {
@@ -765,6 +815,22 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                             dynamicAngles={brandAngles}
                             brandId={selectedBrandId}
+                        />
+
+                        {/* Analyzed Products History */}
+                        <AnalyzedProductSelector
+                            isDarkMode={isDarkMode}
+                            selectedProductId={adProductId}
+                            onSelect={handleSelectAnalyzedProduct}
+                        />
+
+                        {/* Inspiration Library */}
+                        <ConceptLibrary
+                            concepts={savedConcepts}
+                            selectedConceptId={conceptId}
+                            onSelect={handleSelectLibraryConcept}
+                            isDarkMode={isDarkMode}
+                            isLoading={isLoadingConcepts}
                         />
                     </div>
                 </div>

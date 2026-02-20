@@ -8,6 +8,26 @@ export interface AdProductAnalysisResult {
     analysis: Record<string, any>;
 }
 
+export interface AdProductListItem {
+    id: string;
+    name: string;
+    front_image_url: string | null;
+    back_image_url: string | null;
+    analyzed_product_json: Record<string, any> | null;
+    created_at: string;
+}
+
+/**
+ * Fetches all previously analyzed products for the current user.
+ * Endpoint: GET /api/ad-recreation/products
+ */
+export async function getAdProducts(): Promise<AdProductListItem[]> {
+    const response = await axiosClient.get<{ success: boolean; products: AdProductListItem[] }>(
+        '/api/ad-recreation/products',
+    );
+    return response.data.products || [];
+}
+
 /**
  * Updates the analyzed_product_json for an existing ad product.
  * Endpoint: PATCH /api/ad-recreation/products/:id

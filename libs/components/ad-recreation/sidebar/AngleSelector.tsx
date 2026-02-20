@@ -222,13 +222,13 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
                     className={styles.dropdownContent}
                     style={{
                         position: 'absolute',
-                        top: 'calc(100% + 4px)',
+                        bottom: 'calc(100% + 4px)',
                         left: 0,
                         right: 0,
                         zIndex: 100,
                         background: isDarkMode ? '#1a1a2e' : '#ffffff',
                         border: '1px solid rgba(124, 77, 255, 0.3)',
-                        boxShadow: isDarkMode ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(124, 77, 255, 0.15)',
+                        boxShadow: isDarkMode ? '0 -8px 32px rgba(0,0,0,0.5)' : '0 -8px 32px rgba(124, 77, 255, 0.15)',
                         borderRadius: '8px',
                         maxHeight: '60vh',
                         overflowY: 'auto',
