@@ -423,7 +423,11 @@ const AdRecreationPage: React.FC = () => {
             console.log(`🚀 Launching SINGLE generation request for ${selectedAngles.length} angles x ${selectedFormats.length} formats...`);
 
             try {
-                // Phase 2: Transition from merging spinner to cards
+                // Make the SINGLE API call first before hiding the merging spinner
+                const result = await generateAdVariations(payload);
+                console.log('📥 Generation response received:', result);
+
+                // Phase 2: Transition from merging spinner to cards NOW that we have a response
                 if (!hasTransitioned) {
                     hasTransitioned = true;
                     console.log('🎨 Phase 2: Showing cards...');
@@ -432,10 +436,6 @@ const AdRecreationPage: React.FC = () => {
                     setShowResults(true);
                     setIsMerging(false);
                 }
-
-                // Make the SINGLE API call
-                const result = await generateAdVariations(payload);
-                console.log('📥 Generation response received:', result);
 
                 // Extract generation data from the response
                 const generation = (result as any);
