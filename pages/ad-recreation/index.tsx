@@ -763,7 +763,56 @@ const AdRecreationPage: React.FC = () => {
         <>
             <div className={`${styles.pageWrapper} ${lightClass}`} style={{ paddingBottom: 100 }}>
                 {/* LEFT SIDEBAR */}
-                <div className={`${styles.sidebar} ${lightClass}`} style={{ height: 'calc(100vh - 100px)' }}>
+                <div className={`${styles.sidebar} ${lightClass}`} style={{ height: 'calc(100vh - 100px)', position: 'relative' }}>
+
+                    {/* Generation lock overlay — blocks all sidebar interaction during generation/merging */}
+                    {(isGenerating || isMerging) && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                zIndex: 50,
+                                background: isDarkMode
+                                    ? 'rgba(9, 9, 11, 0.72)'
+                                    : 'rgba(255, 255, 255, 0.72)',
+                                backdropFilter: 'blur(2px)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '12px',
+                                cursor: 'not-allowed',
+                                borderRight: '1px solid rgba(124, 77, 255, 0.15)',
+                            }}
+                        >
+                            <div style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                border: '3px solid rgba(124, 77, 255, 0.2)',
+                                borderTopColor: '#7c4dff',
+                                animation: 'spin 1s linear infinite',
+                            }} />
+                            <span style={{
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                color: isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+                                textAlign: 'center',
+                                padding: '0 24px',
+                            }}>
+                                {isMerging ? 'Preparing ad...' : 'Generation in progress'}
+                            </span>
+                            <span style={{
+                                fontSize: '11px',
+                                color: isDarkMode ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
+                                textAlign: 'center',
+                                padding: '0 24px',
+                            }}>
+                                Wait until generation completes
+                            </span>
+                        </div>
+                    )}
+
                     <div className={styles.sidebarContent}>
                         <BrandSelect
                             selectedBrandId={selectedBrandId}
