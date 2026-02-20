@@ -1336,7 +1336,7 @@ const AdRecreationPage: React.FC = () => {
                                     ))}
                                 </div>
                             );
-                        })() : (!isMerging && (analysisJson || adProductAnalysis)) ? (
+                        })() : (!isMerging && !isGenerating && (analysisJson || adProductAnalysis)) ? (
                             <AnalysisStage
                                 data={analysisJson}
                                 conceptId={conceptId || undefined}
@@ -1347,9 +1347,9 @@ const AdRecreationPage: React.FC = () => {
                                 productId={adProductId || undefined}
                                 onProductUpdate={(newData) => setAdProductAnalysis(newData)}
                             />
-                        ) : (
+                        ) : (!isMerging && !isGenerating) ? (
                             <EmptyState isDarkMode={isDarkMode} />
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </div >
