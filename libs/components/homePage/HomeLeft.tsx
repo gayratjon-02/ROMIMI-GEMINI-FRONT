@@ -119,6 +119,8 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
   // Library expansion state (default: collapsed)
   const [isLibraryExpanded, setIsLibraryExpanded] = useState(false);
+  // Track which product folders are open inside the library
+  const [expandedProductFolders, setExpandedProductFolders] = useState<Set<string>>(new Set());
 
   // Product Catalog: products grouped by category
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
@@ -631,9 +633,10 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
             </div>
           )}
 
-          {/* Library Section: product names with generated images */}
+          {/* Library Section: grouped by product as collapsible folders */}
           {onLibrarySelect && (
             <div className={styles.section}>
+              {/* Section header — click to expand/collapse entire library */}
               <button
                 className={styles.sectionTitle}
                 onClick={() => setIsLibraryExpanded(!isLibraryExpanded)}
@@ -641,12 +644,8 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
               >
                 <span>LIBRARY</span>
                 <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                  width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2"
                   style={{ transform: isLibraryExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
                 >
                   <polyline points="6 9 12 15 18 9" />
@@ -663,29 +662,245 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                   {!libraryLoading && libraryGenerations.length === 0 && (
                     <div className={styles.emptyCollections}>No generated visuals yet</div>
                   )}
-                  {!libraryLoading && libraryGenerations.map((gen) => {
-                    const productName = gen.product?.name || 'Product';
-                    const isActive = activeLibraryId === gen.id;
-                    return (
-                      <button
-                        key={gen.id}
-                        className={`${styles.menuItem} ${isActive ? styles.active : ''}`}
-                        onClick={() => {
-                          setActiveLibraryId(gen.id);
-                          onLibrarySelect(gen);
-                        }}
-                      >
-                        <span className={styles.icon}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <polyline points="21 15 16 10 5 21" />
-                          </svg>
-                        </span>
-                        <span className={styles.label} title={productName}>{productName}</span>
-                      </button>
-                    );
-                  })}
+
+                  {!libraryLoading && (() => {
+                    // Group generations by product ID
+                    const groups: Record<string, { productName: string; items: Generation[] }> = {};
+                    for (const gen of libraryGenerations) {
+                      const pid = gen.product?.id || gen.product_id || 'unknown';
+                      const pname = gen.product?.name || 'Unknown Product';
+                      if (!groups[pid]) groups[pid] = { productName: pname, items: [] };
+                      groups[pid].items.push(gen);
+                    }
+
+                    const formatDate = (iso: string) => {
+                      const d = new Date(iso);
+                      const now = new Date();
+                      const diffMs = now.getTime() - d.getTime();
+                      const diffDays = Math.floor(diffMs / 86400000);
+                      if (diffDays === 0) return 'Today';
+                      if (diffDays === 1) return 'Yesterday';
+                      if (diffDays < 7) return `${diffDays}d ago`;
+                      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    };
+
+                    const getThumb = (gen: Generation): string | null => {
+                      const visuals = gen.visuals || gen.visual_outputs || [];
+                      const completed = visuals.find(v => v.status === 'completed' && v.image_url);
+                      return completed?.image_url || null;
+                    };
+
+                    return Object.entries(groups).map(([pid, group]) => {
+                      const isFolderOpen = expandedProductFolders.has(pid);
+                      const hasActive = group.items.some(g => g.id === activeLibraryId);
+
+                      return (
+                        <div key={pid} style={{ marginBottom: '2px' }}>
+                          {/* Folder row */}
+                          <button
+                            onClick={() => setExpandedProductFolders(prev => {
+                              const next = new Set(prev);
+                              isFolderOpen ? next.delete(pid) : next.add(pid);
+                              return next;
+                            })}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              width: '100%',
+                              padding: '8px 10px',
+                              background: hasActive
+                                ? 'rgba(79,70,229,0.12)'
+                                : isFolderOpen
+                                  ? (isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')
+                                  : 'transparent',
+                              border: 'none',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              color: isDarkMode ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+                              textAlign: 'left',
+                              transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => {
+                              if (!hasActive && !isFolderOpen)
+                                (e.currentTarget as HTMLButtonElement).style.background = isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
+                            }}
+                            onMouseLeave={e => {
+                              if (!hasActive && !isFolderOpen)
+                                (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                            }}
+                          >
+                            {/* Folder icon */}
+                            <svg
+                              width="15" height="15" viewBox="0 0 24 24"
+                              fill={isFolderOpen ? 'rgba(79,70,229,0.3)' : 'transparent'}
+                              stroke={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)'}
+                              strokeWidth="2"
+                              style={{ flexShrink: 0 }}
+                            >
+                              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                            </svg>
+
+                            {/* Product name */}
+                            <span style={{
+                              flex: 1,
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              {group.productName}
+                            </span>
+
+                            {/* Count badge */}
+                            <span style={{
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              padding: '1px 6px',
+                              borderRadius: '10px',
+                              background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                              color: isDarkMode ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)',
+                              flexShrink: 0,
+                            }}>
+                              {group.items.length}
+                            </span>
+
+                            {/* Chevron */}
+                            <svg
+                              width="12" height="12" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" strokeWidth="2.5"
+                              style={{
+                                flexShrink: 0,
+                                opacity: 0.4,
+                                transform: isFolderOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.18s',
+                              }}
+                            >
+                              <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                          </button>
+
+                          {/* Folder contents — individual generation items */}
+                          {isFolderOpen && (
+                            <div style={{ paddingLeft: '10px', marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              {group.items.map((gen, idx) => {
+                                const isActive = activeLibraryId === gen.id;
+                                const thumb = getThumb(gen);
+                                const dateStr = formatDate(gen.created_at);
+                                const shotCount = (gen.visuals || gen.visual_outputs || []).filter(v => v.status === 'completed').length;
+
+                                return (
+                                  <button
+                                    key={gen.id}
+                                    onClick={() => {
+                                      setActiveLibraryId(gen.id);
+                                      onLibrarySelect(gen);
+                                    }}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      width: '100%',
+                                      padding: '6px 8px',
+                                      background: isActive
+                                        ? 'rgba(79,70,229,0.18)'
+                                        : 'transparent',
+                                      border: isActive
+                                        ? '1px solid rgba(79,70,229,0.35)'
+                                        : '1px solid transparent',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      transition: 'all 0.15s',
+                                    }}
+                                    onMouseEnter={e => {
+                                      if (!isActive)
+                                        (e.currentTarget as HTMLButtonElement).style.background = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+                                    }}
+                                    onMouseLeave={e => {
+                                      if (!isActive)
+                                        (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                                    }}
+                                  >
+                                    {/* Thumbnail */}
+                                    <div style={{
+                                      width: '32px',
+                                      height: '32px',
+                                      borderRadius: '5px',
+                                      overflow: 'hidden',
+                                      flexShrink: 0,
+                                      background: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
+                                      border: isActive ? '1.5px solid rgba(79,70,229,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}>
+                                      {thumb ? (
+                                        <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'} strokeWidth="2">
+                                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                                          <circle cx="8.5" cy="8.5" r="1.5" />
+                                          <polyline points="21 15 16 10 5 21" />
+                                        </svg>
+                                      )}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{
+                                        fontSize: '11px',
+                                        fontWeight: 500,
+                                        color: isDarkMode ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}>
+                                        Gen #{idx + 1}
+                                      </div>
+                                      <div style={{
+                                        fontSize: '10px',
+                                        color: isDarkMode ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)',
+                                        marginTop: '1px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}>
+                                        {dateStr}
+                                        {shotCount > 0 && (
+                                          <span style={{
+                                            padding: '0 4px',
+                                            background: isDarkMode ? 'rgba(79,70,229,0.2)' : 'rgba(79,70,229,0.12)',
+                                            borderRadius: '3px',
+                                            color: '#7c6fe0',
+                                            fontWeight: 600,
+                                          }}>
+                                            {shotCount} shots
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Active dot */}
+                                    {isActive && (
+                                      <div style={{
+                                        width: '6px',
+                                        height: '6px',
+                                        borderRadius: '50%',
+                                        background: '#4f46e5',
+                                        flexShrink: 0,
+                                      }} />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </>
               )}
             </div>
