@@ -15,6 +15,7 @@ import {
     generateAdVariations,
     getGenerationStatus,
     regenerateVariation,
+    cancelGeneration,
     GenerationResult
 } from '@/libs/server/Ad-Recreation/generation/generation.service';
 import { useGenerationSocket } from '@/libs/hooks/useGenerationSocket';
@@ -184,6 +185,35 @@ const AdRecreationPage: React.FC = () => {
             }
         };
     }, []);
+
+    // ════════════════════════════════════════════════════════════
+    // CANCEL GENERATION ON PAGE LEAVE / REFRESH
+    // ════════════════════════════════════════════════════════════
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (currentGenerationId) {
+                // Use sendBeacon for reliable delivery during page unload
+                const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+                const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'}/api/ad-recreation/${currentGenerationId}/cancel`;
+                navigator.sendBeacon(url, JSON.stringify({ token }));
+                console.log(`🛑 Sent cancel beacon for generation: ${currentGenerationId}`);
+            }
+        };
+
+        const handleRouteChange = () => {
+            if (currentGenerationId) {
+                cancelGeneration(currentGenerationId);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        router.events.on('routeChangeStart', handleRouteChange);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            router.events.off('routeChangeStart', handleRouteChange);
+        };
+    }, [currentGenerationId, router.events]);
 
     // Fetch saved concepts on mount
     useEffect(() => {

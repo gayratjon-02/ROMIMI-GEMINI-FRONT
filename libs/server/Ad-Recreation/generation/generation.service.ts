@@ -208,3 +208,16 @@ export async function getAllGenerations(): Promise<GenerationResult[]> {
 
     return response.data.generations;
 }
+
+/**
+ * Cancels an in-progress generation.
+ * @param generationId - The generation ID to cancel
+ */
+export async function cancelGeneration(generationId: string): Promise<void> {
+    try {
+        await axiosClient.post(`/api/ad-recreation/${generationId}/cancel`);
+        console.log(`🛑 Cancel request sent for generation: ${generationId}`);
+    } catch (error) {
+        console.error('Failed to send cancel request:', error);
+    }
+}
