@@ -53,7 +53,7 @@ export const MARKETING_ANGLES: Angle[] = [
 ];
 
 const MAX_ANGLES = 6;
-const AUTO_CLOSE_DELAY = 4000; // 4 seconds
+const AUTO_CLOSE_DELAY = 3000; // 3 seconds
 
 interface AngleSelectorProps {
     selected: string[];
@@ -221,11 +221,16 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
                 <div
                     className={styles.dropdownContent}
                     style={{
-                        marginTop: '4px',
-                        background: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                        border: '1px solid rgba(124, 77, 255, 0.2)',
+                        position: 'absolute',
+                        top: 'calc(100% + 4px)',
+                        left: 0,
+                        right: 0,
+                        zIndex: 100,
+                        background: isDarkMode ? '#1a1a2e' : '#ffffff',
+                        border: '1px solid rgba(124, 77, 255, 0.3)',
+                        boxShadow: isDarkMode ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(124, 77, 255, 0.15)',
                         borderRadius: '8px',
-                        maxHeight: '500px',
+                        maxHeight: '60vh',
                         overflowY: 'auto',
                     }}
                 >
