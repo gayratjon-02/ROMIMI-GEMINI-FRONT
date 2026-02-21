@@ -299,6 +299,23 @@ export async function uploadBrandAssets(
     return response.data.brand;
 }
 
+/**
+ * Deletes an ad brand and all its related data (cascade).
+ * @param brandId - The brand ID to delete
+ * @returns Promise with success message
+ */
+export async function deleteAdBrand(brandId: string): Promise<{ success: boolean; message: string }> {
+    const response = await axiosClient.post<{ success: boolean; message: string }>(
+        `/api/brands/${brandId}/delete`
+    );
+
+    if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to delete brand');
+    }
+
+    return response.data;
+}
+
 export async function updateBrandPlaybook(brandId: string, playbook: BrandPlaybookJson): Promise<AdBrand> {
     const response = await axiosClient.patch<{ success: boolean; message: string; brand: AdBrand }>(
         `/api/brands/${brandId}/playbook`,

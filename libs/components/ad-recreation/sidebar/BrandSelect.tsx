@@ -1,8 +1,8 @@
 // libs/components/ad-recreation/sidebar/BrandSelect.tsx
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Loader2, Plus } from 'lucide-react';
+import { ChevronDown, Loader2, Plus, Trash2 } from 'lucide-react';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
-import { fetchAdBrands, AdBrand } from '@/libs/server/Ad-Recreation/brand/brand.service';
+import { fetchAdBrands, deleteAdBrand, AdBrand } from '@/libs/server/Ad-Recreation/brand/brand.service';
 import CreateBrandModal from './CreateBrandModal';
 
 // Local Brand interface for component display (includes logo emoji fallback)
@@ -76,6 +76,8 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [imgErrors, setImgErrors] = useState<Set<string>>(new Set()); // Track broken logos
+    const [deleteConfirmBrand, setDeleteConfirmBrand] = useState<Brand | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Use prop brands if provided, otherwise fetch from API
     const brands = propBrands || apiBrands;
@@ -124,6 +126,33 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
 
         // Auto-select the new brand
         onSelect(newBrand.id);
+    };
+
+    const handleDeleteClick = (brand: Brand, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsOpen(false);
+        setDeleteConfirmBrand(brand);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteConfirmBrand) return;
+        setIsDeleting(true);
+        try {
+            await deleteAdBrand(deleteConfirmBrand.id);
+            const remaining = apiBrands.filter(b => b.id !== deleteConfirmBrand.id);
+            setApiBrands(remaining);
+
+            // If deleted brand was selected, auto-select next one
+            if (selectedBrandId === deleteConfirmBrand.id) {
+                onSelect(remaining.length > 0 ? remaining[0].id : '');
+            }
+
+            setDeleteConfirmBrand(null);
+        } catch (err) {
+            console.error('Failed to delete brand:', err);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     // Find selected brand object
@@ -183,25 +212,40 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
                                 </div>
                             ) : (
                                 brands.map(brand => (
-                                    <button
+                                    <div
                                         key={brand.id}
-                                        className={`${styles.brandOption} ${selectedBrandId === brand.id ? styles.selected : ''
-                                            }`}
-                                        onClick={() => handleSelect(brand.id)}
-                                        type="button"
+                                        className={`${styles.brandOption} ${selectedBrandId === brand.id ? styles.selected : ''}`}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                     >
-                                        {brand.logo_url && !imgErrors.has(brand.id) ? (
-                                            <img
-                                                src={brand.logo_url}
-                                                alt={brand.name}
-                                                style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 3 }}
-                                                onError={() => setImgErrors(prev => new Set(prev).add(brand.id))}
-                                            />
-                                        ) : (
-                                            <span>{brand.logo}</span>
-                                        )}
-                                        <span>{brand.name}</span>
-                                    </button>
+                                        <button
+                                            className={styles.brandOptionContent}
+                                            onClick={() => handleSelect(brand.id)}
+                                            type="button"
+                                            style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0 }}
+                                        >
+                                            {brand.logo_url && !imgErrors.has(brand.id) ? (
+                                                <img
+                                                    src={brand.logo_url}
+                                                    alt={brand.name}
+                                                    style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 3 }}
+                                                    onError={() => setImgErrors(prev => new Set(prev).add(brand.id))}
+                                                />
+                                            ) : (
+                                                <span>{brand.logo}</span>
+                                            )}
+                                            <span>{brand.name}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleDeleteClick(brand, e)}
+                                            title="Delete brand"
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, opacity: 0.4, color: 'inherit', display: 'flex', alignItems: 'center' }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ef4444'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.4'; e.currentTarget.style.color = 'inherit'; }}
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
                                 ))
                             )}
 
@@ -227,6 +271,62 @@ const BrandSelect: React.FC<BrandSelectProps> = ({
                 onCreated={handleBrandCreated}
                 isDarkMode={isDarkMode}
             />
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmBrand && (
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                    }}
+                    onClick={() => !isDeleting && setDeleteConfirmBrand(null)}
+                >
+                    <div
+                        style={{
+                            background: isDarkMode ? '#1a1a2e' : '#fff',
+                            borderRadius: 12, padding: 24, width: 360,
+                            border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 style={{ margin: '0 0 8px', fontSize: 16, color: isDarkMode ? '#fff' : '#111' }}>
+                            Delete Brand
+                        </h3>
+                        <p style={{ margin: '0 0 20px', fontSize: 14, color: isDarkMode ? '#aaa' : '#555' }}>
+                            Are you sure you want to delete <strong>{deleteConfirmBrand.name}</strong>? All collections, products, and generations under this brand will be permanently removed.
+                        </p>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button
+                                type="button"
+                                onClick={() => setDeleteConfirmBrand(null)}
+                                disabled={isDeleting}
+                                style={{
+                                    padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                                    background: isDarkMode ? '#2a2a3e' : '#f0f0f0',
+                                    border: 'none', color: isDarkMode ? '#ccc' : '#333', fontSize: 13,
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeleteConfirm}
+                                disabled={isDeleting}
+                                style={{
+                                    padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                                    background: '#ef4444', border: 'none', color: '#fff', fontSize: 13,
+                                    opacity: isDeleting ? 0.7 : 1,
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                }}
+                            >
+                                {isDeleting && <Loader2 size={14} className={styles.spinner} />}
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
