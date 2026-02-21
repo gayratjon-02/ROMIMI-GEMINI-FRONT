@@ -10,28 +10,28 @@ export const MOCK_BRANDS = [
 
 export const MOCK_ANGLES = [
     {
-        id: 'problem_solution',
-        label: 'Problem / Solution',
-        desc: 'Solve a pain point',
-        icon: '💡'
+        id: 'pain_back',
+        label: 'Back Pain',
+        desc: 'Target chronic back pain sufferers',
+        icon: '🩹'
     },
     {
-        id: 'social_proof',
-        label: 'Social Proof',
-        desc: 'Customer reviews & trust',
+        id: 'proof_reviews',
+        label: 'Reviews',
+        desc: '2,400+ five-star reviews',
         icon: '⭐'
     },
     {
-        id: 'fomo',
-        label: 'FOMO',
-        desc: 'Urgency & scarcity',
-        icon: '⏰'
+        id: 'value_savings',
+        label: 'Cost Savings',
+        desc: 'Save 1,200+/year vs gym',
+        icon: '💰'
     },
     {
-        id: 'minimalist',
-        label: 'Minimalist',
-        desc: 'Clean & elegant design',
-        icon: '✨'
+        id: 'emotional_confidence',
+        label: 'Confidence',
+        desc: 'Stand taller, literally and figuratively',
+        icon: '👑'
     },
 ];
 
@@ -73,39 +73,39 @@ export const MOCK_CONCEPT_JSON = {
 export const MOCK_RESULTS = [
     {
         id: '1',
-        angle: 'problem_solution',
+        angle: 'pain_back',
         format: 'story',
-        imageUrl: 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Nike+Air+Zoom',
-        headline: 'STOP SETTLING FOR HEAVY SHOES',
-        cta: 'RUN FASTER NOW',
-        subtext: 'Feel the difference with 40% lighter soles'
+        imageUrl: 'https://placehold.co/1080x1920/1a1a2e/FFF?text=Back+Pain+Relief',
+        headline: 'MY BACK WAS GETTING WORSE EVERY DAY',
+        cta: 'FIX YOUR BACK',
+        subtext: 'Feel the difference after just 4 weeks'
     },
     {
         id: '2',
-        angle: 'social_proof',
+        angle: 'proof_reviews',
         format: 'story',
         imageUrl: 'https://placehold.co/1080x1920/1a2e1a/FFF?text=5+Star+Reviews',
-        headline: 'TRUSTED BY 10M+ RUNNERS',
-        cta: 'JOIN THE MOVEMENT',
-        subtext: '★★★★★ 4.9/5 from verified buyers'
+        headline: '2,400+ FIVE-STAR REVIEWS',
+        cta: 'SEE WHY THEY LOVE IT',
+        subtext: '★★★★★ Verified customer reviews'
     },
     {
         id: '3',
-        angle: 'fomo',
+        angle: 'value_savings',
         format: 'square',
-        imageUrl: 'https://placehold.co/1080x1080/2e1a1a/FFF?text=Limited+Edition',
-        headline: 'ONLY 48 HOURS LEFT',
-        cta: 'GRAB YOURS NOW',
-        subtext: '73% already sold out'
+        imageUrl: 'https://placehold.co/1080x1080/2e1a1a/FFF?text=Save+1200+Per+Year',
+        headline: 'SAVE OVER 1,200 PER YEAR',
+        cta: 'START SAVING',
+        subtext: 'One-time cost vs expensive gym memberships'
     },
     {
         id: '4',
-        angle: 'minimalist',
+        angle: 'emotional_confidence',
         format: 'portrait',
-        imageUrl: 'https://placehold.co/1080x1350/0a0a14/FFF?text=Air+Zoom',
-        headline: 'AIR ZOOM',
-        cta: 'DISCOVER',
-        subtext: 'Precision engineered for speed'
+        imageUrl: 'https://placehold.co/1080x1350/0a0a14/FFF?text=Confidence',
+        headline: 'I STAND TALLER NOW',
+        cta: 'FEEL CONFIDENT',
+        subtext: 'Literally and figuratively'
     },
 ];
 

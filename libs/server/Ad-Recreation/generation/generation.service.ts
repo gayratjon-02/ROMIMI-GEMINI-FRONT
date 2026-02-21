@@ -10,13 +10,13 @@ import axiosClient from '@/libs/server/axios-client';
  * Backend DTO Structure (from generate-ad.dto.ts):
  * - brand_id: UUID (required) - product data is auto-fetched from brand
  * - concept_id: UUID (required)
- * - marketing_angle_id: string (required) - e.g., "social_proof"
+ * - marketing_angle_id: string (required) - e.g., "pain_back"
  * - format_id: string (required) - e.g., "story"
  */
 export interface GenerationPayload {
     brand_id: string;           // UUID - product data auto-fetched on backend
     concept_id: string;         // UUID
-    marketing_angle_ids: string[]; // Array of angle IDs e.g., ["problem_solution", "social_proof"]
+    marketing_angle_ids: string[]; // Array of angle IDs e.g., ["pain_back", "proof_reviews"]
     format_ids: string[];          // Array of format IDs e.g., ["story", "square"]
     product_id: string;        // UUID - REQUIRED - product images sent to Gemini as reference
     mapped_assets?: {           // Hero image mapping - user selects which product image fills the hero zone

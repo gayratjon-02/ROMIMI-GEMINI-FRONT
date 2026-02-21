@@ -19,37 +19,37 @@ export interface Angle {
 }
 
 export const MARKETING_ANGLES: Angle[] = [
-    // PROBLEM-FOCUSED (4)
-    { id: 'problem_solution', label: 'Problem / Solution', desc: 'Present pain point, position as solution', icon: '🩹', category: 'Problem-Focused' },
-    { id: 'before_after', label: 'Before & After', desc: 'Show dramatic transformation', icon: '🦋', category: 'Problem-Focused' },
-    { id: 'myth_buster', label: 'Myth Buster', desc: 'Debunk common misconception', icon: '💡', category: 'Problem-Focused' },
-    { id: 'contrast', label: 'Contrast', desc: 'Juxtapose opposing scenarios', icon: '⚖️', category: 'Problem-Focused' },
+    // PAIN POINTS (5)
+    { id: 'pain_back', label: 'Back Pain', desc: 'Target chronic back pain sufferers', icon: '🩹', category: 'Pain Points' },
+    { id: 'pain_low_energy', label: 'Low Energy', desc: 'Exhausted by 3pm every day', icon: '🔋', category: 'Pain Points' },
+    { id: 'pain_posture', label: 'Poor Posture', desc: 'Sitting 8 hours destroying body', icon: '🧍', category: 'Pain Points' },
+    { id: 'pain_guilt', label: 'Exercise Guilt', desc: 'Kept saying "next Monday" for years', icon: '😔', category: 'Pain Points' },
+    { id: 'pain_no_time', label: 'No Time', desc: 'Between school runs and work, no me-time', icon: '⏰', category: 'Pain Points' },
 
-    // TRUST & PROOF (5)
-    { id: 'social_proof', label: 'Social Proof', desc: 'Testimonials & ratings', icon: '⭐', category: 'Trust & Proof' },
-    { id: 'expert_endorsement', label: 'Expert Endorsement', desc: 'Authority figures vouch', icon: '🎓', category: 'Trust & Proof' },
-    { id: 'user_generated', label: 'User Generated', desc: 'Real customer content', icon: '📸', category: 'Trust & Proof' },
-    { id: 'guarantee', label: 'Guarantee', desc: 'Money-back or satisfaction', icon: '🛡️', category: 'Trust & Proof' },
-    { id: 'fomo', label: 'Urgency / FOMO', desc: 'Limited-time or scarcity', icon: '⏰', category: 'Trust & Proof' },
+    // OBJECTIONS (4)
+    { id: 'objection_beginner', label: 'Beginner Fear', desc: 'Never done this, will I look stupid?', icon: '🐣', category: 'Objections' },
+    { id: 'objection_skeptic', label: 'Skeptic Partner', desc: 'Partner laughed at the idea', icon: '🤨', category: 'Objections' },
+    { id: 'objection_expensive', label: 'Too Expensive', desc: "Can't afford classes every week", icon: '💸', category: 'Objections' },
+    { id: 'objection_space', label: 'No Space', desc: 'Flat is tiny, where to put it?', icon: '📦', category: 'Objections' },
 
-    // VALUE & FEATURES (4)
-    { id: 'cost_savings', label: 'Cost Savings', desc: 'ROI & value-for-money', icon: '💵', category: 'Value & Features' },
-    { id: 'feature_highlight', label: 'Feature Highlight', desc: 'Spotlight key feature', icon: '✨', category: 'Value & Features' },
-    { id: 'benefit_stacking', label: 'Benefit Stacking', desc: 'List multiple benefits', icon: '📋', category: 'Value & Features' },
-    { id: 'us_vs_them', label: 'Us vs. Competitors', desc: 'Compare advantages', icon: '🥊', category: 'Value & Features' },
+    // VALUE (4)
+    { id: 'value_savings', label: 'Cost Savings', desc: 'Save 1,200+/year vs gym', icon: '💰', category: 'Value' },
+    { id: 'value_convenience', label: 'Convenience', desc: '15 minutes while kids watch TV', icon: '⚡', category: 'Value' },
+    { id: 'value_bundle', label: 'Bundle Value', desc: 'FREE gifts worth 195+', icon: '🎁', category: 'Value' },
+    { id: 'value_delivery', label: 'Fast Delivery', desc: 'FREE next-day delivery', icon: '🚚', category: 'Value' },
 
-    // ENGAGEMENT (4)
-    { id: 'storytelling', label: 'Storytelling', desc: 'Emotional narrative arc', icon: '📖', category: 'Engagement' },
-    { id: 'educational', label: 'Educational', desc: 'Teach while introducing product', icon: '🎓', category: 'Engagement' },
-    { id: 'how_to', label: 'How To', desc: 'Step-by-step process', icon: '📝', category: 'Engagement' },
-    { id: 'curiosity_gap', label: 'Curiosity Gap', desc: 'Tease intriguing result', icon: '🔮', category: 'Engagement' },
-    { id: 'question', label: 'Question', desc: 'Hook with provocative question', icon: '❓', category: 'Engagement' },
+    // SOCIAL PROOF (4)
+    { id: 'proof_statistics', label: 'Statistics', desc: '94% felt stronger after 4 weeks', icon: '📊', category: 'Social Proof' },
+    { id: 'proof_reviews', label: 'Reviews', desc: '2,400+ five-star reviews', icon: '⭐', category: 'Social Proof' },
+    { id: 'proof_community', label: 'Community', desc: 'Join 8,000+ members', icon: '👥', category: 'Social Proof' },
+    { id: 'proof_word_of_mouth', label: 'Word of Mouth', desc: 'Friend recommended it', icon: '💬', category: 'Social Proof' },
 
-    // LIFESTYLE & BRAND (5)
-    { id: 'lifestyle', label: 'Lifestyle', desc: 'Associate with aspirational identity', icon: '🌴', category: 'Lifestyle & Brand' },
-    { id: 'luxury', label: 'Luxury', desc: 'Premium quality & elegance', icon: '💎', category: 'Lifestyle & Brand' },
-    { id: 'minimalist', label: 'Minimalist', desc: 'Clean design, product speaks', icon: '⬜', category: 'Lifestyle & Brand' },
-    { id: 'urgent', label: 'Urgent', desc: 'Countdown & deadline messaging', icon: '🔥', category: 'Lifestyle & Brand' },
+    // EMOTIONAL (5)
+    { id: 'emotional_strength', label: 'Strength', desc: 'Finally feel like myself again', icon: '💪', category: 'Emotional' },
+    { id: 'emotional_self_care', label: 'Self-Care', desc: 'First thing done for myself in years', icon: '🧘', category: 'Emotional' },
+    { id: 'emotional_family', label: 'Family', desc: 'Can finally play with kids without pain', icon: '👨‍👩‍👧', category: 'Emotional' },
+    { id: 'emotional_confidence', label: 'Confidence', desc: 'Stand taller, literally and figuratively', icon: '👑', category: 'Emotional' },
+    { id: 'emotional_transformation', label: 'Life Transformation', desc: 'Changed routine, changed life', icon: '🦋', category: 'Emotional' },
 ];
 
 const MAX_ANGLES = 6;
@@ -101,7 +101,7 @@ const AngleSelector: React.FC<AngleSelectorProps> = ({
     const getSelectedLabels = () => {
         if (selected.length === 0) return 'None selected';
         const labels = selected
-            .map(id => MARKETING_ANGLES.find(a => a.id === id)?.label)
+            .map(id => dynamicAngles.find(a => a.id === id)?.label || MARKETING_ANGLES.find(a => a.id === id)?.label)
             .filter(Boolean)
             .slice(0, 3);
         if (selected.length > 3) {
