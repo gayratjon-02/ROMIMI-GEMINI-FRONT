@@ -1,151 +1,23 @@
 // libs/components/ad-recreation/sidebar/AnalyzedProductSelector.tsx
-// Dropdown list of previously analyzed products, similar to AngleSelector pattern
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronDown, ChevronUp, CheckCircle, Loader2, Package, Trash2 } from 'lucide-react';
-import { getAdProducts, deleteAdProduct, AdProductListItem } from '@/libs/server/Ad-Recreation/products/ad-product.service';
-
-const AUTO_CLOSE_DELAY = 3000;
+// Simple sidebar button that opens AnalyzedProductsPanel in the main area
+import React from 'react';
+import { Package, ChevronRight } from 'lucide-react';
 
 interface AnalyzedProductSelectorProps {
     isDarkMode: boolean;
-    selectedProductId: string | null;
-    onSelect: (productId: string, imageUrl: string, analysis: Record<string, any>) => void;
-    onDeleted?: (deletedId: string) => void;
+    count: number;
+    isActive: boolean;
+    onClick: () => void;
 }
 
 const AnalyzedProductSelector: React.FC<AnalyzedProductSelectorProps> = ({
     isDarkMode,
-    selectedProductId,
-    onSelect,
-    onDeleted,
+    count,
+    isActive,
+    onClick,
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [products, setProducts] = useState<AdProductListItem[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const hasFetchedRef = useRef(false);
-
-    const selectedProduct = products.find(p => p.id === selectedProductId) || null;
-
-    const clearCloseTimer = useCallback(() => {
-        if (closeTimerRef.current) {
-            clearTimeout(closeTimerRef.current);
-            closeTimerRef.current = null;
-        }
-    }, []);
-
-    const handleMouseLeave = useCallback(() => {
-        if (!isExpanded) return;
-        clearCloseTimer();
-        closeTimerRef.current = setTimeout(() => {
-            setIsExpanded(false);
-        }, AUTO_CLOSE_DELAY);
-    }, [isExpanded, clearCloseTimer]);
-
-    const handleMouseEnter = useCallback(() => {
-        clearCloseTimer();
-    }, [clearCloseTimer]);
-
-    // Click outside → close
-    useEffect(() => {
-        if (!isExpanded) return;
-        const handleClickOutside = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-                clearCloseTimer();
-                setIsExpanded(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isExpanded, clearCloseTimer]);
-
-    useEffect(() => {
-        return () => clearCloseTimer();
-    }, [clearCloseTimer]);
-
-    // Fetch products when dropdown opens (once)
-    useEffect(() => {
-        if (!isExpanded || hasFetchedRef.current) return;
-        hasFetchedRef.current = true;
-        setIsLoading(true);
-        getAdProducts()
-            .then(data => setProducts(data.filter(p => p.analyzed_product_json)))
-            .catch(err => console.error('Failed to fetch analyzed products:', err))
-            .finally(() => setIsLoading(false));
-    }, [isExpanded]);
-
-    // Refresh list when dropdown reopens (to pick up newly analyzed products)
-    const handleToggle = () => {
-        if (!isExpanded) {
-            // Always re-fetch on open to pick up newly uploaded products
-            setIsLoading(true);
-            getAdProducts()
-                .then(data => setProducts(data.filter(p => p.analyzed_product_json)))
-                .catch(err => console.error('Failed to fetch analyzed products:', err))
-                .finally(() => setIsLoading(false));
-        }
-        setIsExpanded(prev => !prev);
-    };
-
-    const handleSelect = (product: AdProductListItem) => {
-        if (!product.analyzed_product_json) return;
-        onSelect(
-            product.id,
-            product.front_image_url || '',
-            product.analyzed_product_json,
-        );
-        clearCloseTimer();
-        setIsExpanded(false);
-    };
-
-    const handleDeleteClick = (productId: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setDeleteConfirmId(productId);
-    };
-
-    const handleDeleteConfirm = async () => {
-        if (!deleteConfirmId) return;
-        setIsDeleting(true);
-        try {
-            await deleteAdProduct(deleteConfirmId);
-            setProducts(prev => prev.filter(p => p.id !== deleteConfirmId));
-            if (selectedProductId === deleteConfirmId) {
-                onDeleted?.(deleteConfirmId);
-            }
-            setDeleteConfirmId(null);
-        } catch (err) {
-            console.error('Failed to delete product:', err);
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
-    const handleDeleteCancel = (e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        setDeleteConfirmId(null);
-    };
-
-    const formatDate = (dateStr: string) => {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    };
-
-    const getHeaderLabel = () => {
-        if (selectedProduct) return selectedProduct.name;
-        return 'None selected';
-    };
-
     return (
-        <div
-            ref={containerRef}
-            style={{ position: 'relative', marginBottom: '0' }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-        >
-            {/* Section Label */}
+        <div style={{ marginBottom: '0' }}>
             <label
                 style={{
                     fontSize: '11px',
@@ -159,309 +31,51 @@ const AnalyzedProductSelector: React.FC<AnalyzedProductSelectorProps> = ({
             >
                 Analyzed Products
             </label>
-
-            {/* Dropdown Header */}
-            <div
-                onClick={handleToggle}
+            <button
+                type="button"
+                onClick={onClick}
                 style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
                     alignItems: 'center',
+                    gap: '10px',
                     width: '100%',
                     padding: '12px 16px',
-                    background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    border: '1px solid rgba(124, 77, 255, 0.3)',
+                    background: isActive
+                        ? (isDarkMode ? 'rgba(124, 77, 255, 0.15)' : 'rgba(124, 77, 255, 0.1)')
+                        : (isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'),
+                    border: isActive
+                        ? '1px solid #7c4dff'
+                        : '1px solid rgba(124, 77, 255, 0.3)',
+                    borderLeft: isActive ? '3px solid #7c4dff' : '1px solid rgba(124, 77, 255, 0.3)',
                     borderRadius: '8px',
                     cursor: 'pointer',
                     color: isDarkMode ? '#fff' : '#1a1a2e',
                     fontSize: '14px',
-                    transition: 'border-color 0.2s',
+                    transition: 'all 0.2s',
                     boxSizing: 'border-box',
+                    textAlign: 'left',
+                }}
+                onMouseEnter={e => {
+                    if (!isActive) {
+                        e.currentTarget.style.background = isDarkMode
+                            ? 'rgba(124, 77, 255, 0.08)'
+                            : 'rgba(124, 77, 255, 0.06)';
+                    }
+                }}
+                onMouseLeave={e => {
+                    if (!isActive) {
+                        e.currentTarget.style.background = isDarkMode
+                            ? 'rgba(255,255,255,0.05)'
+                            : 'rgba(0,0,0,0.05)';
+                    }
                 }}
             >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                    <strong>{products.length}</strong> analyzed: {getHeaderLabel()}
+                <Package size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
+                <span style={{ flex: 1 }}>
+                    <strong>{count}</strong> Analyzed Products
                 </span>
-                {isExpanded ? <ChevronUp size={18} style={{ flexShrink: 0 }} /> : <ChevronDown size={18} style={{ flexShrink: 0 }} />}
-            </div>
-
-            {/* Dropdown Content */}
-            {isExpanded && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        bottom: 'calc(100% + 4px)',
-                        left: 0,
-                        right: 0,
-                        zIndex: 100,
-                        background: isDarkMode ? '#1a1a2e' : '#ffffff',
-                        border: '1px solid rgba(124, 77, 255, 0.3)',
-                        boxShadow: isDarkMode
-                            ? '0 -8px 32px rgba(0,0,0,0.5)'
-                            : '0 -8px 32px rgba(124, 77, 255, 0.15)',
-                        borderRadius: '8px',
-                        maxHeight: '55vh',
-                        overflowY: 'auto',
-                    }}
-                >
-                    {isLoading ? (
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '8px',
-                                padding: '24px',
-                                color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
-                                fontSize: '13px',
-                            }}
-                        >
-                            <Loader2 size={16} style={{ animation: 'spin 0.9s linear infinite' }} />
-                            Loading products...
-                            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-                        </div>
-                    ) : products.length === 0 ? (
-                        <div
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '24px',
-                                color: isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-                                fontSize: '13px',
-                                textAlign: 'center',
-                            }}
-                        >
-                            <Package size={24} opacity={0.4} />
-                            No analyzed products yet.
-                            <span style={{ fontSize: '11px' }}>Upload a product above to analyze it.</span>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Category-style header */}
-                            <div
-                                style={{
-                                    padding: '8px 12px',
-                                    background: isDarkMode
-                                        ? 'rgba(124, 77, 255, 0.15)'
-                                        : 'rgba(124, 77, 255, 0.1)',
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                    color: '#7c4dff',
-                                    borderBottom: '1px solid rgba(124, 77, 255, 0.2)',
-                                }}
-                            >
-                                Previously Analyzed ({products.length})
-                            </div>
-
-                            {products.map(product => {
-                                const isSelected = product.id === selectedProductId;
-                                const thumbUrl = product.front_image_url;
-
-                                return (
-                                    <button
-                                        key={product.id}
-                                        type="button"
-                                        onClick={() => handleSelect(product)}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '10px',
-                                            width: '100%',
-                                            padding: '10px 12px',
-                                            background: isSelected
-                                                ? 'rgba(124, 77, 255, 0.15)'
-                                                : 'transparent',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            color: isDarkMode ? '#fff' : '#1a1a2e',
-                                            textAlign: 'left',
-                                            transition: 'background 0.15s',
-                                            borderBottom: '1px solid rgba(124, 77, 255, 0.06)',
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (!isSelected) {
-                                                (e.currentTarget as HTMLButtonElement).style.background =
-                                                    'rgba(124, 77, 255, 0.08)';
-                                            }
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (!isSelected) {
-                                                (e.currentTarget as HTMLButtonElement).style.background =
-                                                    'transparent';
-                                            }
-                                        }}
-                                    >
-                                        {/* Thumbnail */}
-                                        <div
-                                            style={{
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '6px',
-                                                overflow: 'hidden',
-                                                flexShrink: 0,
-                                                border: isSelected
-                                                    ? '2px solid #7c4dff'
-                                                    : '1px solid rgba(124, 77, 255, 0.2)',
-                                                background: isDarkMode
-                                                    ? 'rgba(255,255,255,0.05)'
-                                                    : 'rgba(0,0,0,0.05)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}
-                                        >
-                                            {thumbUrl ? (
-                                                <img
-                                                    src={thumbUrl}
-                                                    alt={product.name}
-                                                    style={{
-                                                        width: '100%',
-                                                        height: '100%',
-                                                        objectFit: 'cover',
-                                                    }}
-                                                />
-                                            ) : (
-                                                <Package size={16} opacity={0.4} />
-                                            )}
-                                        </div>
-
-                                        {/* Name & date */}
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div
-                                                style={{
-                                                    fontSize: '13px',
-                                                    fontWeight: 500,
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    whiteSpace: 'nowrap',
-                                                }}
-                                            >
-                                                {product.name}
-                                            </div>
-                                            <div
-                                                style={{
-                                                    fontSize: '11px',
-                                                    opacity: 0.5,
-                                                    marginTop: '2px',
-                                                }}
-                                            >
-                                                {formatDate(product.created_at)}
-                                            </div>
-                                        </div>
-
-                                        {/* Selected checkmark */}
-                                        {isSelected && (
-                                            <CheckCircle size={16} color="#7c4dff" style={{ flexShrink: 0 }} />
-                                        )}
-
-                                        {/* Delete button */}
-                                        <div
-                                            onClick={(e) => handleDeleteClick(product.id, e)}
-                                            style={{
-                                                padding: '4px',
-                                                borderRadius: '4px',
-                                                cursor: 'pointer',
-                                                opacity: 0.4,
-                                                transition: 'opacity 0.15s, color 0.15s',
-                                                flexShrink: 0,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                            }}
-                                            onMouseEnter={e => {
-                                                (e.currentTarget as HTMLDivElement).style.opacity = '1';
-                                                (e.currentTarget as HTMLDivElement).style.color = '#ff4444';
-                                            }}
-                                            onMouseLeave={e => {
-                                                (e.currentTarget as HTMLDivElement).style.opacity = '0.4';
-                                                (e.currentTarget as HTMLDivElement).style.color = 'inherit';
-                                            }}
-                                        >
-                                            <Trash2 size={14} />
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </>
-                    )}
-                </div>
-            )}
-
-            {/* Delete Confirmation Dialog */}
-            {deleteConfirmId && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(0,0,0,0.6)',
-                        zIndex: 9999,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                    onClick={handleDeleteCancel}
-                >
-                    <div
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                            background: isDarkMode ? '#1a1a2e' : '#ffffff',
-                            borderRadius: '12px',
-                            padding: '24px',
-                            maxWidth: '360px',
-                            width: '90%',
-                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-                            border: '1px solid rgba(124, 77, 255, 0.3)',
-                        }}
-                    >
-                        <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', color: isDarkMode ? '#fff' : '#1a1a2e' }}>
-                            Delete Product?
-                        </div>
-                        <div style={{ fontSize: '13px', opacity: 0.7, marginBottom: '20px', color: isDarkMode ? '#fff' : '#1a1a2e' }}>
-                            This product and its analysis will be permanently deleted from the database.
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                            <button
-                                onClick={() => handleDeleteCancel()}
-                                disabled={isDeleting}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '6px',
-                                    border: '1px solid rgba(124, 77, 255, 0.3)',
-                                    background: 'transparent',
-                                    color: isDarkMode ? '#fff' : '#1a1a2e',
-                                    cursor: 'pointer',
-                                    fontSize: '13px',
-                                }}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDeleteConfirm}
-                                disabled={isDeleting}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '6px',
-                                    border: 'none',
-                                    background: '#ff4444',
-                                    color: '#fff',
-                                    cursor: isDeleting ? 'not-allowed' : 'pointer',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    opacity: isDeleting ? 0.7 : 1,
-                                }}
-                            >
-                                {isDeleting ? 'Deleting...' : 'Delete'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                <ChevronRight size={16} style={{ opacity: 0.4, flexShrink: 0 }} />
+            </button>
         </div>
     );
 };

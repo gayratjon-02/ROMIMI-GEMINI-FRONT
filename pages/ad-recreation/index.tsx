@@ -36,6 +36,8 @@ import ConceptLibrary, { ConceptItem } from '@/libs/components/ad-recreation/sid
 import EmptyState from '@/libs/components/ad-recreation/gallery/EmptyState';
 import AnalysisStage from '@/libs/components/ad-recreation/gallery/AnalysisStage';
 import ResultsGrid, { MockResult } from '@/libs/components/ad-recreation/gallery/ResultsGrid';
+import AnalyzedProductsPanel from '@/libs/components/ad-recreation/gallery/AnalyzedProductsPanel';
+import InspirationLibraryPanel from '@/libs/components/ad-recreation/gallery/InspirationLibraryPanel';
 
 // ============================================
 // PLACEHOLDER RESULT INTERFACE
@@ -100,7 +102,10 @@ const AdRecreationPage: React.FC = () => {
 
     // Concept Library state
     const [savedConcepts, setSavedConcepts] = useState<ConceptItem[]>([]);
-    const [isLoadingConcepts, setIsLoadingConcepts] = useState(false);
+
+    // Management Panel state
+    const [activePanel, setActivePanel] = useState<'none' | 'products' | 'inspirations'>('none');
+    const [productCount, setProductCount] = useState(0);
 
     // Polling ref
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -215,20 +220,24 @@ const AdRecreationPage: React.FC = () => {
         };
     }, [currentGenerationId, router.events]);
 
-    // Fetch saved concepts on mount
+    // Fetch saved concepts and product count on mount
     useEffect(() => {
         const loadConcepts = async () => {
-            setIsLoadingConcepts(true);
             try {
                 const concepts = await fetchAllConcepts();
                 setSavedConcepts(concepts as unknown as ConceptItem[]);
             } catch (err) {
                 console.error('Failed to load concepts:', err);
-            } finally {
-                setIsLoadingConcepts(false);
             }
         };
         loadConcepts();
+
+        // Fetch product count
+        import('@/libs/server/Ad-Recreation/products/ad-product.service').then(({ getAdProducts }) => {
+            getAdProducts()
+                .then(data => setProductCount(data.filter(p => p.analyzed_product_json).length))
+                .catch(() => {});
+        });
     }, []);
 
     // Ad product analysis callback — called by AdProductUploadSection on success
@@ -236,6 +245,7 @@ const AdRecreationPage: React.FC = () => {
         setAdProductId(productId);
         setAdProductImageUrl(imageUrl);
         setAdProductAnalysis(analysis);
+        setProductCount(prev => prev + 1);
         console.log(`✅ Ad product analyzed: ${productId}`);
     }, []);
 
@@ -898,33 +908,17 @@ const AdRecreationPage: React.FC = () => {
                         {/* Analyzed Products History */}
                         <AnalyzedProductSelector
                             isDarkMode={isDarkMode}
-                            selectedProductId={adProductId}
-                            onSelect={handleSelectAnalyzedProduct}
-                            onDeleted={(deletedId) => {
-                                if (adProductId === deletedId) {
-                                    setAdProductId(null);
-                                    setAdProductImageUrl(null);
-                                    setAdProductAnalysis(null);
-                                }
-                            }}
+                            count={productCount}
+                            isActive={activePanel === 'products'}
+                            onClick={() => setActivePanel(prev => prev === 'products' ? 'none' : 'products')}
                         />
 
                         {/* Inspiration Library */}
                         <ConceptLibrary
-                            concepts={savedConcepts}
-                            selectedConceptId={conceptId}
-                            onSelect={handleSelectLibraryConcept}
-                            onDeleted={(deletedId) => {
-                                setSavedConcepts(prev => prev.filter(c => c.id !== deletedId));
-                                if (conceptId === deletedId) {
-                                    setConceptId(null);
-                                    setAnalysisJson(null);
-                                    setInspirationImageUrl(null);
-                                    setSelectedHeroImage(null);
-                                }
-                            }}
                             isDarkMode={isDarkMode}
-                            isLoading={isLoadingConcepts}
+                            count={savedConcepts.length}
+                            isActive={activePanel === 'inspirations'}
+                            onClick={() => setActivePanel(prev => prev === 'inspirations' ? 'none' : 'inspirations')}
                         />
                     </div>
                 </div>
@@ -1434,7 +1428,45 @@ const AdRecreationPage: React.FC = () => {
                                     ))}
                                 </div>
                             );
-                        })() : (!isMerging && !isGenerating && (analysisJson || adProductAnalysis)) ? (
+                        })() : (!isMerging && !isGenerating && activePanel === 'products') ? (
+                            <AnalyzedProductsPanel
+                                isDarkMode={isDarkMode}
+                                selectedProductId={adProductId}
+                                onSelect={(productId, imageUrl, analysis) => {
+                                    handleSelectAnalyzedProduct(productId, imageUrl, analysis);
+                                    setActivePanel('none');
+                                }}
+                                onDeleted={(deletedIds) => {
+                                    if (adProductId && deletedIds.includes(adProductId)) {
+                                        setAdProductId(null);
+                                        setAdProductImageUrl(null);
+                                        setAdProductAnalysis(null);
+                                    }
+                                    setProductCount(prev => Math.max(0, prev - deletedIds.length));
+                                }}
+                                onClose={() => setActivePanel('none')}
+                            />
+                        ) : (!isMerging && !isGenerating && activePanel === 'inspirations') ? (
+                            <InspirationLibraryPanel
+                                isDarkMode={isDarkMode}
+                                concepts={savedConcepts}
+                                selectedConceptId={conceptId}
+                                onSelect={(concept) => {
+                                    handleSelectLibraryConcept(concept);
+                                    setActivePanel('none');
+                                }}
+                                onDeleted={(deletedIds) => {
+                                    setSavedConcepts(prev => prev.filter(c => !deletedIds.includes(c.id)));
+                                    if (conceptId && deletedIds.includes(conceptId)) {
+                                        setConceptId(null);
+                                        setAnalysisJson(null);
+                                        setInspirationImageUrl(null);
+                                        setSelectedHeroImage(null);
+                                    }
+                                }}
+                                onClose={() => setActivePanel('none')}
+                            />
+                        ) : (!isMerging && !isGenerating && (analysisJson || adProductAnalysis)) ? (
                             <AnalysisStage
                                 data={analysisJson}
                                 conceptId={conceptId || undefined}
