@@ -503,19 +503,18 @@ const AdRecreationPage: React.FC = () => {
             console.log(`🚀 Launching SINGLE generation request for ${selectedAngles.length} angles x ${selectedFormats.length} formats...`);
 
             try {
-                // Make the SINGLE API call first before hiding the merging spinner
+                // Phase 2: Show placeholder cards IMMEDIATELY (don't wait for API response)
+                // The API takes minutes to generate all images, so we show loading cards right away
+                hasTransitioned = true;
+                console.log('🎨 Phase 2: Showing placeholder cards immediately...');
+                const placeholders = createPlaceholders();
+                setGeneratedResults(placeholders);
+                setShowResults(true);
+                setIsMerging(false);
+
+                // Now start the actual API call (cards are already visible as loading)
                 const result = await generateAdVariations(payload);
                 console.log('📥 Generation response received:', result);
-
-                // Phase 2: Transition from merging spinner to cards NOW that we have a response
-                if (!hasTransitioned) {
-                    hasTransitioned = true;
-                    console.log('🎨 Phase 2: Showing cards...');
-                    const placeholders = createPlaceholders();
-                    setGeneratedResults(placeholders);
-                    setShowResults(true);
-                    setIsMerging(false);
-                }
 
                 // Extract generation data from the response
                 const generation = (result as any);
@@ -1020,6 +1019,10 @@ const AdRecreationPage: React.FC = () => {
                                     ))}
                                 </div>
                                 <style>{`
+                                    @keyframes spin {
+                                        from { transform: rotate(0deg); }
+                                        to { transform: rotate(360deg); }
+                                    }
                                     @keyframes pulse {
                                         0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
                                         40% { opacity: 1; transform: scale(1.2); }
