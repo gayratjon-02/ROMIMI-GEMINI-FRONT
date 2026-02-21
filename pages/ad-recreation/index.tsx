@@ -900,6 +900,13 @@ const AdRecreationPage: React.FC = () => {
                             isDarkMode={isDarkMode}
                             selectedProductId={adProductId}
                             onSelect={handleSelectAnalyzedProduct}
+                            onDeleted={(deletedId) => {
+                                if (adProductId === deletedId) {
+                                    setAdProductId(null);
+                                    setAdProductImageUrl(null);
+                                    setAdProductAnalysis(null);
+                                }
+                            }}
                         />
 
                         {/* Inspiration Library */}
@@ -907,6 +914,15 @@ const AdRecreationPage: React.FC = () => {
                             concepts={savedConcepts}
                             selectedConceptId={conceptId}
                             onSelect={handleSelectLibraryConcept}
+                            onDeleted={(deletedId) => {
+                                setSavedConcepts(prev => prev.filter(c => c.id !== deletedId));
+                                if (conceptId === deletedId) {
+                                    setConceptId(null);
+                                    setAnalysisJson(null);
+                                    setInspirationImageUrl(null);
+                                    setSelectedHeroImage(null);
+                                }
+                            }}
                             isDarkMode={isDarkMode}
                             isLoading={isLoadingConcepts}
                         />

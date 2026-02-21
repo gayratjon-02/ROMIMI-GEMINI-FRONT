@@ -2,7 +2,8 @@
 // Dropdown list of previously analyzed Inspirations (Concepts).
 // Selects one → sends its analysis_json to the center panel.
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Image, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Image, Loader2, Trash2 } from 'lucide-react';
+import { deleteConcept } from '@/libs/server/Ad-Recreation/inspiration/inspiration.service';
 import styles from '@/scss/styles/AdRecreation/AdRecreation.module.scss';
 
 const AUTO_CLOSE_DELAY = 3000; // 3 seconds
@@ -20,6 +21,7 @@ interface ConceptLibraryProps {
     concepts: ConceptItem[];
     selectedConceptId: string | null;
     onSelect: (concept: ConceptItem) => void;
+    onDeleted?: (deletedId: string) => void;
     isDarkMode: boolean;
     isLoading?: boolean;
 }
@@ -28,10 +30,13 @@ const ConceptLibrary: React.FC<ConceptLibraryProps> = ({
     concepts,
     selectedConceptId,
     onSelect,
+    onDeleted,
     isDarkMode,
     isLoading = false,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -91,6 +96,30 @@ const ConceptLibrary: React.FC<ConceptLibraryProps> = ({
         } catch {
             return '';
         }
+    };
+
+    const handleDeleteClick = (conceptId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setDeleteConfirmId(conceptId);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteConfirmId) return;
+        setIsDeleting(true);
+        try {
+            await deleteConcept(deleteConfirmId);
+            onDeleted?.(deleteConfirmId);
+            setDeleteConfirmId(null);
+        } catch (err) {
+            console.error('Failed to delete concept:', err);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleDeleteCancel = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        setDeleteConfirmId(null);
     };
 
     return (
@@ -260,10 +289,108 @@ const ConceptLibrary: React.FC<ConceptLibraryProps> = ({
                                             }}
                                         />
                                     )}
+
+                                    {/* Delete button */}
+                                    <div
+                                        onClick={(e) => handleDeleteClick(concept.id, e)}
+                                        style={{
+                                            padding: '4px',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            opacity: 0.4,
+                                            transition: 'opacity 0.15s, color 0.15s',
+                                            flexShrink: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                        }}
+                                        onMouseEnter={e => {
+                                            (e.currentTarget as HTMLDivElement).style.opacity = '1';
+                                            (e.currentTarget as HTMLDivElement).style.color = '#ff4444';
+                                        }}
+                                        onMouseLeave={e => {
+                                            (e.currentTarget as HTMLDivElement).style.opacity = '0.4';
+                                            (e.currentTarget as HTMLDivElement).style.color = 'inherit';
+                                        }}
+                                    >
+                                        <Trash2 size={14} />
+                                    </div>
                                 </button>
                             );
                         })
                     )}
+                </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirmId && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.6)',
+                        zIndex: 9999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                    onClick={handleDeleteCancel}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: isDarkMode ? '#1a1a2e' : '#ffffff',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            maxWidth: '360px',
+                            width: '90%',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                            border: '1px solid rgba(124, 77, 255, 0.3)',
+                        }}
+                    >
+                        <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', color: isDarkMode ? '#fff' : '#1a1a2e' }}>
+                            Delete Inspiration?
+                        </div>
+                        <div style={{ fontSize: '13px', opacity: 0.7, marginBottom: '20px', color: isDarkMode ? '#fff' : '#1a1a2e' }}>
+                            This inspiration and its analysis will be permanently deleted from the database.
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => handleDeleteCancel()}
+                                disabled={isDeleting}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(124, 77, 255, 0.3)',
+                                    background: 'transparent',
+                                    color: isDarkMode ? '#fff' : '#1a1a2e',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={isDeleting}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    background: '#ff4444',
+                                    color: '#fff',
+                                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    opacity: isDeleting ? 0.7 : 1,
+                                }}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

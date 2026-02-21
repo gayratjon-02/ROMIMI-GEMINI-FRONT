@@ -39,6 +39,17 @@ export async function updateAdProductAnalysis(productId: string, analysis: objec
 }
 
 /**
+ * Deletes an analyzed product by ID.
+ * Endpoint: DELETE /api/ad-recreation/products/:id
+ */
+export async function deleteAdProduct(productId: string): Promise<{ success: boolean; message: string }> {
+    const response = await axiosClient.delete<{ success: boolean; message: string }>(
+        `/api/ad-recreation/products/${productId}`,
+    );
+    return response.data;
+}
+
+/**
  * Uploads a single reference product image and analyzes it with Claude.
  * Returns the product_id to use in generation.
  *

@@ -87,6 +87,17 @@ export async function uploadInspirationImage(file: File): Promise<UploadResult> 
 }
 
 /**
+ * Deletes an inspiration concept by ID.
+ * Endpoint: DELETE /api/concepts/:id
+ */
+export async function deleteConcept(conceptId: string): Promise<{ success: boolean; message: string }> {
+    const response = await axiosClient.delete<{ success: boolean; message: string }>(
+        `/api/concepts/${conceptId}`,
+    );
+    return response.data;
+}
+
+/**
  * Fetches a previously analyzed concept by ID.
  * @param conceptId - The concept ID to fetch
  * @returns Promise<AdConceptAnalysis | null>

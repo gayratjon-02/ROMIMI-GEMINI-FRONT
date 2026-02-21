@@ -1,8 +1,8 @@
 // libs/components/ad-recreation/sidebar/AnalyzedProductSelector.tsx
 // Dropdown list of previously analyzed products, similar to AngleSelector pattern
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronDown, ChevronUp, CheckCircle, Loader2, Package } from 'lucide-react';
-import { getAdProducts, AdProductListItem } from '@/libs/server/Ad-Recreation/products/ad-product.service';
+import { ChevronDown, ChevronUp, CheckCircle, Loader2, Package, Trash2 } from 'lucide-react';
+import { getAdProducts, deleteAdProduct, AdProductListItem } from '@/libs/server/Ad-Recreation/products/ad-product.service';
 
 const AUTO_CLOSE_DELAY = 3000;
 
@@ -10,16 +10,20 @@ interface AnalyzedProductSelectorProps {
     isDarkMode: boolean;
     selectedProductId: string | null;
     onSelect: (productId: string, imageUrl: string, analysis: Record<string, any>) => void;
+    onDeleted?: (deletedId: string) => void;
 }
 
 const AnalyzedProductSelector: React.FC<AnalyzedProductSelectorProps> = ({
     isDarkMode,
     selectedProductId,
     onSelect,
+    onDeleted,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [products, setProducts] = useState<AdProductListItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
     const hasFetchedRef = useRef(false);
@@ -95,6 +99,33 @@ const AnalyzedProductSelector: React.FC<AnalyzedProductSelectorProps> = ({
         );
         clearCloseTimer();
         setIsExpanded(false);
+    };
+
+    const handleDeleteClick = (productId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setDeleteConfirmId(productId);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteConfirmId) return;
+        setIsDeleting(true);
+        try {
+            await deleteAdProduct(deleteConfirmId);
+            setProducts(prev => prev.filter(p => p.id !== deleteConfirmId));
+            if (selectedProductId === deleteConfirmId) {
+                onDeleted?.(deleteConfirmId);
+            }
+            setDeleteConfirmId(null);
+        } catch (err) {
+            console.error('Failed to delete product:', err);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleDeleteCancel = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        setDeleteConfirmId(null);
     };
 
     const formatDate = (dateStr: string) => {
@@ -326,11 +357,109 @@ const AnalyzedProductSelector: React.FC<AnalyzedProductSelectorProps> = ({
                                         {isSelected && (
                                             <CheckCircle size={16} color="#7c4dff" style={{ flexShrink: 0 }} />
                                         )}
+
+                                        {/* Delete button */}
+                                        <div
+                                            onClick={(e) => handleDeleteClick(product.id, e)}
+                                            style={{
+                                                padding: '4px',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                opacity: 0.4,
+                                                transition: 'opacity 0.15s, color 0.15s',
+                                                flexShrink: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                            }}
+                                            onMouseEnter={e => {
+                                                (e.currentTarget as HTMLDivElement).style.opacity = '1';
+                                                (e.currentTarget as HTMLDivElement).style.color = '#ff4444';
+                                            }}
+                                            onMouseLeave={e => {
+                                                (e.currentTarget as HTMLDivElement).style.opacity = '0.4';
+                                                (e.currentTarget as HTMLDivElement).style.color = 'inherit';
+                                            }}
+                                        >
+                                            <Trash2 size={14} />
+                                        </div>
                                     </button>
                                 );
                             })}
                         </>
                     )}
+                </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirmId && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.6)',
+                        zIndex: 9999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                    onClick={handleDeleteCancel}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: isDarkMode ? '#1a1a2e' : '#ffffff',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            maxWidth: '360px',
+                            width: '90%',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                            border: '1px solid rgba(124, 77, 255, 0.3)',
+                        }}
+                    >
+                        <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', color: isDarkMode ? '#fff' : '#1a1a2e' }}>
+                            Delete Product?
+                        </div>
+                        <div style={{ fontSize: '13px', opacity: 0.7, marginBottom: '20px', color: isDarkMode ? '#fff' : '#1a1a2e' }}>
+                            This product and its analysis will be permanently deleted from the database.
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => handleDeleteCancel()}
+                                disabled={isDeleting}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(124, 77, 255, 0.3)',
+                                    background: 'transparent',
+                                    color: isDarkMode ? '#fff' : '#1a1a2e',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={isDeleting}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    background: '#ff4444',
+                                    color: '#fff',
+                                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    opacity: isDeleting ? 0.7 : 1,
+                                }}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
