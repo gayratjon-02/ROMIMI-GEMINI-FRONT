@@ -150,12 +150,13 @@ export async function createBrand(data: CreateBrandData): Promise<AdBrand> {
 }
 
 /**
- * Brand Playbook JSON structure (enhanced)
+ * Brand Playbook JSON structure (Spec v3 compliant)
  */
 export interface BrandPlaybookJson {
     brand_name: string;
+    industry: string;
     website: string;
-    industry?: string;
+    currency: string;
     brand_colors: {
         primary: string;
         secondary: string;
@@ -169,7 +170,8 @@ export interface BrandPlaybookJson {
         body: string;
     };
     tone_of_voice: string;
-    target_audience: {
+    usps: string[];
+    target_audience?: {
         gender: string;
         age_range: string;
         personas?: string[];
@@ -178,10 +180,20 @@ export interface BrandPlaybookJson {
         region: string;
         rules: string[];
     };
-    usp_offers?: {
-        key_benefits: string[];
-        current_offer: string;
+    current_offer?: {
+        discount?: string;
+        price_original?: string;
+        price_sale?: string;
+        free_gifts?: string[];
+        free_gifts_value?: string;
+        delivery?: string;
     };
+    logo?: {
+        style?: string;
+        light_url?: string;
+        dark_url?: string;
+    };
+    product_ref?: string;
 }
 
 /**
