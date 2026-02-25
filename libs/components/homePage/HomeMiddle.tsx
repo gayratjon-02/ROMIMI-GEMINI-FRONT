@@ -272,6 +272,44 @@ const EmptyState: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => (
     </motion.div>
 );
 
+// DA Preview State - Show DA JSON when collection selected but no product analyzed
+interface DAPreviewStateProps {
+    isDarkMode: boolean;
+    daJSON: DAJSON;
+    collectionName?: string;
+}
+
+const DAPreviewState: React.FC<DAPreviewStateProps> = ({ isDarkMode, daJSON, collectionName }) => (
+    <motion.div
+        className={styles.analyzedState}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+    >
+        <div className={styles.analyzedHeader}>
+            <Layers size={24} className={styles.successIcon} />
+            <h2>DA Preset: {collectionName || 'Selected'}</h2>
+        </div>
+
+        <div className={styles.jsonContainer}>
+            <textarea
+                className={styles.jsonEditor}
+                value={JSON.stringify(daJSON, null, 2)}
+                readOnly
+                spellCheck={false}
+            />
+        </div>
+
+        <div className={styles.jsonControls}>
+            <div className={styles.jsonTabs}>
+                <button className={`${styles.jsonTab} ${styles.active}`}>
+                    DA Analyzed JSON
+                </button>
+            </div>
+        </div>
+    </motion.div>
+);
+
 // Analyzed State - Show JSON result after analysis
 interface AnalyzedStateProps {
     isDarkMode: boolean;
@@ -1190,6 +1228,12 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             onReanalyze={onReanalyze}
                             onSaveComplete={onSaveComplete}
                             progress={progress}
+                        />
+                    ) : effectiveDAJSON ? (
+                        <DAPreviewState
+                            isDarkMode={isDarkMode}
+                            daJSON={effectiveDAJSON}
+                            collectionName={selectedCollection?.name}
                         />
                     ) : (
                         <EmptyState isDarkMode={isDarkMode} />
