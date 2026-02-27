@@ -438,6 +438,40 @@ export async function retryVisual(
 }
 
 /**
+ * Delete a generation
+ */
+export async function deleteGeneration(id: string): Promise<{ message: string }> {
+    try {
+        const response = await fetch(`${API_BASE}/generations/deleteGeneration/${id}`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to delete generation"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as { message: string };
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+/**
  * Debug: Get config status
  */
 export async function debugConfig(): Promise<{

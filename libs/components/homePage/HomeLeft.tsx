@@ -6,8 +6,9 @@ import styles from '@/scss/styles/HomePage/HomeLeft.module.scss';
 import { getUserInfo, logout, UserInfo } from '@/libs/server/HomePage/signup';
 import { getAllBrands, updateBrand, deleteBrand } from '@/libs/server/HomePage/brand';
 import { getCollectionsByBrand, updateCollection, deleteCollection } from '@/libs/server/HomePage/collection';
-import { getAllGenerations } from '@/libs/server/HomePage/merging';
-import { getAllProducts } from '@/libs/server/HomePage/product';
+import { getAllGenerations, deleteGeneration } from '@/libs/server/HomePage/merging';
+import { getAllProducts, deleteProduct } from '@/libs/server/HomePage/product';
+import { deleteDAPreset } from '@/libs/server/HomePage/da';
 import { Brand, UpdateBrandData } from '@/libs/types/homepage/brand';
 import { Collection, UpdateCollectionData } from '@/libs/types/homepage/collection';
 import { Generation } from '@/libs/types/homepage/generation';
@@ -126,6 +127,14 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
+
+  // Delete states for library items
+  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<{ id: string; name: string } | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+  const [deleteConfirmGeneration, setDeleteConfirmGeneration] = useState<{ id: string; label: string } | null>(null);
+  const [isDeletingGeneration, setIsDeletingGeneration] = useState(false);
+  const [deleteConfirmDA, setDeleteConfirmDA] = useState<{ id: string; name: string } | null>(null);
+  const [isDeletingDA, setIsDeletingDA] = useState(false);
 
   useEffect(() => {
     const info = getUserInfo();
@@ -376,6 +385,64 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
       console.error('Error deleting collection:', error);
     } finally {
       setIsDeletingCollection(false);
+    }
+  };
+
+  // Delete product from library (cascades generations)
+  const handleDeleteProductConfirm = async () => {
+    if (!deleteConfirmProduct) return;
+    setIsDeletingProduct(true);
+    try {
+      await deleteProduct(deleteConfirmProduct.id);
+      setLibraryGenerations(prev => prev.filter(g => {
+        const pid = g.product?.id || g.product_id;
+        return pid !== deleteConfirmProduct.id;
+      }));
+      if (activeLibraryId) {
+        const activeGen = libraryGenerations.find(g => g.id === activeLibraryId);
+        const activePid = activeGen?.product?.id || activeGen?.product_id;
+        if (activePid === deleteConfirmProduct.id) {
+          setActiveLibraryId(null);
+        }
+      }
+      setDeleteConfirmProduct(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    } finally {
+      setIsDeletingProduct(false);
+    }
+  };
+
+  // Delete single generation from library
+  const handleDeleteGenerationConfirm = async () => {
+    if (!deleteConfirmGeneration) return;
+    setIsDeletingGeneration(true);
+    try {
+      await deleteGeneration(deleteConfirmGeneration.id);
+      setLibraryGenerations(prev => prev.filter(g => g.id !== deleteConfirmGeneration.id));
+      if (activeLibraryId === deleteConfirmGeneration.id) {
+        setActiveLibraryId(null);
+      }
+      setDeleteConfirmGeneration(null);
+    } catch (error) {
+      console.error('Error deleting generation:', error);
+    } finally {
+      setIsDeletingGeneration(false);
+    }
+  };
+
+  // Delete DA preset (collection/brand in this context)
+  const handleDeleteDAConfirm = async () => {
+    if (!deleteConfirmDA) return;
+    setIsDeletingDA(true);
+    try {
+      await deleteDAPreset(deleteConfirmDA.id);
+      setBrands(prev => prev.filter(b => b.id !== deleteConfirmDA.id));
+      setDeleteConfirmDA(null);
+    } catch (error) {
+      console.error('Error deleting DA preset:', error);
+    } finally {
+      setIsDeletingDA(false);
     }
   };
 
@@ -696,90 +763,131 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
 
                       return (
                         <div key={pid} style={{ marginBottom: '2px' }}>
-                          {/* Folder row */}
-                          <button
-                            onClick={() => setExpandedProductFolders(prev => {
-                              const next = new Set(prev);
-                              isFolderOpen ? next.delete(pid) : next.add(pid);
-                              return next;
-                            })}
+                          {/* Folder row with delete */}
+                          <div
+                            className="lib-folder-row"
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '8px',
-                              width: '100%',
-                              padding: '8px 10px',
-                              background: hasActive
-                                ? 'rgba(79,70,229,0.12)'
-                                : isFolderOpen
-                                  ? (isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')
-                                  : 'transparent',
-                              border: 'none',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              color: isDarkMode ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
-                              textAlign: 'left',
-                              transition: 'background 0.15s',
+                              position: 'relative',
                             }}
                             onMouseEnter={e => {
-                              if (!hasActive && !isFolderOpen)
-                                (e.currentTarget as HTMLButtonElement).style.background = isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
+                              const del = e.currentTarget.querySelector('.lib-folder-delete') as HTMLElement;
+                              if (del) del.style.opacity = '1';
                             }}
                             onMouseLeave={e => {
-                              if (!hasActive && !isFolderOpen)
-                                (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                              const del = e.currentTarget.querySelector('.lib-folder-delete') as HTMLElement;
+                              if (del) del.style.opacity = '0';
                             }}
                           >
-                            {/* Folder icon */}
-                            <svg
-                              width="15" height="15" viewBox="0 0 24 24"
-                              fill={isFolderOpen ? 'rgba(79,70,229,0.3)' : 'transparent'}
-                              stroke={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)'}
-                              strokeWidth="2"
-                              style={{ flexShrink: 0 }}
-                            >
-                              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                            </svg>
-
-                            {/* Product name */}
-                            <span style={{
-                              flex: 1,
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              {group.productName}
-                            </span>
-
-                            {/* Count badge */}
-                            <span style={{
-                              fontSize: '10px',
-                              fontWeight: 600,
-                              padding: '1px 6px',
-                              borderRadius: '10px',
-                              background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                              color: isDarkMode ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)',
-                              flexShrink: 0,
-                            }}>
-                              {group.items.length}
-                            </span>
-
-                            {/* Chevron */}
-                            <svg
-                              width="12" height="12" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" strokeWidth="2.5"
+                            <button
+                              onClick={() => setExpandedProductFolders(prev => {
+                                const next = new Set(prev);
+                                isFolderOpen ? next.delete(pid) : next.add(pid);
+                                return next;
+                              })}
                               style={{
-                                flexShrink: 0,
-                                opacity: 0.4,
-                                transform: isFolderOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.18s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                flex: 1,
+                                padding: '8px 10px',
+                                background: hasActive
+                                  ? 'rgba(79,70,229,0.12)'
+                                  : isFolderOpen
+                                    ? (isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')
+                                    : 'transparent',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                color: isDarkMode ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+                                textAlign: 'left',
+                                transition: 'background 0.15s',
                               }}
                             >
-                              <polyline points="6 9 12 15 18 9" />
-                            </svg>
-                          </button>
+                              {/* Folder icon */}
+                              <svg
+                                width="15" height="15" viewBox="0 0 24 24"
+                                fill={isFolderOpen ? 'rgba(79,70,229,0.3)' : 'transparent'}
+                                stroke={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)'}
+                                strokeWidth="2"
+                                style={{ flexShrink: 0 }}
+                              >
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                              </svg>
+
+                              {/* Product name */}
+                              <span style={{
+                                flex: 1,
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {group.productName}
+                              </span>
+
+                              {/* Count badge */}
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: '1px 6px',
+                                borderRadius: '10px',
+                                background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                                color: isDarkMode ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.5)',
+                                flexShrink: 0,
+                              }}>
+                                {group.items.length}
+                              </span>
+
+                              {/* Chevron */}
+                              <svg
+                                width="12" height="12" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" strokeWidth="2.5"
+                                style={{
+                                  flexShrink: 0,
+                                  opacity: 0.4,
+                                  transform: isFolderOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                  transition: 'transform 0.18s',
+                                }}
+                              >
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                            </button>
+
+                            {/* Delete product button (shows on hover) */}
+                            <button
+                              className="lib-folder-delete"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirmProduct({ id: pid, name: group.productName });
+                              }}
+                              title="Delete product & all generations"
+                              style={{
+                                position: 'absolute',
+                                right: '4px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                opacity: 0,
+                                transition: 'opacity 0.15s',
+                                background: 'rgba(239,68,68,0.15)',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 2,
+                              }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
 
                           {/* Folder contents — individual generation items */}
                           {isFolderOpen && (
@@ -791,108 +899,153 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                                 const shotCount = (gen.visuals || gen.visual_outputs || []).filter(v => v.status === 'completed').length;
 
                                 return (
-                                  <button
+                                  <div
                                     key={gen.id}
-                                    onClick={() => {
-                                      setActiveLibraryId(gen.id);
-                                      onLibrarySelect(gen);
-                                    }}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '8px',
-                                      width: '100%',
-                                      padding: '6px 8px',
-                                      background: isActive
-                                        ? 'rgba(79,70,229,0.18)'
-                                        : 'transparent',
-                                      border: isActive
-                                        ? '1px solid rgba(79,70,229,0.35)'
-                                        : '1px solid transparent',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
-                                      textAlign: 'left',
-                                      transition: 'all 0.15s',
-                                    }}
+                                    className="lib-gen-row"
+                                    style={{ position: 'relative' }}
                                     onMouseEnter={e => {
-                                      if (!isActive)
-                                        (e.currentTarget as HTMLButtonElement).style.background = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+                                      const del = e.currentTarget.querySelector('.lib-gen-delete') as HTMLElement;
+                                      if (del) del.style.opacity = '1';
                                     }}
                                     onMouseLeave={e => {
-                                      if (!isActive)
-                                        (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                                      const del = e.currentTarget.querySelector('.lib-gen-delete') as HTMLElement;
+                                      if (del) del.style.opacity = '0';
                                     }}
                                   >
-                                    {/* Thumbnail */}
-                                    <div style={{
-                                      width: '32px',
-                                      height: '32px',
-                                      borderRadius: '5px',
-                                      overflow: 'hidden',
-                                      flexShrink: 0,
-                                      background: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
-                                      border: isActive ? '1.5px solid rgba(79,70,229,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}>
-                                      {thumb ? (
-                                        <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                      ) : (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'} strokeWidth="2">
-                                          <rect x="3" y="3" width="18" height="18" rx="2" />
-                                          <circle cx="8.5" cy="8.5" r="1.5" />
-                                          <polyline points="21 15 16 10 5 21" />
-                                        </svg>
-                                      )}
-                                    </div>
-
-                                    {/* Info */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{
-                                        fontSize: '11px',
-                                        fontWeight: 500,
-                                        color: isDarkMode ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                      }}>
-                                        Gen #{idx + 1}
-                                      </div>
-                                      <div style={{
-                                        fontSize: '10px',
-                                        color: isDarkMode ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)',
-                                        marginTop: '1px',
+                                    <button
+                                      onClick={() => {
+                                        setActiveLibraryId(gen.id);
+                                        onLibrarySelect(gen);
+                                      }}
+                                      style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '4px',
+                                        gap: '8px',
+                                        width: '100%',
+                                        padding: '6px 8px',
+                                        background: isActive
+                                          ? 'rgba(79,70,229,0.18)'
+                                          : 'transparent',
+                                        border: isActive
+                                          ? '1px solid rgba(79,70,229,0.35)'
+                                          : '1px solid transparent',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'all 0.15s',
+                                      }}
+                                      onMouseEnter={e => {
+                                        if (!isActive)
+                                          (e.currentTarget as HTMLButtonElement).style.background = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+                                      }}
+                                      onMouseLeave={e => {
+                                        if (!isActive)
+                                          (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                                      }}
+                                    >
+                                      {/* Thumbnail */}
+                                      <div style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '5px',
+                                        overflow: 'hidden',
+                                        flexShrink: 0,
+                                        background: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
+                                        border: isActive ? '1.5px solid rgba(79,70,229,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
                                       }}>
-                                        {dateStr}
-                                        {shotCount > 0 && (
-                                          <span style={{
-                                            padding: '0 4px',
-                                            background: isDarkMode ? 'rgba(79,70,229,0.2)' : 'rgba(79,70,229,0.12)',
-                                            borderRadius: '3px',
-                                            color: '#7c6fe0',
-                                            fontWeight: 600,
-                                          }}>
-                                            {shotCount} shots
-                                          </span>
+                                        {thumb ? (
+                                          <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'} strokeWidth="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                                            <circle cx="8.5" cy="8.5" r="1.5" />
+                                            <polyline points="21 15 16 10 5 21" />
+                                          </svg>
                                         )}
                                       </div>
-                                    </div>
 
-                                    {/* Active dot */}
-                                    {isActive && (
-                                      <div style={{
-                                        width: '6px',
-                                        height: '6px',
-                                        borderRadius: '50%',
-                                        background: '#4f46e5',
-                                        flexShrink: 0,
-                                      }} />
-                                    )}
-                                  </button>
+                                      {/* Info */}
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{
+                                          fontSize: '11px',
+                                          fontWeight: 500,
+                                          color: isDarkMode ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                        }}>
+                                          Gen #{idx + 1}
+                                        </div>
+                                        <div style={{
+                                          fontSize: '10px',
+                                          color: isDarkMode ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)',
+                                          marginTop: '1px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                        }}>
+                                          {dateStr}
+                                          {shotCount > 0 && (
+                                            <span style={{
+                                              padding: '0 4px',
+                                              background: isDarkMode ? 'rgba(79,70,229,0.2)' : 'rgba(79,70,229,0.12)',
+                                              borderRadius: '3px',
+                                              color: '#7c6fe0',
+                                              fontWeight: 600,
+                                            }}>
+                                              {shotCount} shots
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Active dot */}
+                                      {isActive && (
+                                        <div style={{
+                                          width: '6px',
+                                          height: '6px',
+                                          borderRadius: '50%',
+                                          background: '#4f46e5',
+                                          flexShrink: 0,
+                                        }} />
+                                      )}
+                                    </button>
+
+                                    {/* Delete generation button (shows on hover) */}
+                                    <button
+                                      className="lib-gen-delete"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteConfirmGeneration({ id: gen.id, label: `Gen #${idx + 1}` });
+                                      }}
+                                      title="Delete generation"
+                                      style={{
+                                        position: 'absolute',
+                                        right: '4px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        opacity: 0,
+                                        transition: 'opacity 0.15s',
+                                        background: 'rgba(239,68,68,0.15)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '3px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        zIndex: 2,
+                                      }}
+                                    >
+                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                      </svg>
+                                    </button>
+                                  </div>
                                 );
                               })}
                             </div>
@@ -1069,6 +1222,86 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                   disabled={isDeletingCollection}
                 >
                   {isDeletingCollection ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Delete Product Confirmation Modal */}
+      {
+        deleteConfirmProduct && (
+          <div className={styles.modalOverlay} onClick={() => setDeleteConfirmProduct(null)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <h3>Delete Product</h3>
+              <p className={styles.modalText}>
+                Are you sure you want to delete <strong>{deleteConfirmProduct.name}</strong>?
+                This will also delete all generations for this product.
+              </p>
+              <div className={styles.modalActions}>
+                <button className={styles.cancelBtn} onClick={() => setDeleteConfirmProduct(null)}>
+                  Cancel
+                </button>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={handleDeleteProductConfirm}
+                  disabled={isDeletingProduct}
+                >
+                  {isDeletingProduct ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Delete Generation Confirmation Modal */}
+      {
+        deleteConfirmGeneration && (
+          <div className={styles.modalOverlay} onClick={() => setDeleteConfirmGeneration(null)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <h3>Delete Generation</h3>
+              <p className={styles.modalText}>
+                Are you sure you want to delete <strong>{deleteConfirmGeneration.label}</strong>?
+                This action cannot be undone.
+              </p>
+              <div className={styles.modalActions}>
+                <button className={styles.cancelBtn} onClick={() => setDeleteConfirmGeneration(null)}>
+                  Cancel
+                </button>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={handleDeleteGenerationConfirm}
+                  disabled={isDeletingGeneration}
+                >
+                  {isDeletingGeneration ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Delete DA Preset Confirmation Modal */}
+      {
+        deleteConfirmDA && (
+          <div className={styles.modalOverlay} onClick={() => setDeleteConfirmDA(null)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <h3>Delete DA Preset</h3>
+              <p className={styles.modalText}>
+                Are you sure you want to delete <strong>{deleteConfirmDA.name}</strong>?
+              </p>
+              <div className={styles.modalActions}>
+                <button className={styles.cancelBtn} onClick={() => setDeleteConfirmDA(null)}>
+                  Cancel
+                </button>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={handleDeleteDAConfirm}
+                  disabled={isDeletingDA}
+                >
+                  {isDeletingDA ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
