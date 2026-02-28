@@ -290,6 +290,13 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
 
   const handleBrandCreated = (newBrand: Brand) => {
     console.log('New brand created:', newBrand);
+    // Add brand to local state immediately for instant UI feedback
+    setBrands(prev => {
+      const exists = prev.some(b => b.id === newBrand.id);
+      return exists ? prev : [...prev, newBrand];
+    });
+    setActiveBrandId(newBrand.id);
+    if (onBrandSelect) onBrandSelect(newBrand);
     if (onBrandCreated) onBrandCreated();
     // Auto-open collection wizard for the new brand (Seamless DA creation)
     handleCreateCollectionClick(newBrand);
@@ -667,16 +674,14 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
               );
             })}
 
-            {/* No brands message */}
-            {/* No brands/DA message - Show Create DA Button */}
-            {!isLoadingBrands && brands.length === 0 && (
+            {/* Create Brand Button — always visible */}
+            {!isLoadingBrands && (
               <button
                 className={styles.createBrandButton}
-                onClick={() => setIsCollectionWizardOpen(true)}
-                style={{ marginTop: '10px', width: '100%', justifyContent: 'center' }}
+                onClick={() => setIsBrandModalOpen(true)}
               >
                 <span className={styles.addIcon}>+</span>
-                <span className={styles.label}>Create DA</span>
+                <span className={styles.label}>Create Brand</span>
               </button>
             )}
           </div>
