@@ -4,6 +4,8 @@ export interface Brand {
   id: string;
   name: string;
   brand_brief?: string;
+  model_adult_url?: string;
+  model_kid_url?: string;
   createdAt: string;
   updatedAt: string;
 }

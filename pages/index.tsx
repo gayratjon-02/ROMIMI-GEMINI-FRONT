@@ -3,6 +3,7 @@ import { useTheme } from "@mui/material";
 import { useState, useCallback, useEffect } from "react";
 import HomeTop from "@/libs/components/homePage/HomeTop";
 import HomeLeft from "@/libs/components/homePage/HomeLeft";
+import HomeRight from "@/libs/components/homePage/HomeRight";
 import HomeMiddle, { ProductJSON, DAJSON } from "@/libs/components/homePage/HomeMiddle";
 import HomeBottom, { createDefaultShotOptions } from "@/libs/components/homePage/HomeButtom";
 import { Brand } from "@/libs/types/homepage/brand";
@@ -287,6 +288,11 @@ function Home() {
     setSelectedBrand(brand);
     setSelectedCollection(null);
     // 🔧 REMOVED: setLibrarySelectedGeneration(null) - allows Library + DA selection workflow
+  }, []);
+
+  // Update selectedBrand when model reference is uploaded from HomeRight
+  const handleBrandUpdated = useCallback((updatedBrand: Brand) => {
+    setSelectedBrand(updatedBrand);
   }, []);
 
   const handleCollectionSelect = useCallback((collection: Collection | null, brand: Brand | null) => {
@@ -1210,6 +1216,15 @@ function Home() {
             onExecutePendingGeneration={handleExecutePendingGeneration}
           />
         </div>
+
+        {/* Right Sidebar — Model Reference Upload */}
+        <div className="home-right-container">
+          <HomeRight
+            isDarkMode={isDarkMode}
+            selectedBrand={selectedBrand}
+            onBrandUpdated={handleBrandUpdated}
+          />
+        </div>
       </div>
 
       {/* DA Picker Modal */}
@@ -1228,13 +1243,17 @@ function Home() {
                     .mobile-hamburger {
                         display: flex !important;
                     }
-                    
+
                     .mobile-overlay {
                         display: block !important;
                     }
-                    
+
                     .home-left-container {
-                        display: contents; 
+                        display: contents;
+                    }
+
+                    .home-right-container {
+                        display: none;
                     }
                 }
             `}</style>
