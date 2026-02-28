@@ -614,7 +614,7 @@ function Home() {
 
     // Create placeholder cards immediately based on merged_prompts
     const mergedPromptsData = generationResponse?.merged_prompts || {};
-    const shotTypes = Object.keys(mergedPromptsData);
+    const shotTypes = Object.keys(mergedPromptsData).filter(k => !k.startsWith('_'));
 
     if (shotTypes.length > 0) {
       const placeholderVisuals = shotTypes.map(type => ({
@@ -788,7 +788,8 @@ function Home() {
       setIsMerging(false);
 
       // Phase 2: Generate - show placeholder cards immediately
-      const shotTypes = Object.keys(merged as Record<string, any>);
+      const mergedPromptsObj = merged.merged_prompts || {};
+      const shotTypes = Object.keys(mergedPromptsObj).filter(k => !k.startsWith('_'));
       const placeholderVisuals = shotTypes.map(type => ({
         type,
         status: 'pending' as const,
@@ -800,7 +801,7 @@ function Home() {
       // Set generation state
       setGenerationId(generation.id);
       setGenerationResponse(generation);
-      setMergedPrompts(merged as any);
+      setMergedPrompts(mergedPromptsObj as any);
       setPreviousCollectionId(selectedCollection.id);
       setIsGenerating(true);
       setIsGeneratingImages(true);
@@ -877,7 +878,8 @@ function Home() {
       setIsMerging(false);
 
       // Phase 2: Generate - show placeholder cards immediately
-      const mergedKeys = Object.keys(merged as Record<string, any>);
+      const mergedPromptsObj = merged.merged_prompts || {};
+      const mergedKeys = Object.keys(mergedPromptsObj).filter(k => !k.startsWith('_'));
       const placeholderVisuals = mergedKeys.map(type => ({
         type,
         shot_type: type,
@@ -889,7 +891,7 @@ function Home() {
       // Set generation state
       setGenerationId(generation.id);
       setGenerationResponse(generation);
-      setMergedPrompts(merged as any);
+      setMergedPrompts(mergedPromptsObj as any);
       setPreviousCollectionId(selectedCollection.id);
       setIsGenerating(true);
       setIsGeneratingImages(true);
@@ -947,7 +949,8 @@ function Home() {
       setIsMerging(false);
 
       // Phase 2: Generate - show placeholder cards
-      const shotTypes = Object.keys(merged as Record<string, any>);
+      const mergedPromptsObj = merged.merged_prompts || {};
+      const shotTypes = Object.keys(mergedPromptsObj).filter(k => !k.startsWith('_'));
       const placeholderVisuals = shotTypes.map(type => ({
         type,
         status: 'pending' as const,
@@ -959,7 +962,7 @@ function Home() {
       // Set generation state
       setGenerationId(generation.id);
       setGenerationResponse(generation);
-      setMergedPrompts(merged as any);
+      setMergedPrompts(mergedPromptsObj as any);
       setPreviousCollectionId(collectionId);
       setIsGenerating(true);
       setIsGeneratingImages(true);
