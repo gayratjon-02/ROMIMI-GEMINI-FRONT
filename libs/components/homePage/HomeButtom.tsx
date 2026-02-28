@@ -63,6 +63,9 @@ interface HomeBottomProps {
     // Pending generation: DA selected, waiting for user to click Generate
     hasPendingGeneration?: boolean;
     onExecutePendingGeneration?: () => void;
+    // Model Reference selection
+    onSelectModel?: () => void;
+    hasSelectedModel?: boolean;
 }
 
 const SHOT_TYPE_CONFIGS: ShotTypeConfig[] = [
@@ -136,6 +139,8 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
     onGenerateWithNew,
     hasPendingGeneration = false,
     onExecutePendingGeneration,
+    onSelectModel,
+    hasSelectedModel = false,
 }) => {
     // Count enabled shots
     const enabledCount = useMemo(() => {
@@ -373,6 +378,17 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
 
             {/* Right Section: Generate Button */}
             <div className={styles.rightSection}>
+                {/* Model Reference selector */}
+                {onSelectModel && (
+                    <button
+                        className={`${styles.modelBtn} ${hasSelectedModel ? styles.active : ''}`}
+                        onClick={onSelectModel}
+                    >
+                        <User size={14} />
+                        <span>{hasSelectedModel ? 'Model Selected' : 'Select Model'}</span>
+                    </button>
+                )}
+
                 {/* Generate Images with New DA - only when DA changed, hides on click */}
                 {isRegenerationAvailable && !isMerging && onRegenerateWithNewDA && (
                     <button

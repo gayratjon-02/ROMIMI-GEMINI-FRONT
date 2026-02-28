@@ -29,6 +29,7 @@ import {
 } from '@/libs/server/HomePage/generate';
 import { useGenerationSocket } from '@/libs/hooks/useGenerationSocket';
 import SelectDAModal from '@/libs/components/modals/SelectDAModal';
+import SelectModelModal from '@/libs/components/modals/SelectModelModal';
 
 // Mock DA Analysis for fallback
 const mockDAAnalysis: DAJSON = {
@@ -137,6 +138,10 @@ function Home() {
   const [showDAModal, setShowDAModal] = useState(false);
   // Pending DA selected from modal — generation starts only when user clicks Generate
   const [pendingNewDAId, setPendingNewDAId] = useState<string | null>(null);
+
+  // Model Reference selection (from SelectModelModal)
+  const [selectedModelRefId, setSelectedModelRefId] = useState<string | null>(null);
+  const [showModelModal, setShowModelModal] = useState(false);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -584,6 +589,7 @@ function Home() {
         shot_options: options,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
+        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
       });
 
       // Fetch updated generation with merged prompts
@@ -641,6 +647,7 @@ function Home() {
         shot_options: shotOptions,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
+        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
       });
       console.log('✅ Re-merged with shot_options, resolution, aspect_ratio before generation');
 
@@ -786,6 +793,7 @@ function Home() {
         shot_options: shotOptions,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
+        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
       });
 
       console.log('✅ Merge complete');
@@ -876,6 +884,7 @@ function Home() {
         shot_options: shotOpts,
         resolution: (librarySelectedGeneration as any).resolution || '4K',
         aspect_ratio: (librarySelectedGeneration as any).aspect_ratio || '4:5',
+        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
       });
 
       console.log('✅ Merge complete');
@@ -947,6 +956,7 @@ function Home() {
         shot_options: shotOptions,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
+        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
       });
 
       console.log('✅ Merge complete');
@@ -1214,10 +1224,12 @@ function Home() {
             onGenerateWithNew={handleGenerateWithNew}
             hasPendingGeneration={!!pendingNewDAId}
             onExecutePendingGeneration={handleExecutePendingGeneration}
+            onSelectModel={() => setShowModelModal(true)}
+            hasSelectedModel={!!selectedModelRefId}
           />
         </div>
 
-        {/* Right Sidebar — Model Reference Upload */}
+        {/* Right Sidebar — Model Reference Library */}
         <div className="home-right-container">
           <HomeRight
             isDarkMode={isDarkMode}
@@ -1236,6 +1248,20 @@ function Home() {
         brandId={selectedBrand?.id}
         brandName={selectedBrand?.name}
       />
+
+      {/* Model Reference Picker Modal */}
+      {selectedBrand && (
+        <SelectModelModal
+          isOpen={showModelModal}
+          onClose={() => setShowModelModal(false)}
+          onSelect={(modelRefId) => {
+            setSelectedModelRefId(modelRefId);
+            setShowModelModal(false);
+          }}
+          currentModelRefId={selectedModelRefId}
+          brandId={selectedBrand.id}
+        />
+      )}
 
       {/* Responsive CSS */}
       <style jsx>{`

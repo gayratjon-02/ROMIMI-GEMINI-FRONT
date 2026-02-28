@@ -1,9 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, Trash2, Loader2, User } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeRight.module.scss';
 import { Brand } from '@/libs/types/homepage/brand';
-import { uploadModelReference } from '@/libs/server/HomePage/brand';
+import { ModelReference } from '@/libs/types/homepage/model-reference';
+import {
+	getModelReferences,
+	uploadModelReference,
+	deleteModelReference,
+} from '@/libs/server/HomePage/model-reference';
 
 interface HomeRightProps {
 	isDarkMode: boolean;
@@ -18,139 +24,83 @@ interface UploadState {
 }
 
 const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBrandUpdated }) => {
-	const [adultUpload, setAdultUpload] = useState<UploadState>({ isUploading: false, success: null, error: null });
-	const [kidUpload, setKidUpload] = useState<UploadState>({ isUploading: false, success: null, error: null });
-	const [adultDragOver, setAdultDragOver] = useState(false);
-	const [kidDragOver, setKidDragOver] = useState(false);
+	const [models, setModels] = useState<ModelReference[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [upload, setUpload] = useState<UploadState>({ isUploading: false, success: null, error: null });
+	const [uploadName, setUploadName] = useState('');
+	const [uploadType, setUploadType] = useState<'adult' | 'kid'>('adult');
+	const [showUploadForm, setShowUploadForm] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const adultInputRef = useRef<HTMLInputElement>(null);
-	const kidInputRef = useRef<HTMLInputElement>(null);
+	const fetchModels = useCallback(() => {
+		if (!selectedBrand) return;
+		setIsLoading(true);
+		getModelReferences(selectedBrand.id)
+			.then(setModels)
+			.catch(console.error)
+			.finally(() => setIsLoading(false));
+	}, [selectedBrand]);
 
-	const handleUpload = useCallback(async (file: File, type: 'adult' | 'kid') => {
+	useEffect(() => {
+		if (selectedBrand) {
+			fetchModels();
+		} else {
+			setModels([]);
+		}
+		setShowUploadForm(false);
+	}, [selectedBrand, fetchModels]);
+
+	const handleUpload = useCallback(async (file: File) => {
 		if (!selectedBrand) return;
 
 		if (!file.type.startsWith('image/')) {
-			const setter = type === 'adult' ? setAdultUpload : setKidUpload;
-			setter({ isUploading: false, success: null, error: 'Only image files are allowed' });
+			setUpload({ isUploading: false, success: null, error: 'Only image files are allowed' });
 			return;
 		}
 
 		if (file.size > 10 * 1024 * 1024) {
-			const setter = type === 'adult' ? setAdultUpload : setKidUpload;
-			setter({ isUploading: false, success: null, error: 'File must be under 10MB' });
+			setUpload({ isUploading: false, success: null, error: 'File must be under 10MB' });
 			return;
 		}
 
-		const setter = type === 'adult' ? setAdultUpload : setKidUpload;
-		setter({ isUploading: true, success: null, error: null });
+		if (!uploadName.trim()) {
+			setUpload({ isUploading: false, success: null, error: 'Please enter a model name' });
+			return;
+		}
+
+		setUpload({ isUploading: true, success: null, error: null });
 
 		try {
-			const updatedBrand = await uploadModelReference(selectedBrand.id, type, file);
-			onBrandUpdated(updatedBrand);
-			setter({ isUploading: false, success: 'Uploaded successfully', error: null });
-			setTimeout(() => setter(prev => ({ ...prev, success: null })), 3000);
+			const newModel = await uploadModelReference(selectedBrand.id, uploadName.trim(), uploadType, file);
+			setModels(prev => [newModel, ...prev]);
+			setUpload({ isUploading: false, success: 'Uploaded successfully', error: null });
+			setShowUploadForm(false);
+			setUploadName('');
+			setTimeout(() => setUpload(prev => ({ ...prev, success: null })), 3000);
 		} catch (err: any) {
-			setter({ isUploading: false, success: null, error: err.message || 'Upload failed' });
+			setUpload({ isUploading: false, success: null, error: err.message || 'Upload failed' });
 		}
-	}, [selectedBrand, onBrandUpdated]);
+	}, [selectedBrand, uploadName, uploadType]);
 
-	const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>, type: 'adult' | 'kid') => {
+	const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
-		if (file) handleUpload(file, type);
+		if (file) handleUpload(file);
 		e.target.value = '';
 	}, [handleUpload]);
 
-	const handleDrop = useCallback((e: React.DragEvent, type: 'adult' | 'kid') => {
-		e.preventDefault();
-		if (type === 'adult') setAdultDragOver(false);
-		else setKidDragOver(false);
-
-		const file = e.dataTransfer.files?.[0];
-		if (file) handleUpload(file, type);
-	}, [handleUpload]);
-
-	const handleDragOver = useCallback((e: React.DragEvent) => {
-		e.preventDefault();
+	const handleDelete = useCallback(async (id: string) => {
+		try {
+			await deleteModelReference(id);
+			setModels(prev => prev.filter(m => m.id !== id));
+		} catch (err: any) {
+			setUpload({ isUploading: false, success: null, error: err.message || 'Delete failed' });
+		}
 	}, []);
-
-	const renderUploadZone = (
-		type: 'adult' | 'kid',
-		imageUrl: string | undefined,
-		uploadState: UploadState,
-		dragOver: boolean,
-		setDragOver: (v: boolean) => void,
-		inputRef: React.RefObject<HTMLInputElement>
-	) => {
-		const label = type === 'adult' ? 'Adult Model' : 'Kid Model';
-
-		return (
-			<div className={styles.section}>
-				<div className={styles.sectionLabel}>{label}</div>
-
-				<div
-					className={`${styles.uploadZone} ${dragOver ? styles.uploadZoneDragOver : ''}`}
-					onClick={() => !uploadState.isUploading && inputRef.current?.click()}
-					onDrop={(e) => handleDrop(e, type)}
-					onDragOver={handleDragOver}
-					onDragEnter={() => setDragOver(true)}
-					onDragLeave={() => setDragOver(false)}
-				>
-					{imageUrl ? (
-						<div className={styles.previewWrapper}>
-							<img src={imageUrl} alt={label} className={styles.previewImage} />
-							{!uploadState.isUploading && (
-								<button
-									className={styles.removeBtn}
-									onClick={(e) => {
-										e.stopPropagation();
-										inputRef.current?.click();
-									}}
-									title="Replace image"
-								>
-									&#8635;
-								</button>
-							)}
-						</div>
-					) : (
-						<>
-							<div className={styles.uploadIcon}>&#128247;</div>
-							<div className={styles.uploadText}>
-								Drop {type} model photo here
-							</div>
-							<div className={styles.uploadHint}>or click to browse</div>
-						</>
-					)}
-
-					{uploadState.isUploading && (
-						<div className={styles.uploadingOverlay}>
-							<div className={styles.spinner} />
-							<div className={styles.uploadingText}>Uploading...</div>
-						</div>
-					)}
-				</div>
-
-				{uploadState.success && (
-					<div className={styles.successMsg}>{uploadState.success}</div>
-				)}
-				{uploadState.error && (
-					<div className={styles.errorMsg}>{uploadState.error}</div>
-				)}
-
-				<input
-					ref={inputRef}
-					type="file"
-					accept="image/*"
-					style={{ display: 'none' }}
-					onChange={(e) => handleFileSelect(e, type)}
-				/>
-			</div>
-		);
-	};
 
 	return (
 		<div className={`${styles.sidebar} ${isDarkMode ? '' : styles.light}`}>
 			<div className={styles.header}>
-				<h3 className={styles.title}>Model Reference</h3>
+				<h3 className={styles.title}>Model References</h3>
 				<div className={styles.subtitle}>
 					{selectedBrand ? selectedBrand.name : 'Select a brand'}
 				</div>
@@ -158,28 +108,118 @@ const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBran
 
 			{selectedBrand ? (
 				<div className={styles.content}>
-					{renderUploadZone(
-						'adult',
-						selectedBrand.model_adult_url,
-						adultUpload,
-						adultDragOver,
-						setAdultDragOver,
-						adultInputRef as React.RefObject<HTMLInputElement>
+					{/* Upload Form Toggle */}
+					{showUploadForm && (
+						<div className={styles.uploadFormInline}>
+							<input
+								type="text"
+								className={styles.nameInput}
+								placeholder="Model name"
+								value={uploadName}
+								onChange={(e) => setUploadName(e.target.value)}
+							/>
+							<div className={styles.typeRow}>
+								<button
+									className={`${styles.typeBtn} ${uploadType === 'adult' ? styles.active : ''}`}
+									onClick={() => setUploadType('adult')}
+								>
+									Adult
+								</button>
+								<button
+									className={`${styles.typeBtn} ${uploadType === 'kid' ? styles.active : ''}`}
+									onClick={() => setUploadType('kid')}
+								>
+									Kid
+								</button>
+							</div>
+							<button
+								className={styles.chooseFileBtn}
+								onClick={() => fileInputRef.current?.click()}
+								disabled={upload.isUploading || !uploadName.trim()}
+							>
+								{upload.isUploading ? (
+									<><Loader2 size={13} className={styles.spinnerIcon} /> Uploading...</>
+								) : (
+									<><Plus size={13} /> Choose Image</>
+								)}
+							</button>
+							<input
+								ref={fileInputRef}
+								type="file"
+								accept="image/*"
+								style={{ display: 'none' }}
+								onChange={handleFileSelect}
+							/>
+						</div>
 					)}
-					{renderUploadZone(
-						'kid',
-						selectedBrand.model_kid_url,
-						kidUpload,
-						kidDragOver,
-						setKidDragOver,
-						kidInputRef as React.RefObject<HTMLInputElement>
+
+					{/* Add New Button */}
+					<button
+						className={styles.addNewBtn}
+						onClick={() => {
+							setShowUploadForm(!showUploadForm);
+							setUpload({ isUploading: false, success: null, error: null });
+						}}
+					>
+						<Plus size={14} />
+						<span>{showUploadForm ? 'Cancel' : 'Add Model'}</span>
+					</button>
+
+					{/* Status Messages */}
+					{upload.success && <div className={styles.successMsg}>{upload.success}</div>}
+					{upload.error && <div className={styles.errorMsg}>{upload.error}</div>}
+
+					{/* Model Grid */}
+					{isLoading ? (
+						<div className={styles.emptyState}>
+							<div className={styles.spinnerWrap}>
+								<div className={styles.spinner} />
+							</div>
+							<div className={styles.emptyText}>Loading...</div>
+						</div>
+					) : models.length === 0 ? (
+						<div className={styles.emptyState}>
+							<div className={styles.emptyIcon}>
+								<User size={32} />
+							</div>
+							<div className={styles.emptyText}>
+								No model references yet. Upload a model photo for consistent face/body.
+							</div>
+						</div>
+					) : (
+						<div className={styles.modelGrid}>
+							{models.map((model) => (
+								<div key={model.id} className={styles.modelCard}>
+									<div className={styles.modelImageWrap}>
+										<img
+											src={model.image_url}
+											alt={model.name}
+											className={styles.modelImage}
+										/>
+										<span className={`${styles.typeBadge} ${model.type === 'kid' ? styles.kid : ''}`}>
+											{model.type}
+										</span>
+										<button
+											className={styles.deleteOverlay}
+											onClick={() => handleDelete(model.id)}
+											title="Delete"
+										>
+											<Trash2 size={14} />
+										</button>
+									</div>
+									<div className={styles.modelName}>{model.name}</div>
+								</div>
+							))}
+						</div>
 					)}
 				</div>
 			) : (
 				<div className={styles.emptyState}>
-					<div className={styles.emptyIcon}>&#128100;</div>
+					<div className={styles.emptyIcon}>
+						<User size={32} />
+					</div>
 					<div className={styles.emptyText}>
-						Select a brand from the left panel to upload model reference images
+						Select a brand from the left panel to manage model references
 					</div>
 				</div>
 			)}

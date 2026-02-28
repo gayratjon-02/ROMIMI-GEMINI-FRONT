@@ -1,4 +1,4 @@
-// HomeRight Sidebar Styles — Model Reference Upload Panel
+// HomeRight Sidebar Styles — Model Reference Library Panel
 
 .sidebar {
   position: relative;
@@ -82,173 +82,267 @@
 // Content
 .content {
   flex: 1;
-  padding: 20px 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 12px;
 }
 
-// Section
-.section {
+// Add New Button
+.addNewBtn {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sectionLabel {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-  padding: 0 4px;
-
-  .light & {
-    color: rgba(0, 0, 0, 0.5);
-  }
-}
-
-// Upload Zone
-.uploadZone {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  border-radius: 12px;
-  border: 2px dashed rgba(79, 70, 229, 0.35);
-  background: rgba(79, 70, 229, 0.06);
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px dashed rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.06);
+  color: rgba(139, 92, 246, 0.85);
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  overflow: hidden;
+  transition: all 0.15s ease;
 
   &:hover {
-    border-color: rgba(79, 70, 229, 0.6);
-    background: rgba(79, 70, 229, 0.1);
+    border-color: rgba(139, 92, 246, 0.7);
+    background: rgba(139, 92, 246, 0.12);
+    color: #a78bfa;
   }
 
   .light & {
-    border-color: rgba(79, 70, 229, 0.25);
-    background: rgba(79, 70, 229, 0.04);
+    border-color: rgba(79, 70, 229, 0.3);
+    color: rgba(79, 70, 229, 0.8);
 
     &:hover {
-      border-color: rgba(79, 70, 229, 0.5);
+      border-color: rgba(79, 70, 229, 0.6);
       background: rgba(79, 70, 229, 0.08);
     }
   }
 }
 
-.uploadZoneDragOver {
-  border-color: #4f46e5 !important;
-  background: rgba(79, 70, 229, 0.15) !important;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-}
-
-.uploadIcon {
-  font-size: 32px;
-  color: rgba(79, 70, 229, 0.6);
-  line-height: 1;
+// Inline Upload Form
+.uploadFormInline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
 
   .light & {
-    color: rgba(79, 70, 229, 0.5);
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.08);
   }
 }
 
-.uploadText {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
-  text-align: center;
-  padding: 0 12px;
-
-  .light & {
-    color: rgba(0, 0, 0, 0.5);
-  }
-}
-
-.uploadHint {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
-
-  .light & {
-    color: rgba(0, 0, 0, 0.35);
-  }
-}
-
-// Preview Image
-.previewWrapper {
-  position: relative;
+.nameInput {
   width: 100%;
-  height: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f1f5f9;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  &:focus {
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+
+  .light & {
+    border-color: rgba(0, 0, 0, 0.12);
+    background: #fff;
+    color: #1a1a1a;
+
+    &::placeholder {
+      color: rgba(0, 0, 0, 0.3);
+    }
+
+    &:focus {
+      border-color: rgba(79, 70, 229, 0.5);
+    }
+  }
 }
 
-.previewImage {
+.typeRow {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  .light & {
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+.typeBtn {
+  flex: 1;
+  padding: 7px 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &.active {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+  }
+
+  .light & {
+    background: rgba(0, 0, 0, 0.02);
+    color: rgba(0, 0, 0, 0.4);
+
+    &.active {
+      background: rgba(79, 70, 229, 0.12);
+      color: #4f46e5;
+    }
+  }
+}
+
+.chooseFileBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.spinnerIcon {
+  animation: spin 0.9s linear infinite;
+}
+
+// Model Grid
+.modelGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.modelCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+
+    .deleteOverlay {
+      opacity: 1;
+    }
+  }
+
+  .light & {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.07);
+
+    &:hover {
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+  }
+}
+
+.modelImageWrap {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.modelImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
 }
 
-.removeBtn {
+.typeBadge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
+  bottom: 6px;
+  right: 6px;
+  background: rgba(16, 185, 129, 0.85);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.kid {
+    background: rgba(245, 158, 11, 0.85);
+  }
+}
+
+.deleteOverlay {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
   border: none;
-  color: #ffffff;
-  font-size: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  opacity: 0;
+  transition: all 0.15s;
   backdrop-filter: blur(4px);
 
   &:hover {
     background: rgba(239, 68, 68, 0.8);
-    transform: scale(1.1);
+    color: #fff;
   }
 }
 
-// Uploading State
-.uploadingOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  backdrop-filter: blur(2px);
-}
-
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #8b85ff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.uploadingText {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+.modelName {
+  font-size: 11px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 2px 8px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .light & {
+    color: rgba(0, 0, 0, 0.65);
+  }
 }
 
 // No Brand Selected State
@@ -264,8 +358,11 @@
 }
 
 .emptyIcon {
-  font-size: 40px;
-  opacity: 0.3;
+  color: rgba(255, 255, 255, 0.15);
+
+  .light & {
+    color: rgba(0, 0, 0, 0.15);
+  }
 }
 
 .emptyText {
@@ -275,6 +372,28 @@
 
   .light & {
     color: rgba(0, 0, 0, 0.4);
+  }
+}
+
+// Spinner
+.spinnerWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #8b85ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
