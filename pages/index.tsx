@@ -1215,6 +1215,8 @@ function Home() {
         onClose={() => setShowDAModal(false)}
         onSelect={handleDAModalSelect}
         currentCollectionId={librarySelectedGeneration?.collection_id || selectedCollection?.id}
+        brandId={selectedBrand?.id}
+        brandName={selectedBrand?.name}
       />
 
       {/* Responsive CSS */}

@@ -13,6 +13,8 @@ interface SelectDAModalProps {
     onClose: () => void;
     onSelect: (collectionId: string) => void;
     currentCollectionId?: string;
+    brandId?: string;
+    brandName?: string;
 }
 
 const SelectDAModal: React.FC<SelectDAModalProps> = ({
@@ -20,6 +22,8 @@ const SelectDAModal: React.FC<SelectDAModalProps> = ({
     onClose,
     onSelect,
     currentCollectionId,
+    brandId,
+    brandName,
 }) => {
     const [collections, setCollections] = useState<Collection[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -163,6 +167,8 @@ const SelectDAModal: React.FC<SelectDAModalProps> = ({
                 isOpen={showCreateWizard}
                 onClose={() => setShowCreateWizard(false)}
                 onCollectionCreated={handleCollectionCreated}
+                brandId={brandId}
+                brandName={brandName}
             />
         </AnimatePresence>
     );
