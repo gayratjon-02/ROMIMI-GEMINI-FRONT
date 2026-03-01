@@ -130,8 +130,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
 
   // Delete states for library items
-  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<{ id: string; name: string } | null>(null);
-  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
   const [deleteConfirmGeneration, setDeleteConfirmGeneration] = useState<{ id: string; label: string } | null>(null);
   const [isDeletingGeneration, setIsDeletingGeneration] = useState(false);
   const [deleteConfirmDA, setDeleteConfirmDA] = useState<{ id: string; name: string } | null>(null);
@@ -396,31 +394,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
     }
   };
 
-  // Delete product from library (cascades generations)
-  const handleDeleteProductConfirm = async () => {
-    if (!deleteConfirmProduct) return;
-    setIsDeletingProduct(true);
-    try {
-      await deleteProduct(deleteConfirmProduct.id);
-      setLibraryGenerations(prev => prev.filter(g => {
-        const pid = g.product?.id || g.product_id;
-        return pid !== deleteConfirmProduct.id;
-      }));
-      if (activeLibraryId) {
-        const activeGen = libraryGenerations.find(g => g.id === activeLibraryId);
-        const activePid = activeGen?.product?.id || activeGen?.product_id;
-        if (activePid === deleteConfirmProduct.id) {
-          setActiveLibraryId(null);
-        }
-      }
-      setDeleteConfirmProduct(null);
-    } catch (error) {
-      console.error('Error deleting product:', error);
-    } finally {
-      setIsDeletingProduct(false);
-    }
-  };
-
   // Delete product from catalog dropdown
   const handleCatalogProductDelete = async (productId: string) => {
     await deleteProduct(productId);
@@ -445,15 +418,42 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
   };
 
   // Delete single generation from library
+  // If the folder becomes empty after deletion, auto-delete the product too
   const handleDeleteGenerationConfirm = async () => {
     if (!deleteConfirmGeneration) return;
     setIsDeletingGeneration(true);
     try {
+      // Find the product ID for this generation before removing it
+      const genToDelete = libraryGenerations.find(g => g.id === deleteConfirmGeneration.id);
+      const productId = genToDelete?.product?.id || genToDelete?.product_id;
+
       await deleteGeneration(deleteConfirmGeneration.id);
-      setLibraryGenerations(prev => prev.filter(g => g.id !== deleteConfirmGeneration.id));
+      const remaining = libraryGenerations.filter(g => g.id !== deleteConfirmGeneration.id);
+      setLibraryGenerations(remaining);
+
       if (activeLibraryId === deleteConfirmGeneration.id) {
         setActiveLibraryId(null);
       }
+
+      // Check if the product folder is now empty — if so, delete the product from DB
+      if (productId) {
+        const folderStillHasItems = remaining.some(g => {
+          const pid = g.product?.id || g.product_id;
+          return pid === productId;
+        });
+        if (!folderStillHasItems) {
+          try {
+            await deleteProduct(productId);
+            setCatalogProducts(prev => prev.filter(p => p.id !== productId));
+            if (activeProductId === productId) {
+              setActiveProductId(null);
+            }
+          } catch (err) {
+            console.error('Error auto-deleting empty product:', err);
+          }
+        }
+      }
+
       setDeleteConfirmGeneration(null);
     } catch (error) {
       console.error('Error deleting generation:', error);
@@ -799,15 +799,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              position: 'relative',
-                            }}
-                            onMouseEnter={e => {
-                              const del = e.currentTarget.querySelector('.lib-folder-delete') as HTMLElement;
-                              if (del) del.style.opacity = '1';
-                            }}
-                            onMouseLeave={e => {
-                              const del = e.currentTarget.querySelector('.lib-folder-delete') as HTMLElement;
-                              if (del) del.style.opacity = '0';
                             }}
                           >
                             <button
@@ -886,37 +877,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                               </svg>
                             </button>
 
-                            {/* Delete product button (shows on hover) */}
-                            <button
-                              className="lib-folder-delete"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteConfirmProduct({ id: pid, name: group.productName });
-                              }}
-                              title="Delete product & all generations"
-                              style={{
-                                position: 'absolute',
-                                right: '4px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                opacity: 0,
-                                transition: 'opacity 0.15s',
-                                background: 'rgba(239,68,68,0.15)',
-                                border: 'none',
-                                borderRadius: '4px',
-                                padding: '4px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                zIndex: 2,
-                              }}
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              </svg>
-                            </button>
                           </div>
 
                           {/* Folder contents — individual generation items */}
@@ -1252,33 +1212,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                   disabled={isDeletingCollection}
                 >
                   {isDeletingCollection ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
-
-      {/* Delete Product Confirmation Modal */}
-      {
-        deleteConfirmProduct && (
-          <div className={styles.modalOverlay} onClick={() => setDeleteConfirmProduct(null)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3>Delete Product</h3>
-              <p className={styles.modalText}>
-                Are you sure you want to delete <strong>{deleteConfirmProduct.name}</strong>?
-                This will also delete all generations for this product.
-              </p>
-              <div className={styles.modalActions}>
-                <button className={styles.cancelBtn} onClick={() => setDeleteConfirmProduct(null)}>
-                  Cancel
-                </button>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={handleDeleteProductConfirm}
-                  disabled={isDeletingProduct}
-                >
-                  {isDeletingProduct ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
