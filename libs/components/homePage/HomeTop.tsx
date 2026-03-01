@@ -20,11 +20,9 @@ interface HomeTopProps {
     selectedBrand?: Brand | null;
     selectedCollection?: Collection | null;
     onCollectionSelect?: (collection: Collection | null, brand: Brand | null) => void;
-    isModelPanelOpen?: boolean;
-    onToggleModelPanel?: () => void;
 }
 
-const HomeTop: React.FC<HomeTopProps> = ({ selectedBrand, selectedCollection, onCollectionSelect, isModelPanelOpen, onToggleModelPanel }) => {
+const HomeTop: React.FC<HomeTopProps> = ({ selectedBrand, selectedCollection, onCollectionSelect }) => {
     const router = useRouter();
     const theme = useTheme();
     const colorMode = useContext(ColorModeContext);
@@ -163,18 +161,6 @@ const HomeTop: React.FC<HomeTopProps> = ({ selectedBrand, selectedCollection, on
                     <HistoryIcon fontSize="small" />
                 </div>
 
-                {/* Model References Toggle */}
-                <div
-                    className={`${styles.iconButton} ${isModelPanelOpen ? styles.active : ''}`}
-                    onClick={onToggleModelPanel}
-                    title="Model References"
-                >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="3" y="4" width="12" height="1.5" rx="0.75" fill="currentColor" />
-                        <rect x="3" y="8.25" width="12" height="1.5" rx="0.75" fill="currentColor" />
-                        <rect x="3" y="12.5" width="12" height="1.5" rx="0.75" fill="currentColor" />
-                    </svg>
-                </div>
             </div>
         </div>
     )

@@ -83,7 +83,7 @@ function Home() {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Model References panel toggle
-  const [isModelPanelOpen, setIsModelPanelOpen] = useState(false);
+  // Right panel always visible (no toggle needed)
 
   // ==================== SHARED PRODUCT STATE (from context) ====================
   const {
@@ -1170,8 +1170,6 @@ function Home() {
             selectedBrand={selectedBrand}
             selectedCollection={selectedCollection}
             onCollectionSelect={handleCollectionSelect}
-            isModelPanelOpen={isModelPanelOpen}
-            onToggleModelPanel={() => setIsModelPanelOpen(!isModelPanelOpen)}
           />
 
           {/* Main Visuals Area */}
@@ -1254,20 +1252,18 @@ function Home() {
           />
         </div>
 
-        {/* Right Sidebar — Model Reference Library (toggled via hamburger) */}
-        {isModelPanelOpen && (
-          <div className="home-right-container">
-            <HomeRight
-              isDarkMode={isDarkMode}
-              selectedBrand={selectedBrand}
-              onBrandUpdated={handleBrandUpdated}
-              selectedAdultModelId={selectedAdultModelRefId}
-              selectedKidModelId={selectedKidModelRefId}
-              onSelectAdultModel={setSelectedAdultModelRefId}
-              onSelectKidModel={setSelectedKidModelRefId}
-            />
-          </div>
-        )}
+        {/* Right Sidebar — Model Reference Library (always visible) */}
+        <div className="home-right-container">
+          <HomeRight
+            isDarkMode={isDarkMode}
+            selectedBrand={selectedBrand}
+            onBrandUpdated={handleBrandUpdated}
+            selectedAdultModelId={selectedAdultModelRefId}
+            selectedKidModelId={selectedKidModelRefId}
+            onSelectAdultModel={setSelectedAdultModelRefId}
+            onSelectKidModel={setSelectedKidModelRefId}
+          />
+        </div>
       </div>
 
       {/* DA Picker Modal */}
