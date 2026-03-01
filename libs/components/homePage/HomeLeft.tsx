@@ -421,6 +421,29 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
     }
   };
 
+  // Delete product from catalog dropdown
+  const handleCatalogProductDelete = async (productId: string) => {
+    await deleteProduct(productId);
+    // Remove from catalog list
+    setCatalogProducts(prev => prev.filter(p => p.id !== productId));
+    // Remove from library generations
+    setLibraryGenerations(prev => prev.filter(g => {
+      const pid = g.product?.id || g.product_id;
+      return pid !== productId;
+    }));
+    // Clear selection if deleted product was selected
+    if (activeProductId === productId) {
+      setActiveProductId(null);
+    }
+    if (activeLibraryId) {
+      const activeGen = libraryGenerations.find(g => g.id === activeLibraryId);
+      const activePid = activeGen?.product?.id || activeGen?.product_id;
+      if (activePid === productId) {
+        setActiveLibraryId(null);
+      }
+    }
+  };
+
   // Delete single generation from library
   const handleDeleteGenerationConfirm = async () => {
     if (!deleteConfirmGeneration) return;
@@ -700,6 +723,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                   setActiveProductId(product.id);
                   onProductSelect(product);
                 }}
+                onProductDelete={handleCatalogProductDelete}
                 isDarkMode={isDarkMode}
                 placeholder="Select Product"
               />

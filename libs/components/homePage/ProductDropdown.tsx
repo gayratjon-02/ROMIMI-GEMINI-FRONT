@@ -11,6 +11,7 @@ interface ProductDropdownProps {
   selectedProductId: string | null;
   selectedCollectionId: string | null;
   onProductSelect: (product: Product) => void;
+  onProductDelete?: (productId: string) => Promise<void>;
   isDarkMode?: boolean;
   placeholder?: string;
 }
@@ -21,11 +22,14 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
   selectedProductId,
   selectedCollectionId,
   onProductSelect,
+  onProductDelete,
   isDarkMode = true,
   placeholder = 'Select Product',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter by collection when one is selected
   const filteredProducts = useMemo(() => {
@@ -86,6 +90,24 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
     setActiveCategory(null);
   };
 
+  const handleDeleteClick = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteConfirm({ id: product.id, name: product.name });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm || !onProductDelete) return;
+    setIsDeleting(true);
+    try {
+      await onProductDelete(deleteConfirm.id);
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className={`${styles.productDropdown} ${!isDarkMode ? styles.light : ''}`}>
       <button
@@ -112,6 +134,26 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
           </svg>
         </span>
       </button>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className={styles.confirmOverlay} onClick={(e) => { e.stopPropagation(); setDeleteConfirm(null); }}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <h4 className={styles.confirmTitle}>Delete Product</h4>
+            <p className={styles.confirmText}>
+              Delete <strong>{deleteConfirm.name}</strong> and all its generations?
+            </p>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelBtn} onClick={() => setDeleteConfirm(null)} disabled={isDeleting}>
+                Cancel
+              </button>
+              <button className={styles.confirmDeleteBtn} onClick={handleDeleteConfirm} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isOpen && (
         <div className={styles.dropdown} onClick={(e) => e.stopPropagation()}>
@@ -168,31 +210,45 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
               {productsByCategory[activeCategory]?.map((product) => {
                 const isActive = selectedProductId === product.id;
                 return (
-                  <button
-                    key={product.id}
-                    type="button"
-                    className={`${styles.productItem} ${isActive ? styles.active : ''}`}
-                    onClick={(e) => handleSelect(product, e)}
-                  >
-                    {product.front_image_url ? (
-                      <img
-                        src={resolveImageUrl(product.front_image_url)}
-                        alt=""
-                        className={styles.productThumb}
-                      />
-                    ) : (
-                      <span className={styles.productThumbPlaceholder}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                          <circle cx="8.5" cy="8.5" r="1.5" />
-                          <polyline points="21 15 16 10 5 21" />
-                        </svg>
+                  <div key={product.id} className={styles.productRow}>
+                    <button
+                      type="button"
+                      className={`${styles.productItem} ${isActive ? styles.active : ''}`}
+                      onClick={(e) => handleSelect(product, e)}
+                    >
+                      {product.front_image_url ? (
+                        <img
+                          src={resolveImageUrl(product.front_image_url)}
+                          alt=""
+                          className={styles.productThumb}
+                        />
+                      ) : (
+                        <span className={styles.productThumbPlaceholder}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </span>
+                      )}
+                      <span className={styles.productName} title={product.name}>
+                        {product.name}
                       </span>
+                    </button>
+                    {onProductDelete && (
+                      <button
+                        type="button"
+                        className={styles.deleteBtn}
+                        onClick={(e) => handleDeleteClick(product, e)}
+                        title="Delete product"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
                     )}
-                    <span className={styles.productName} title={product.name}>
-                      {product.name}
-                    </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>

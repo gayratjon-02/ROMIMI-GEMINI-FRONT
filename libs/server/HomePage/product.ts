@@ -217,12 +217,13 @@ export async function updateProduct(
 }
 
 /**
- * Delete a product
+ * Delete a product and all its generations
+ * DELETE /api/products/:id
  */
-export async function deleteProduct(id: string): Promise<{ message: string }> {
+export async function deleteProduct(id: string): Promise<{ success: boolean; message: string }> {
     try {
-        const response = await fetch(`${API_BASE}/products/deleteProduct/${id}`, {
-            method: "POST",
+        const response = await fetch(`${API_BASE}/products/${id}`, {
+            method: "DELETE",
             headers: getAuthHeaders(),
         });
 
@@ -236,7 +237,7 @@ export async function deleteProduct(id: string): Promise<{ message: string }> {
             throw new AuthApiError(response.status, errorMessages, responseData);
         }
 
-        return responseData as { message: string };
+        return responseData as { success: boolean; message: string };
     } catch (error) {
         if (error instanceof AuthApiError) {
             throw error;
