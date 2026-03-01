@@ -443,6 +443,8 @@ function Home() {
       setVisuals([]);
     }
     await contextAnalyze(forceReanalyze);
+    // Refresh product catalog so newly analyzed product appears in Select Product dropdown
+    setLibraryRefreshTrigger(prev => prev + 1);
   }, [contextAnalyze, productJSON]);
 
   // Handle Analysis Update (from Edit Mode)
