@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, Trash2, Loader2, User } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Plus, Trash2, Loader2, User, Baby, X, Check } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/HomeRight.module.scss';
 import { Brand } from '@/libs/types/homepage/brand';
 import { ModelReference } from '@/libs/types/homepage/model-reference';
@@ -16,6 +16,10 @@ interface HomeRightProps {
 	isDarkMode: boolean;
 	selectedBrand: Brand | null;
 	onBrandUpdated: (brand: Brand) => void;
+	selectedAdultModelId: string | null;
+	selectedKidModelId: string | null;
+	onSelectAdultModel: (id: string | null) => void;
+	onSelectKidModel: (id: string | null) => void;
 }
 
 interface UploadState {
@@ -24,7 +28,15 @@ interface UploadState {
 	error: string | null;
 }
 
-const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBrandUpdated }) => {
+const HomeRight: React.FC<HomeRightProps> = ({
+	isDarkMode,
+	selectedBrand,
+	onBrandUpdated,
+	selectedAdultModelId,
+	selectedKidModelId,
+	onSelectAdultModel,
+	onSelectKidModel,
+}) => {
 	const [models, setModels] = useState<ModelReference[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [upload, setUpload] = useState<UploadState>({ isUploading: false, success: null, error: null });
@@ -50,6 +62,10 @@ const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBran
 		}
 		setShowUploadForm(false);
 	}, [selectedBrand, fetchModels]);
+
+	// Find selected models from the models array
+	const selectedAdult = useMemo(() => models.find(m => m.id === selectedAdultModelId), [models, selectedAdultModelId]);
+	const selectedKid = useMemo(() => models.find(m => m.id === selectedKidModelId), [models, selectedKidModelId]);
 
 	const handleUpload = useCallback(async (file: File) => {
 		if (!selectedBrand) return;
@@ -89,10 +105,22 @@ const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBran
 		try {
 			await deleteModelReference(id);
 			setModels(prev => prev.filter(m => m.id !== id));
+			// Deselect if the deleted model was selected
+			if (id === selectedAdultModelId) onSelectAdultModel(null);
+			if (id === selectedKidModelId) onSelectKidModel(null);
 		} catch (err: any) {
 			setUpload({ isUploading: false, success: null, error: err.message || 'Delete failed' });
 		}
-	}, []);
+	}, [selectedAdultModelId, selectedKidModelId, onSelectAdultModel, onSelectKidModel]);
+
+	// Click model card → auto-assign to correct slot (toggle)
+	const handleModelClick = useCallback((model: ModelReference) => {
+		if (model.type === 'adult') {
+			onSelectAdultModel(selectedAdultModelId === model.id ? null : model.id);
+		} else {
+			onSelectKidModel(selectedKidModelId === model.id ? null : model.id);
+		}
+	}, [selectedAdultModelId, selectedKidModelId, onSelectAdultModel, onSelectKidModel]);
 
 	return (
 		<div className={`${styles.sidebar} ${isDarkMode ? '' : styles.light}`}>
@@ -105,6 +133,54 @@ const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBran
 
 			{selectedBrand ? (
 				<div className={styles.content}>
+					{/* Selected Models Section */}
+					<div className={styles.selectedSection}>
+						<div className={styles.selectedHeader}>
+							{(selectedAdult && selectedKid) ? 'Models Selected' : 'Select for Generation'}
+						</div>
+
+						{/* Adult Slot */}
+						<div className={`${styles.modelSlot} ${selectedAdult ? styles.modelSlotFilled : styles.modelSlotEmpty}`}>
+							<div className={styles.slotIcon}>
+								<User size={14} />
+							</div>
+							{selectedAdult ? (
+								<>
+									<img src={selectedAdult.image_url} alt={selectedAdult.name} className={styles.slotThumbnail} />
+									<span className={styles.slotName}>{selectedAdult.name}</span>
+									<button className={styles.deselectBtn} onClick={() => onSelectAdultModel(null)} title="Deselect">
+										<X size={12} />
+									</button>
+								</>
+							) : (
+								<span className={styles.slotPlaceholder}>Click adult model below</span>
+							)}
+						</div>
+
+						{/* Kid Slot */}
+						<div className={`${styles.modelSlot} ${selectedKid ? styles.modelSlotFilled : styles.modelSlotEmpty}`}>
+							<div className={styles.slotIcon}>
+								<Baby size={14} />
+							</div>
+							{selectedKid ? (
+								<>
+									<img src={selectedKid.image_url} alt={selectedKid.name} className={styles.slotThumbnail} />
+									<span className={styles.slotName}>{selectedKid.name}</span>
+									<button className={styles.deselectBtn} onClick={() => onSelectKidModel(null)} title="Deselect">
+										<X size={12} />
+									</button>
+								</>
+							) : (
+								<span className={styles.slotPlaceholder}>Click kid model below</span>
+							)}
+						</div>
+					</div>
+
+					{/* Library Divider */}
+					<div className={styles.libraryDivider}>
+						<span className={styles.libraryTitle}>Model Library</span>
+					</div>
+
 					{/* Upload Form Toggle */}
 					{showUploadForm && (
 						<div className={styles.uploadFormInline}>
@@ -185,28 +261,43 @@ const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBran
 						</div>
 					) : (
 						<div className={styles.modelGrid}>
-							{models.map((model) => (
-								<div key={model.id} className={styles.modelCard}>
-									<div className={styles.modelImageWrap}>
-										<img
-											src={model.image_url}
-											alt={model.name}
-											className={styles.modelImage}
-										/>
-										<span className={`${styles.typeBadge} ${model.type === 'kid' ? styles.kid : ''}`}>
-											{model.type}
-										</span>
-										<button
-											className={styles.deleteOverlay}
-											onClick={() => handleDelete(model.id)}
-											title="Delete"
-										>
-											<Trash2 size={14} />
-										</button>
+							{models.map((model) => {
+								const isSelected = model.id === selectedAdultModelId || model.id === selectedKidModelId;
+								return (
+									<div
+										key={model.id}
+										className={`${styles.modelCard} ${isSelected ? styles.modelCardSelected : ''}`}
+										onClick={() => handleModelClick(model)}
+									>
+										<div className={styles.modelImageWrap}>
+											<img
+												src={model.image_url}
+												alt={model.name}
+												className={styles.modelImage}
+											/>
+											<span className={`${styles.typeBadge} ${model.type === 'kid' ? styles.kid : ''}`}>
+												{model.type}
+											</span>
+											{isSelected && (
+												<div className={styles.checkOverlay}>
+													<Check size={16} />
+												</div>
+											)}
+											<button
+												className={styles.deleteOverlay}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDelete(model.id);
+												}}
+												title="Delete"
+											>
+												<Trash2 size={14} />
+											</button>
+										</div>
+										<div className={styles.modelName}>{model.name}</div>
 									</div>
-									<div className={styles.modelName}>{model.name}</div>
-								</div>
-							))}
+								);
+							})}
 						</div>
 					)}
 				</div>

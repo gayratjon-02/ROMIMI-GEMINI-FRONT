@@ -63,11 +63,6 @@ interface HomeBottomProps {
     // Pending generation: DA selected, waiting for user to click Generate
     hasPendingGeneration?: boolean;
     onExecutePendingGeneration?: () => void;
-    // Model Reference selection (dual: adult + kid)
-    onSelectAdultModel?: () => void;
-    hasSelectedAdultModel?: boolean;
-    onSelectKidModel?: () => void;
-    hasSelectedKidModel?: boolean;
 }
 
 const SHOT_TYPE_CONFIGS: ShotTypeConfig[] = [
@@ -141,10 +136,6 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
     onGenerateWithNew,
     hasPendingGeneration = false,
     onExecutePendingGeneration,
-    onSelectAdultModel,
-    hasSelectedAdultModel = false,
-    onSelectKidModel,
-    hasSelectedKidModel = false,
 }) => {
     // Count enabled shots
     const enabledCount = useMemo(() => {
@@ -382,26 +373,6 @@ const HomeBottom: React.FC<HomeBottomProps> = ({
 
             {/* Right Section: Generate Button */}
             <div className={styles.rightSection}>
-                {/* Model Reference selectors (Adult + Kid) */}
-                {onSelectAdultModel && (
-                    <button
-                        className={`${styles.modelBtn} ${hasSelectedAdultModel ? styles.active : ''}`}
-                        onClick={onSelectAdultModel}
-                    >
-                        <User size={14} />
-                        <span>{hasSelectedAdultModel ? 'Adult' : 'Adult Model'}</span>
-                    </button>
-                )}
-                {onSelectKidModel && (
-                    <button
-                        className={`${styles.modelBtn} ${styles.kidModelBtn} ${hasSelectedKidModel ? styles.activeKid : ''}`}
-                        onClick={onSelectKidModel}
-                    >
-                        <Baby size={14} />
-                        <span>{hasSelectedKidModel ? 'Kid' : 'Kid Model'}</span>
-                    </button>
-                )}
-
                 {/* Generate Images with New DA - only when DA changed, hides on click */}
                 {isRegenerationAvailable && !isMerging && onRegenerateWithNewDA && (
                     <button

@@ -29,7 +29,6 @@ import {
 } from '@/libs/server/HomePage/generate';
 import { useGenerationSocket } from '@/libs/hooks/useGenerationSocket';
 import SelectDAModal from '@/libs/components/modals/SelectDAModal';
-import SelectModelModal from '@/libs/components/modals/SelectModelModal';
 
 // Mock DA Analysis for fallback
 const mockDAAnalysis: DAJSON = {
@@ -142,11 +141,11 @@ function Home() {
   // Pending DA selected from modal — generation starts only when user clicks Generate
   const [pendingNewDAId, setPendingNewDAId] = useState<string | null>(null);
 
-  // Model Reference selection — dual (adult + kid)
+  // Model Reference selection — dual (adult + kid), managed in HomeRight panel
   const [selectedAdultModelRefId, setSelectedAdultModelRefId] = useState<string | null>(null);
   const [selectedKidModelRefId, setSelectedKidModelRefId] = useState<string | null>(null);
-  const [showAdultModelModal, setShowAdultModelModal] = useState(false);
-  const [showKidModelModal, setShowKidModelModal] = useState(false);
+  // Warning shown when merge is blocked due to missing model selection
+  const [modelWarning, setModelWarning] = useState<string | null>(null);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -530,6 +529,23 @@ function Home() {
       alert('Please select a collection.');
       return;
     }
+
+    // Model validation: block merge if required models aren't selected
+    const soloSubject = (options.solo as any)?.subject || 'adult';
+    const needsAdult = options.duo?.enabled || (options.solo?.enabled && soloSubject !== 'kid');
+    const needsKid = options.duo?.enabled || (options.solo?.enabled && soloSubject === 'kid');
+
+    if (needsAdult && !selectedAdultModelRefId) {
+      setModelWarning('Select an Adult model from the right panel before merging');
+      setIsGenerating(false);
+      return;
+    }
+    if (needsKid && !selectedKidModelRefId) {
+      setModelWarning('Select a Kid model from the right panel before merging');
+      setIsGenerating(false);
+      return;
+    }
+    setModelWarning(null);
 
     setIsGenerating(true);
     setGenerationResponse(null);
@@ -1235,10 +1251,6 @@ function Home() {
             onGenerateWithNew={handleGenerateWithNew}
             hasPendingGeneration={!!pendingNewDAId}
             onExecutePendingGeneration={handleExecutePendingGeneration}
-            onSelectAdultModel={() => setShowAdultModelModal(true)}
-            hasSelectedAdultModel={!!selectedAdultModelRefId}
-            onSelectKidModel={() => setShowKidModelModal(true)}
-            hasSelectedKidModel={!!selectedKidModelRefId}
           />
         </div>
 
@@ -1249,6 +1261,10 @@ function Home() {
               isDarkMode={isDarkMode}
               selectedBrand={selectedBrand}
               onBrandUpdated={handleBrandUpdated}
+              selectedAdultModelId={selectedAdultModelRefId}
+              selectedKidModelId={selectedKidModelRefId}
+              onSelectAdultModel={setSelectedAdultModelRefId}
+              onSelectKidModel={setSelectedKidModelRefId}
             />
           </div>
         )}
@@ -1264,34 +1280,41 @@ function Home() {
         brandName={selectedBrand?.name}
       />
 
-      {/* Adult Model Reference Picker Modal */}
-      {selectedBrand && (
-        <SelectModelModal
-          isOpen={showAdultModelModal}
-          onClose={() => setShowAdultModelModal(false)}
-          onSelect={(modelRefId) => {
-            setSelectedAdultModelRefId(modelRefId);
-            setShowAdultModelModal(false);
-          }}
-          currentModelRefId={selectedAdultModelRefId}
-          brandId={selectedBrand.id}
-          filterType="adult"
-        />
-      )}
-
-      {/* Kid Model Reference Picker Modal */}
-      {selectedBrand && (
-        <SelectModelModal
-          isOpen={showKidModelModal}
-          onClose={() => setShowKidModelModal(false)}
-          onSelect={(modelRefId) => {
-            setSelectedKidModelRefId(modelRefId);
-            setShowKidModelModal(false);
-          }}
-          currentModelRefId={selectedKidModelRefId}
-          brandId={selectedBrand.id}
-          filterType="kid"
-        />
+      {/* Model Warning Toast */}
+      {modelWarning && (
+        <div style={{
+          position: 'fixed',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(239, 68, 68, 0.95)',
+          color: '#fff',
+          padding: '12px 24px',
+          borderRadius: '10px',
+          fontSize: '13px',
+          fontWeight: 500,
+          zIndex: 9999,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <span>{modelWarning}</span>
+          <button
+            onClick={() => setModelWarning(null)}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: '#fff',
+              borderRadius: '4px',
+              padding: '2px 8px',
+              cursor: 'pointer',
+              fontSize: '12px',
+            }}
+          >
+            OK
+          </button>
+        </div>
       )}
 
       {/* Responsive CSS */}

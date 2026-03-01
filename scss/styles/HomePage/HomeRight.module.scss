@@ -241,6 +241,179 @@
   animation: spin 0.9s linear infinite;
 }
 
+// Selected Models Section
+.selectedSection {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .light & {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+}
+
+.selectedHeader {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.5);
+
+  .light & {
+    color: rgba(0, 0, 0, 0.45);
+  }
+}
+
+.modelSlot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+
+.modelSlotEmpty {
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+
+  .light & {
+    border-color: rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.modelSlotFilled {
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+
+  .light & {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.05);
+  }
+}
+
+.slotIcon {
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+
+  .modelSlotFilled & {
+    color: #10b981;
+  }
+
+  .light & {
+    color: rgba(0, 0, 0, 0.35);
+  }
+
+  .light .modelSlotFilled & {
+    color: #059669;
+  }
+}
+
+.slotThumbnail {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.slotName {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  .light & {
+    color: rgba(0, 0, 0, 0.7);
+  }
+}
+
+.slotPlaceholder {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+
+  .light & {
+    color: rgba(0, 0, 0, 0.3);
+  }
+}
+
+.deselectBtn {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .light & {
+    background: rgba(0, 0, 0, 0.06);
+    color: rgba(0, 0, 0, 0.4);
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.12);
+      color: #dc2626;
+    }
+  }
+}
+
+// Library Divider
+.libraryDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .light & {
+    &::before,
+    &::after {
+      background: rgba(0, 0, 0, 0.08);
+    }
+  }
+}
+
+.libraryTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+
+  .light & {
+    color: rgba(0, 0, 0, 0.35);
+  }
+}
+
 // Model Grid
 .modelGrid {
   display: grid;
@@ -257,6 +430,7 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
   transition: all 0.15s;
+  cursor: pointer;
 
   &:hover {
     border-color: rgba(139, 92, 246, 0.3);
@@ -274,6 +448,30 @@
       border-color: rgba(79, 70, 229, 0.3);
     }
   }
+}
+
+.modelCardSelected {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  background: rgba(16, 185, 129, 0.06);
+
+  .light & {
+    border-color: rgba(16, 185, 129, 0.4) !important;
+    background: rgba(16, 185, 129, 0.05);
+  }
+}
+
+.checkOverlay {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modelImageWrap {
