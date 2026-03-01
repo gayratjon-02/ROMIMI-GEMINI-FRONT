@@ -278,9 +278,10 @@ interface DAPreviewStateProps {
     isDarkMode: boolean;
     daJSON: DAJSON;
     collectionName?: string;
+    daImageUrl?: string | null;
 }
 
-const DAPreviewState: React.FC<DAPreviewStateProps> = ({ isDarkMode, daJSON, collectionName }) => (
+const DAPreviewState: React.FC<DAPreviewStateProps> = ({ isDarkMode, daJSON, collectionName, daImageUrl }) => (
     <motion.div
         className={styles.analyzedState}
         initial={{ opacity: 0, y: 20 }}
@@ -291,6 +292,17 @@ const DAPreviewState: React.FC<DAPreviewStateProps> = ({ isDarkMode, daJSON, col
             <Layers size={24} className={styles.successIcon} />
             <h2>DA Preset: {collectionName || 'Selected'}</h2>
         </div>
+
+        {daImageUrl && (
+            <div className={styles.daRefImageWrapper}>
+                <img
+                    src={resolveImageUrl(daImageUrl)}
+                    alt={`DA Reference - ${collectionName}`}
+                    className={styles.daRefImage}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+            </div>
+        )}
 
         <div className={styles.jsonContainer}>
             <textarea
@@ -317,6 +329,7 @@ interface AnalyzedStateProps {
     productJSON: ProductJSON;
     fullAnalysisResponse?: any;
     daJSON?: DAJSON | null;
+    daImageUrl?: string | null;
     productId?: string;
     collectionId?: string;
     onAnalysisUpdate?: (updatedResponse: any) => void;
@@ -339,6 +352,7 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
     productJSON,
     fullAnalysisResponse,
     daJSON,
+    daImageUrl,
     productId,
     collectionId,
     onAnalysisUpdate,
@@ -556,6 +570,17 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 <CheckCircle2 size={24} className={styles.successIcon} />
                 <h2>{hasMergedPrompts ? 'Generation Created Successfully' : 'Product Analyzed Successfully'}</h2>
             </div>
+
+            {daImageUrl && (
+                <div className={styles.daRefImageWrapper}>
+                    <img
+                        src={resolveImageUrl(daImageUrl)}
+                        alt="DA Reference"
+                        className={styles.daRefImage}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                </div>
+            )}
 
             {/* Product Images Preview - HIDDEN for cleaner UI
             <div className={styles.previewContainer}>
@@ -976,11 +1001,13 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
 
     // DA Analysis from collection
     const [collectionDA, setCollectionDA] = useState<DAJSON | null>(null);
+    const [collectionImageUrl, setCollectionImageUrl] = useState<string | null>(null);
 
     // Fetch DA when collection changes
     useEffect(() => {
         if (!selectedCollection?.id) {
             setCollectionDA(null);
+            setCollectionImageUrl(null);
             return;
         }
 
@@ -992,9 +1019,11 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                 } else {
                     setCollectionDA(null);
                 }
+                setCollectionImageUrl(collection.da_reference_image_url || null);
             } catch (error) {
                 console.warn('Failed to fetch collection DA:', error);
                 setCollectionDA(null);
+                setCollectionImageUrl(null);
             }
         })();
     }, [selectedCollection?.id]);
@@ -1203,6 +1232,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             productJSON={effectiveProductJSON}
                             fullAnalysisResponse={effectiveFullResponse}
                             daJSON={effectiveDAJSON}
+                            daImageUrl={collectionImageUrl}
                             productId={productId || undefined}
                             collectionId={selectedCollection?.id}
                             onAnalysisUpdate={onAnalysisUpdate}
@@ -1222,6 +1252,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
                             isDarkMode={isDarkMode}
                             daJSON={effectiveDAJSON}
                             collectionName={selectedCollection?.name}
+                            daImageUrl={collectionImageUrl}
                         />
                     ) : (
                         <EmptyState isDarkMode={isDarkMode} />
