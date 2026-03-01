@@ -241,7 +241,6 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
         setLoadingCollections(brand.id);
         try {
           const collections = await getCollectionsByBrand(brand.id);
-          console.log('[DA Debug] Collections loaded:', collections.map(c => ({ id: c.id, name: c.name, da_ref_img: c.da_reference_image_url })));
           setBrandCollections(prev => ({ ...prev, [brand.id]: collections }));
         } catch (error) {
           console.error('Error fetching collections:', error);
@@ -640,9 +639,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                                   alt=""
                                   className={styles.collectionThumb}
                                   onError={(e) => {
-                                    console.warn('[DA] Sidebar image failed:', collection.da_reference_image_url);
-                                    e.currentTarget.src = '';
-                                    e.currentTarget.style.background = 'rgba(255,100,100,0.2)';
+                                    e.currentTarget.style.display = 'none';
                                   }}
                                 />
                               ) : (
