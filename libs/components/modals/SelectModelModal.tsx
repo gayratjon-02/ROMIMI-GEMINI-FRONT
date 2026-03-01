@@ -14,6 +14,8 @@ interface SelectModelModalProps {
 	onSelect: (modelRefId: string | null) => void;
 	currentModelRefId?: string | null;
 	brandId: string;
+	/** Filter models by type. When set, only shows models of this type and locks upload type. */
+	filterType?: 'adult' | 'kid';
 }
 
 const SelectModelModal: React.FC<SelectModelModalProps> = ({
@@ -22,13 +24,14 @@ const SelectModelModal: React.FC<SelectModelModalProps> = ({
 	onSelect,
 	currentModelRefId,
 	brandId,
+	filterType,
 }) => {
 	const [models, setModels] = useState<ModelReference[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
 	const [uploadName, setUploadName] = useState('');
-	const [uploadType, setUploadType] = useState<'adult' | 'kid'>('adult');
+	const [uploadType, setUploadType] = useState<'adult' | 'kid'>(filterType || 'adult');
 	const [showUploadForm, setShowUploadForm] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,10 +40,11 @@ const SelectModelModal: React.FC<SelectModelModalProps> = ({
 		if (!brandId) return;
 		setIsLoading(true);
 		getModelReferences(brandId)
+			.then(all => filterType ? all.filter(m => m.type === filterType) : all)
 			.then(setModels)
 			.catch(console.error)
 			.finally(() => setIsLoading(false));
-	}, [brandId]);
+	}, [brandId, filterType]);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -124,7 +128,7 @@ const SelectModelModal: React.FC<SelectModelModalProps> = ({
 					>
 						{/* Header */}
 						<div className={styles.header}>
-							<h2 className={styles.title}>Select Model Reference</h2>
+							<h2 className={styles.title}>{filterType ? `Select ${filterType === 'adult' ? 'Adult' : 'Kid'} Model` : 'Select Model Reference'}</h2>
 							<button className={styles.closeBtn} onClick={onClose}>
 								<X size={18} />
 							</button>
@@ -146,20 +150,22 @@ const SelectModelModal: React.FC<SelectModelModalProps> = ({
 										value={uploadName}
 										onChange={(e) => setUploadName(e.target.value)}
 									/>
-									<div className={styles.typeToggle}>
-										<button
-											className={`${styles.typeBtn} ${uploadType === 'adult' ? styles.active : ''}`}
-											onClick={() => setUploadType('adult')}
-										>
-											Adult
-										</button>
-										<button
-											className={`${styles.typeBtn} ${uploadType === 'kid' ? styles.active : ''}`}
-											onClick={() => setUploadType('kid')}
-										>
-											Kid
-										</button>
-									</div>
+									{!filterType && (
+										<div className={styles.typeToggle}>
+											<button
+												className={`${styles.typeBtn} ${uploadType === 'adult' ? styles.active : ''}`}
+												onClick={() => setUploadType('adult')}
+											>
+												Adult
+											</button>
+											<button
+												className={`${styles.typeBtn} ${uploadType === 'kid' ? styles.active : ''}`}
+												onClick={() => setUploadType('kid')}
+											>
+												Kid
+											</button>
+										</div>
+									)}
 									<button
 										className={styles.uploadBtn}
 										onClick={() => fileInputRef.current?.click()}

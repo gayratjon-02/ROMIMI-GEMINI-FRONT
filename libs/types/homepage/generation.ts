@@ -70,8 +70,12 @@ export interface MergePromptsData {
     resolution?: string;
     /** Aspect ratio for output: "4:5" | "1:1" | "9:16" | "16:9" */
     aspect_ratio?: string;
-    /** Model reference ID for face/body/hair consistency */
+    /** @deprecated Use adult_model_reference_id / kid_model_reference_id instead */
     model_reference_id?: string;
+    /** Adult model reference ID for DUO + SOLO adult shots */
+    adult_model_reference_id?: string;
+    /** Kid model reference ID for DUO + SOLO kid shots */
+    kid_model_reference_id?: string;
 }
 
 export interface UpdateMergedPromptsData {

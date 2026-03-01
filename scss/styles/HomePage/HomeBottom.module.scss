@@ -487,6 +487,25 @@
     }
 }
 
+.kidModelBtn {
+    &:hover {
+        border-color: rgba(245, 158, 11, 0.4);
+        background: rgba(245, 158, 11, 0.08);
+    }
+}
+
+.activeKid {
+    border-color: rgba(245, 158, 11, 0.5);
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+
+    .light & {
+        border-color: rgba(217, 119, 6, 0.4);
+        background: rgba(217, 119, 6, 0.08);
+        color: #d97706;
+    }
+}
+
 @keyframes gradientShift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }

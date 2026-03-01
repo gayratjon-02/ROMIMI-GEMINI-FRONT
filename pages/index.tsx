@@ -142,9 +142,11 @@ function Home() {
   // Pending DA selected from modal — generation starts only when user clicks Generate
   const [pendingNewDAId, setPendingNewDAId] = useState<string | null>(null);
 
-  // Model Reference selection (from SelectModelModal)
-  const [selectedModelRefId, setSelectedModelRefId] = useState<string | null>(null);
-  const [showModelModal, setShowModelModal] = useState(false);
+  // Model Reference selection — dual (adult + kid)
+  const [selectedAdultModelRefId, setSelectedAdultModelRefId] = useState<string | null>(null);
+  const [selectedKidModelRefId, setSelectedKidModelRefId] = useState<string | null>(null);
+  const [showAdultModelModal, setShowAdultModelModal] = useState(false);
+  const [showKidModelModal, setShowKidModelModal] = useState(false);
 
   // WebSocket Integration - Real-time image updates
   const { isConnected: socketConnected } = useGenerationSocket(generationResponse?.id || null, {
@@ -594,7 +596,8 @@ function Home() {
         shot_options: options,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
-        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
+        ...(selectedAdultModelRefId && { adult_model_reference_id: selectedAdultModelRefId }),
+        ...(selectedKidModelRefId && { kid_model_reference_id: selectedKidModelRefId }),
       });
 
       // Fetch updated generation with merged prompts
@@ -658,7 +661,8 @@ function Home() {
         shot_options: shotOptions,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
-        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
+        ...(selectedAdultModelRefId && { adult_model_reference_id: selectedAdultModelRefId }),
+        ...(selectedKidModelRefId && { kid_model_reference_id: selectedKidModelRefId }),
       });
       console.log('✅ Re-merged with shot_options, resolution, aspect_ratio before generation');
 
@@ -804,7 +808,8 @@ function Home() {
         shot_options: shotOptions,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
-        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
+        ...(selectedAdultModelRefId && { adult_model_reference_id: selectedAdultModelRefId }),
+        ...(selectedKidModelRefId && { kid_model_reference_id: selectedKidModelRefId }),
       });
 
       console.log('✅ Merge complete');
@@ -892,7 +897,8 @@ function Home() {
         shot_options: shotOpts,
         resolution: (librarySelectedGeneration as any).resolution || '4K',
         aspect_ratio: (librarySelectedGeneration as any).aspect_ratio || '4:5',
-        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
+        ...(selectedAdultModelRefId && { adult_model_reference_id: selectedAdultModelRefId }),
+        ...(selectedKidModelRefId && { kid_model_reference_id: selectedKidModelRefId }),
       });
 
       console.log('✅ Merge complete');
@@ -961,7 +967,8 @@ function Home() {
         shot_options: shotOptions,
         resolution: resolution === '4k' ? '4K' : '2K',
         aspect_ratio: aspectRatio,
-        ...(selectedModelRefId && { model_reference_id: selectedModelRefId }),
+        ...(selectedAdultModelRefId && { adult_model_reference_id: selectedAdultModelRefId }),
+        ...(selectedKidModelRefId && { kid_model_reference_id: selectedKidModelRefId }),
       });
 
       console.log('✅ Merge complete');
@@ -1228,8 +1235,10 @@ function Home() {
             onGenerateWithNew={handleGenerateWithNew}
             hasPendingGeneration={!!pendingNewDAId}
             onExecutePendingGeneration={handleExecutePendingGeneration}
-            onSelectModel={() => setShowModelModal(true)}
-            hasSelectedModel={!!selectedModelRefId}
+            onSelectAdultModel={() => setShowAdultModelModal(true)}
+            hasSelectedAdultModel={!!selectedAdultModelRefId}
+            onSelectKidModel={() => setShowKidModelModal(true)}
+            hasSelectedKidModel={!!selectedKidModelRefId}
           />
         </div>
 
@@ -1255,17 +1264,33 @@ function Home() {
         brandName={selectedBrand?.name}
       />
 
-      {/* Model Reference Picker Modal */}
+      {/* Adult Model Reference Picker Modal */}
       {selectedBrand && (
         <SelectModelModal
-          isOpen={showModelModal}
-          onClose={() => setShowModelModal(false)}
+          isOpen={showAdultModelModal}
+          onClose={() => setShowAdultModelModal(false)}
           onSelect={(modelRefId) => {
-            setSelectedModelRefId(modelRefId);
-            setShowModelModal(false);
+            setSelectedAdultModelRefId(modelRefId);
+            setShowAdultModelModal(false);
           }}
-          currentModelRefId={selectedModelRefId}
+          currentModelRefId={selectedAdultModelRefId}
           brandId={selectedBrand.id}
+          filterType="adult"
+        />
+      )}
+
+      {/* Kid Model Reference Picker Modal */}
+      {selectedBrand && (
+        <SelectModelModal
+          isOpen={showKidModelModal}
+          onClose={() => setShowKidModelModal(false)}
+          onSelect={(modelRefId) => {
+            setSelectedKidModelRefId(modelRefId);
+            setShowKidModelModal(false);
+          }}
+          currentModelRefId={selectedKidModelRefId}
+          brandId={selectedBrand.id}
+          filterType="kid"
         />
       )}
 
