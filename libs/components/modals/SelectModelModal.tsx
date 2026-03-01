@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, User, Loader2, Plus, Trash2 } from 'lucide-react';
 import { getModelReferences, uploadModelReference, deleteModelReference } from '@/libs/server/HomePage/model-reference';
 import { ModelReference } from '@/libs/types/homepage/model-reference';
+import { compressImage } from '@/libs/utils/compressImage';
 import styles from '@/scss/styles/Modals/SelectModelModal.module.scss';
 
 interface SelectModelModalProps {
@@ -59,6 +60,11 @@ const SelectModelModal: React.FC<SelectModelModalProps> = ({
 	};
 
 	const handleUpload = async (file: File) => {
+		if (!file.type.startsWith('image/')) {
+			setError('Only image files are allowed');
+			return;
+		}
+
 		if (!uploadName.trim()) {
 			setError('Please enter a name for the model');
 			return;
@@ -68,7 +74,8 @@ const SelectModelModal: React.FC<SelectModelModalProps> = ({
 		setError(null);
 
 		try {
-			const newModel = await uploadModelReference(brandId, uploadName.trim(), uploadType, file);
+			const uploadFile = await compressImage(file);
+			const newModel = await uploadModelReference(brandId, uploadName.trim(), uploadType, uploadFile);
 			setModels(prev => [newModel, ...prev]);
 			setSelectedId(newModel.id);
 			setShowUploadForm(false);

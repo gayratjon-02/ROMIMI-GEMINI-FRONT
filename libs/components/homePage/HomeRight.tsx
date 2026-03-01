@@ -10,6 +10,7 @@ import {
 	uploadModelReference,
 	deleteModelReference,
 } from '@/libs/server/HomePage/model-reference';
+import { compressImage } from '@/libs/utils/compressImage';
 
 interface HomeRightProps {
 	isDarkMode: boolean;
@@ -58,11 +59,6 @@ const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBran
 			return;
 		}
 
-		if (file.size > 10 * 1024 * 1024) {
-			setUpload({ isUploading: false, success: null, error: 'File must be under 10MB' });
-			return;
-		}
-
 		if (!uploadName.trim()) {
 			setUpload({ isUploading: false, success: null, error: 'Please enter a model name' });
 			return;
@@ -71,7 +67,8 @@ const HomeRight: React.FC<HomeRightProps> = ({ isDarkMode, selectedBrand, onBran
 		setUpload({ isUploading: true, success: null, error: null });
 
 		try {
-			const newModel = await uploadModelReference(selectedBrand.id, uploadName.trim(), uploadType, file);
+			const uploadFile = await compressImage(file);
+			const newModel = await uploadModelReference(selectedBrand.id, uploadName.trim(), uploadType, uploadFile);
 			setModels(prev => [newModel, ...prev]);
 			setUpload({ isUploading: false, success: 'Uploaded successfully', error: null });
 			setShowUploadForm(false);
