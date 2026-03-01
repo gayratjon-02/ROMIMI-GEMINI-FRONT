@@ -4,7 +4,7 @@
   position: relative;
   height: 100vh;
   width: 280px;
-  background: #1a1a1a;
+  background: #0a0a0f;
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -12,7 +12,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   transition: all 0.3s ease;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -49,7 +49,7 @@
 // Header
 .header {
   padding: 24px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
   .light & {
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
