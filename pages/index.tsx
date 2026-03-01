@@ -83,6 +83,9 @@ function Home() {
   // Mobile drawer state
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
+  // Model References panel toggle
+  const [isModelPanelOpen, setIsModelPanelOpen] = useState(false);
+
   // ==================== SHARED PRODUCT STATE (from context) ====================
   const {
     frontImage, backImage, referenceImages,
@@ -1145,6 +1148,8 @@ function Home() {
             selectedBrand={selectedBrand}
             selectedCollection={selectedCollection}
             onCollectionSelect={handleCollectionSelect}
+            isModelPanelOpen={isModelPanelOpen}
+            onToggleModelPanel={() => setIsModelPanelOpen(!isModelPanelOpen)}
           />
 
           {/* Main Visuals Area */}
@@ -1229,14 +1234,16 @@ function Home() {
           />
         </div>
 
-        {/* Right Sidebar — Model Reference Library */}
-        <div className="home-right-container">
-          <HomeRight
-            isDarkMode={isDarkMode}
-            selectedBrand={selectedBrand}
-            onBrandUpdated={handleBrandUpdated}
-          />
-        </div>
+        {/* Right Sidebar — Model Reference Library (toggled via hamburger) */}
+        {isModelPanelOpen && (
+          <div className="home-right-container">
+            <HomeRight
+              isDarkMode={isDarkMode}
+              selectedBrand={selectedBrand}
+              onBrandUpdated={handleBrandUpdated}
+            />
+          </div>
+        )}
       </div>
 
       {/* DA Picker Modal */}
@@ -1276,10 +1283,6 @@ function Home() {
 
                     .home-left-container {
                         display: contents;
-                    }
-
-                    .home-right-container {
-                        display: none;
                     }
                 }
             `}</style>

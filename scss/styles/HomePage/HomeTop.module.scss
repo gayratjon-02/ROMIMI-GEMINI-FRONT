@@ -385,6 +385,18 @@
       }
     }
   }
+
+  &.active {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+
+    .light & {
+      background: rgba(79, 70, 229, 0.12);
+      color: #4f46e5;
+      border-color: rgba(79, 70, 229, 0.2);
+    }
+  }
 }
 
 // Responsive Design

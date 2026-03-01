@@ -19,6 +19,7 @@ import CreateBrandModal from '@/libs/components/modals/CreateBrandModal';
 import ProductUploadSection from './ProductUploadSection';
 import ProductDropdown from './ProductDropdown';
 import JSONPreviewPanel, { ProductJSON, DAJSON } from './JSONPreviewPanel';
+import { resolveImageUrl } from '@/libs/utils/resolveImageUrl';
 
 interface HomeLeftProps {
   isDarkMode?: boolean;
@@ -759,7 +760,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                     const getThumb = (gen: Generation): string | null => {
                       const visuals = gen.visuals || gen.visual_outputs || [];
                       const completed = visuals.find(v => v.status === 'completed' && v.image_url);
-                      return completed?.image_url || null;
+                      return resolveImageUrl(completed?.image_url) || null;
                     };
 
                     return Object.entries(groups).map(([pid, group]) => {

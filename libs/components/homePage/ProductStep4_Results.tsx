@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, RefreshCw, Check, X, Loader2, Home, Eye } from 'lucide-react';
 import styles from '@/scss/styles/HomePage/ProductStep4Results.module.scss';
+import { resolveImageUrl } from '@/libs/utils/resolveImageUrl';
 
 interface VisualOutput {
     type: string;
@@ -110,7 +111,7 @@ const ProductStep4_Results: React.FC<ProductStep4Props> = ({
                             {visual.status === 'completed' && visual.image_url ? (
                                 <>
                                     <img
-                                        src={visual.image_url}
+                                        src={resolveImageUrl(visual.image_url)}
                                         alt={visualTypeLabels[visual.type] || visual.type}
                                         className={styles.resultImage}
                                     />
@@ -124,7 +125,7 @@ const ProductStep4_Results: React.FC<ProductStep4Props> = ({
                                         </button>
                                         <button
                                             className={styles.downloadButton}
-                                            onClick={() => visual.image_url && downloadSingleImage(visual.image_url, `romimi-${visual.type}.png`)}
+                                            onClick={() => visual.image_url && downloadSingleImage(resolveImageUrl(visual.image_url)!, `romimi-${visual.type}.png`)}
                                         >
                                             <Download size={18} />
                                         </button>
@@ -215,14 +216,14 @@ const ProductStep4_Results: React.FC<ProductStep4Props> = ({
                             </button>
                             {fullscreenImage.image_url && (
                                 <img
-                                    src={fullscreenImage.image_url}
+                                    src={resolveImageUrl(fullscreenImage.image_url)}
                                     alt={visualTypeLabels[fullscreenImage.type] || fullscreenImage.type}
                                     className={styles.modalImage}
                                 />
                             )}
                             <button
                                 className={styles.modalDownloadBtn}
-                                onClick={() => fullscreenImage.image_url && downloadSingleImage(fullscreenImage.image_url, `romimi-${fullscreenImage.type}.png`)}
+                                onClick={() => fullscreenImage.image_url && downloadSingleImage(resolveImageUrl(fullscreenImage.image_url)!, `romimi-${fullscreenImage.type}.png`)}
                             >
                                 <Download size={16} />
                                 Download Image

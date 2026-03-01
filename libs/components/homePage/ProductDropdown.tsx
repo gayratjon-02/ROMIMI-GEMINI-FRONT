@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from '@/scss/styles/HomePage/ProductDropdown.module.scss';
 import { Product } from '@/libs/types/homepage/product';
+import { resolveImageUrl } from '@/libs/utils/resolveImageUrl';
 
 interface ProductDropdownProps {
   products: Product[];
@@ -175,7 +176,7 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
                   >
                     {product.front_image_url ? (
                       <img
-                        src={product.front_image_url}
+                        src={resolveImageUrl(product.front_image_url)}
                         alt=""
                         className={styles.productThumb}
                       />

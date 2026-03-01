@@ -34,6 +34,7 @@ import {
 } from '@/libs/server/HomePage/merging';
 import { updateDAJSON, getCollection, getCollectionsByBrand } from '@/libs/server/HomePage/collection';
 import { Collection } from '@/libs/types/homepage/collection';
+import { resolveImageUrl } from '@/libs/utils/resolveImageUrl';
 
 interface HomeMiddleProps {
     isDarkMode?: boolean;
@@ -767,23 +768,7 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
         }
     };
 
-    // Helper to normalize image URLs using the configured base URL
-    const getSecureImageUrl = (url: string | undefined): string | undefined => {
-        if (!url) return undefined;
-
-        // Data URLs need no processing
-        if (url.startsWith('data:')) return url;
-
-        // Use configured IMAGE_BASE_URL to rewrite backend URLs if needed
-        const imageBase = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
-        if (imageBase && url.startsWith('http://167.172.90.235:4001')) {
-            return url.replace('http://167.172.90.235:4001', imageBase);
-        }
-
-        return url;
-    };
-
-    const secureImageUrl = getSecureImageUrl(visual.image_url);
+    const secureImageUrl = resolveImageUrl(visual.image_url);
 
     // Handle single image download
     const handleDownload = () => {
