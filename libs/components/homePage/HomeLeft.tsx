@@ -635,21 +635,16 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                           >
                             <span className={styles.collectionIcon}>
                               {collection.da_reference_image_url ? (
-                                <>
-                                  <img
-                                    src={resolveImageUrl(collection.da_reference_image_url)}
-                                    alt=""
-                                    className={styles.collectionThumb}
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                      if (fallback) fallback.style.display = 'block';
-                                    }}
-                                  />
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'none' }}>
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                  </svg>
-                                </>
+                                <img
+                                  src={resolveImageUrl(collection.da_reference_image_url)}
+                                  alt=""
+                                  className={styles.collectionThumb}
+                                  onError={(e) => {
+                                    console.warn('[DA] Sidebar image failed:', collection.da_reference_image_url);
+                                    e.currentTarget.src = '';
+                                    e.currentTarget.style.background = 'rgba(255,100,100,0.2)';
+                                  }}
+                                />
                               ) : (
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />

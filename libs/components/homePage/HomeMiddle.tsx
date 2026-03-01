@@ -299,7 +299,14 @@ const DAPreviewState: React.FC<DAPreviewStateProps> = ({ isDarkMode, daJSON, col
                     src={resolveImageUrl(daImageUrl)}
                     alt={`DA Reference - ${collectionName}`}
                     className={styles.daRefImage}
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    onError={(e) => {
+                        console.warn('[DA] Middle image failed to load:', daImageUrl, '→', resolveImageUrl(daImageUrl));
+                        e.currentTarget.style.display = 'none';
+                        const wrapper = e.currentTarget.parentElement;
+                        if (wrapper) {
+                            wrapper.innerHTML = '<div style="padding:12px;background:rgba(255,100,100,0.1);border-radius:8px;text-align:center;font-size:12px;color:#ff6b6b;">Image unavailable — re-analyze DA to fix</div>';
+                        }
+                    }}
                 />
             </div>
         )}
@@ -577,7 +584,10 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                         src={resolveImageUrl(daImageUrl)}
                         alt="DA Reference"
                         className={styles.daRefImage}
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        onError={(e) => {
+                            console.warn('[DA] AnalyzedState image failed:', daImageUrl);
+                            e.currentTarget.style.display = 'none';
+                        }}
                     />
                 </div>
             )}
