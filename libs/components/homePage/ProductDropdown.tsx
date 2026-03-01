@@ -282,16 +282,25 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
                           src={resolveImageUrl(product.front_image_url)}
                           alt=""
                           className={styles.productThumb}
+                          onError={(e) => {
+                            // Hide broken image and show placeholder instead
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const placeholder = target.nextElementSibling as HTMLElement;
+                            if (placeholder) placeholder.style.display = 'flex';
+                          }}
                         />
-                      ) : (
-                        <span className={styles.productThumbPlaceholder}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <polyline points="21 15 16 10 5 21" />
-                          </svg>
-                        </span>
-                      )}
+                      ) : null}
+                      <span
+                        className={styles.productThumbPlaceholder}
+                        style={{ display: product.front_image_url ? 'none' : 'flex' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                      </span>
                       <span className={styles.productName} title={product.name}>
                         {product.name}
                       </span>
