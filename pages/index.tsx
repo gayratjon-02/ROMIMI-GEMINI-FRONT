@@ -614,8 +614,7 @@ function Home() {
     } catch (error: any) {
       console.error('Merge failed:', error);
       alert(error.message || 'Failed to merge prompts');
-    } finally {
-      setIsGenerating(false);
+      window.location.reload();
     }
   }, [productId, selectedCollection, daJSON, fullAnalysisResponse, mockDAAnalysis, resolution, aspectRatio]);
 
@@ -678,7 +677,7 @@ function Home() {
       console.error('Generation execution failed:', error);
       const errorMsg = error?.errors?.join(', ') || error?.message || 'Failed to execute generation';
       alert(`Execution failed: ${errorMsg}`);
-      setIsGenerating(false);
+      window.location.reload();
     }
   }, [generationId, generationResponse, shotOptions, resolution, aspectRatio]);
 
@@ -832,11 +831,8 @@ function Home() {
 
     } catch (error: any) {
       console.error('❌ Regeneration failed:', error);
-      setIsMerging(false);
-      setIsNewDAFlow(false);
-      setIsGeneratingImages(false);
-      setIsGenerating(false);
       alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
+      window.location.reload();
     }
   }, [productId, selectedCollection, shotOptions, resolution, aspectRatio]);
 
@@ -923,11 +919,8 @@ function Home() {
 
     } catch (error: any) {
       console.error('❌ Library regeneration failed:', error);
-      setIsMerging(false);
-      setIsNewDAFlow(false);
-      setIsGeneratingImages(false);
-      setIsGenerating(false);
       alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
+      window.location.reload();
     }
   }, [librarySelectedGeneration, selectedCollection, shotOptions, extractShotOptionsFromMergedPrompts]);
 
@@ -995,11 +988,8 @@ function Home() {
 
     } catch (error: any) {
       console.error('❌ Regeneration from modal failed:', error);
-      setIsMerging(false);
-      setIsNewDAFlow(false);
-      setIsGeneratingImages(false);
-      setIsGenerating(false);
       alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
+      window.location.reload();
     }
   }, [productId, shotOptions, resolution, aspectRatio]);
 
