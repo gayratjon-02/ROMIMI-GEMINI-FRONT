@@ -638,7 +638,7 @@ function Home() {
       alert(error.message || 'Failed to merge prompts');
       window.location.reload();
     }
-  }, [productId, selectedCollection, daJSON, fullAnalysisResponse, mockDAAnalysis, resolution, aspectRatio]);
+  }, [productId, selectedCollection, daJSON, fullAnalysisResponse, mockDAAnalysis, resolution, aspectRatio, selectedAdultModelRefId, selectedKidModelRefId]);
 
   // Step 2: Confirm button → Execute generation and start image creation
   const handleGenerateImages = useCallback(async () => {
@@ -706,7 +706,7 @@ function Home() {
       alert(`Execution failed: ${errorMsg}`);
       window.location.reload();
     }
-  }, [generationId, generationResponse, shotOptions, resolution, aspectRatio]);
+  }, [generationId, generationResponse, shotOptions, resolution, aspectRatio, selectedAdultModelRefId, selectedKidModelRefId]);
 
   // Handle prompts change
   const handlePromptsChange = useCallback((key: string, value: string) => {
@@ -862,7 +862,7 @@ function Home() {
       alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
       window.location.reload();
     }
-  }, [productId, selectedCollection, shotOptions, resolution, aspectRatio]);
+  }, [productId, selectedCollection, shotOptions, resolution, aspectRatio, selectedAdultModelRefId, selectedKidModelRefId]);
 
   /**
    * Generate Library generation with new DA: merge first (loading), then generate (cards)
@@ -951,7 +951,7 @@ function Home() {
       alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
       window.location.reload();
     }
-  }, [librarySelectedGeneration, selectedCollection, shotOptions, extractShotOptionsFromMergedPrompts]);
+  }, [librarySelectedGeneration, selectedCollection, shotOptions, extractShotOptionsFromMergedPrompts, selectedAdultModelRefId, selectedKidModelRefId]);
 
   /**
    * 🆕 Generate with new DA from modal picker (collection selected inside HomeMiddle)
@@ -1021,7 +1021,7 @@ function Home() {
       alert(`Failed to regenerate: ${error.message || 'Unknown error'}`);
       window.location.reload();
     }
-  }, [productId, shotOptions, resolution, aspectRatio]);
+  }, [productId, shotOptions, resolution, aspectRatio, selectedAdultModelRefId, selectedKidModelRefId]);
 
   // Handle DA selection from modal: store pending DA, generation starts only on Generate click
   const handleDAModalSelect = useCallback((collectionId: string) => {
