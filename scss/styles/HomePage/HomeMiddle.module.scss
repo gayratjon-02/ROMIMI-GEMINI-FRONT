@@ -318,6 +318,48 @@
     }
 }
 
+.refImagesRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.refImageCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.refImageThumb {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    .light & {
+        border-color: rgba(0, 0, 0, 0.1);
+    }
+}
+
+.refImageLabel {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+
+    .dark & {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .light & {
+        color: rgba(0, 0, 0, 0.5);
+    }
+}
+
 .jsonTabs {
     display: flex;
     gap: 8px;

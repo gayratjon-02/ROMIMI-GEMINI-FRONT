@@ -573,52 +573,43 @@ const AnalyzedState: React.FC<AnalyzedStateProps> = ({
                 <h2>{hasMergedPrompts ? 'Generation Created Successfully' : 'Product Analyzed Successfully'}</h2>
             </div>
 
-            {daImageUrl && (
-                <div className={styles.daRefImageWrapper}>
-                    <img
-                        src={resolveImageUrl(daImageUrl)}
-                        alt="DA Reference"
-                        className={styles.daRefImage}
-                        onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                        }}
-                    />
+            {(daImageUrl || fullAnalysisResponse?.front_image_url || fullAnalysisResponse?.back_image_url) && (
+                <div className={styles.refImagesRow}>
+                    {daImageUrl && (
+                        <div className={styles.refImageCard}>
+                            <img
+                                src={resolveImageUrl(daImageUrl)}
+                                alt="DA Reference"
+                                className={styles.refImageThumb}
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                            <span className={styles.refImageLabel}>DA</span>
+                        </div>
+                    )}
+                    {(fullAnalysisResponse?.front_image_url || fullAnalysisResponse?.imageUrl) && (
+                        <div className={styles.refImageCard}>
+                            <img
+                                src={resolveImageUrl(fullAnalysisResponse.front_image_url || fullAnalysisResponse.imageUrl)}
+                                alt="Front"
+                                className={styles.refImageThumb}
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                            <span className={styles.refImageLabel}>Front</span>
+                        </div>
+                    )}
+                    {fullAnalysisResponse?.back_image_url && (
+                        <div className={styles.refImageCard}>
+                            <img
+                                src={resolveImageUrl(fullAnalysisResponse.back_image_url)}
+                                alt="Back"
+                                className={styles.refImageThumb}
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                            <span className={styles.refImageLabel}>Back</span>
+                        </div>
+                    )}
                 </div>
             )}
-
-            {/* Product Images Preview - HIDDEN for cleaner UI
-            <div className={styles.previewContainer}>
-                {(fullAnalysisResponse?.front_image_url || fullAnalysisResponse?.imageUrl) && (
-                    <div className={styles.imageCard}>
-                        <div className={styles.imageLabel}>Front</div>
-                        <img
-                            src={fullAnalysisResponse.front_image_url || fullAnalysisResponse.imageUrl}
-                            alt="Front View"
-                        />
-                    </div>
-                )}
-
-                {fullAnalysisResponse?.back_image_url && (
-                    <div className={styles.imageCard}>
-                        <div className={styles.imageLabel}>Back</div>
-                        <img
-                            src={fullAnalysisResponse.back_image_url}
-                            alt="Back View"
-                        />
-                    </div>
-                )}
-
-                {fullAnalysisResponse?.reference_images?.map((url: string, idx: number) => (
-                    <div className={styles.imageCard} key={`ref-${idx}`}>
-                        <div className={styles.imageLabel}>Ref {idx + 1}</div>
-                        <img
-                            src={url}
-                            alt={`Reference ${idx + 1}`}
-                        />
-                    </div>
-                ))}
-            </div>
-            */}
 
             {/* Error/Success Messages */}
             {saveError && (
