@@ -631,9 +631,13 @@ function Home() {
     setIsGenerating(true);
     setProgress(0);
 
-    // Create placeholder cards immediately based on merged_prompts
+    // Create placeholder cards only for enabled shots
     const mergedPromptsData = generationResponse?.merged_prompts || {};
-    const shotTypes = Object.keys(mergedPromptsData).filter(k => !k.startsWith('_'));
+    const shotTypes = Object.keys(mergedPromptsData).filter(k => {
+      if (k.startsWith('_')) return false;
+      const opt = (shotOptions as any)[k];
+      return !opt || opt.enabled !== false;
+    });
 
     if (shotTypes.length > 0) {
       const placeholderVisuals = shotTypes.map(type => ({
