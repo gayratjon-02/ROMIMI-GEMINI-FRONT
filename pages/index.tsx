@@ -611,6 +611,9 @@ function Home() {
 
       console.log('✅ Generation ready for review:', updatedGeneration.id);
 
+      // Merge complete — stop loading so "Generate" button appears
+      setIsGenerating(false);
+
     } catch (error: any) {
       console.error('Merge failed:', error);
       alert(error.message || 'Failed to merge prompts');
