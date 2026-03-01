@@ -1014,6 +1014,7 @@ const HomeMiddle: React.FC<HomeMiddleProps> = ({
         (async () => {
             try {
                 const collection = await getCollection(selectedCollection.id);
+                console.log('[DA Debug] Collection fetched:', collection.id, 'da_reference_image_url:', collection.da_reference_image_url);
                 if (collection.analyzed_da_json) {
                     setCollectionDA(collection.analyzed_da_json as unknown as DAJSON);
                 } else {

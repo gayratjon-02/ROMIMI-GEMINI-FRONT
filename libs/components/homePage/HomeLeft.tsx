@@ -241,6 +241,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
         setLoadingCollections(brand.id);
         try {
           const collections = await getCollectionsByBrand(brand.id);
+          console.log('[DA Debug] Collections loaded:', collections.map(c => ({ id: c.id, name: c.name, da_ref_img: c.da_reference_image_url })));
           setBrandCollections(prev => ({ ...prev, [brand.id]: collections }));
         } catch (error) {
           console.error('Error fetching collections:', error);
