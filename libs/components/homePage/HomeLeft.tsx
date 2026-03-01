@@ -7,7 +7,7 @@ import { getUserInfo, logout, UserInfo } from '@/libs/server/HomePage/signup';
 import { getAllBrands, updateBrand, deleteBrand } from '@/libs/server/HomePage/brand';
 import { getCollectionsByBrand, updateCollection, deleteCollection } from '@/libs/server/HomePage/collection';
 import { getAllGenerations, deleteGeneration } from '@/libs/server/HomePage/merging';
-import { getAllProducts, deleteProduct } from '@/libs/server/HomePage/product';
+import { getAllProducts, deleteProduct, deleteProductsByCategory } from '@/libs/server/HomePage/product';
 import { deleteDAPreset } from '@/libs/server/HomePage/da';
 import { Brand, UpdateBrandData } from '@/libs/types/homepage/brand';
 import { Collection, UpdateCollectionData } from '@/libs/types/homepage/collection';
@@ -417,6 +417,22 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
     }
   };
 
+  // Delete all products in a category
+  const handleCatalogCategoryDelete = async (category: string, productIds: string[]) => {
+    await deleteProductsByCategory(category);
+    // Remove deleted products from catalog list
+    setCatalogProducts(prev => prev.filter(p => !productIds.includes(p.id)));
+    // Remove from library generations
+    setLibraryGenerations(prev => prev.filter(g => {
+      const pid = g.product?.id || g.product_id;
+      return !productIds.includes(pid);
+    }));
+    // Clear selection if deleted product was selected
+    if (activeProductId && productIds.includes(activeProductId)) {
+      setActiveProductId(null);
+    }
+  };
+
   // Delete single generation from library
   // If the folder becomes empty after deletion, auto-delete the product too
   const handleDeleteGenerationConfirm = async () => {
@@ -724,6 +740,7 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                   onProductSelect(product);
                 }}
                 onProductDelete={handleCatalogProductDelete}
+                onCategoryDelete={handleCatalogCategoryDelete}
                 isDarkMode={isDarkMode}
                 placeholder="Select Product"
               />

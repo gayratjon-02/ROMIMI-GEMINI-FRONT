@@ -12,6 +12,7 @@ interface ProductDropdownProps {
   selectedCollectionId: string | null;
   onProductSelect: (product: Product) => void;
   onProductDelete?: (productId: string) => Promise<void>;
+  onCategoryDelete?: (category: string, productIds: string[]) => Promise<void>;
   isDarkMode?: boolean;
   placeholder?: string;
 }
@@ -23,6 +24,7 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
   selectedCollectionId,
   onProductSelect,
   onProductDelete,
+  onCategoryDelete,
   isDarkMode = true,
   placeholder = 'Select Product',
 }) => {
@@ -30,6 +32,8 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<{ category: string; count: number; productIds: string[] } | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   // Filter by collection when one is selected
   const filteredProducts = useMemo(() => {
@@ -108,6 +112,29 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
     }
   };
 
+  const handleCategoryDeleteClick = (category: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const productsInCategory = productsByCategory[category] || [];
+    setDeleteCategoryConfirm({
+      category,
+      count: productsInCategory.length,
+      productIds: productsInCategory.map(p => p.id),
+    });
+  };
+
+  const handleCategoryDeleteConfirm = async () => {
+    if (!deleteCategoryConfirm || !onCategoryDelete) return;
+    setIsDeletingCategory(true);
+    try {
+      await onCategoryDelete(deleteCategoryConfirm.category, deleteCategoryConfirm.productIds);
+      setDeleteCategoryConfirm(null);
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+    } finally {
+      setIsDeletingCategory(false);
+    }
+  };
+
   return (
     <div className={`${styles.productDropdown} ${!isDarkMode ? styles.light : ''}`}>
       <button
@@ -155,6 +182,26 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
         </div>
       )}
 
+      {/* Category Delete Confirmation Modal */}
+      {deleteCategoryConfirm && (
+        <div className={styles.confirmOverlay} onClick={(e) => { e.stopPropagation(); setDeleteCategoryConfirm(null); }}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <h4 className={styles.confirmTitle}>Delete Category</h4>
+            <p className={styles.confirmText}>
+              Delete <strong>{deleteCategoryConfirm.category}</strong> and all <strong>{deleteCategoryConfirm.count}</strong> products inside it?
+            </p>
+            <div className={styles.confirmActions}>
+              <button className={styles.cancelBtn} onClick={() => setDeleteCategoryConfirm(null)} disabled={isDeletingCategory}>
+                Cancel
+              </button>
+              <button className={styles.confirmDeleteBtn} onClick={handleCategoryDeleteConfirm} disabled={isDeletingCategory}>
+                {isDeletingCategory ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isOpen && (
         <div className={styles.dropdown} onClick={(e) => e.stopPropagation()}>
           {isLoading ? (
@@ -172,25 +219,39 @@ const ProductDropdown: React.FC<ProductDropdownProps> = ({
               {categories.map((category) => {
                 const count = productsByCategory[category].length;
                 return (
-                  <button
-                    key={category}
-                    type="button"
-                    className={styles.categoryItem}
-                    onClick={(e) => handleCategoryClick(category, e)}
-                  >
-                    <span className={styles.categoryIcon}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                      </svg>
-                    </span>
-                    <span className={styles.categoryName}>{category}</span>
-                    <span className={styles.categoryCount}>{count}</span>
-                    <span className={styles.categoryArrow}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </span>
-                  </button>
+                  <div key={category} className={styles.categoryRow}>
+                    <button
+                      type="button"
+                      className={styles.categoryItem}
+                      onClick={(e) => handleCategoryClick(category, e)}
+                    >
+                      <span className={styles.categoryIcon}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </span>
+                      <span className={styles.categoryName}>{category}</span>
+                      <span className={styles.categoryCount}>{count}</span>
+                      <span className={styles.categoryArrow}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </span>
+                    </button>
+                    {onCategoryDelete && (
+                      <button
+                        type="button"
+                        className={styles.categoryDeleteBtn}
+                        onClick={(e) => handleCategoryDeleteClick(category, e)}
+                        title={`Delete ${category} and all products`}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

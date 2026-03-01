@@ -252,6 +252,46 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; mes
 }
 
 /**
+ * Delete all products in a category
+ * DELETE /api/products/by-category/:category
+ */
+export async function deleteProductsByCategory(
+    category: string
+): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    try {
+        const response = await fetch(
+            `${API_BASE}/products/by-category/${encodeURIComponent(category)}`,
+            {
+                method: "DELETE",
+                headers: getAuthHeaders(),
+            }
+        );
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            const errorMessages = Array.isArray(responseData.message)
+                ? responseData.message
+                : [responseData.message || "Failed to delete category"];
+
+            throw new AuthApiError(response.status, errorMessages, responseData);
+        }
+
+        return responseData as { success: boolean; message: string; deletedCount: number };
+    } catch (error) {
+        if (error instanceof AuthApiError) {
+            throw error;
+        }
+
+        throw new AuthApiError(500, [Messages.CONNECTION_ERROR], {
+            statusCode: 500,
+            message: Messages.NETWORK_ERROR,
+            error: Messages.INTERNAL_SERVER_ERROR,
+        });
+    }
+}
+
+/**
  * Analyze images (standalone analysis without product)
  */
 export async function analyzeImages(

@@ -155,6 +155,52 @@
   }
 }
 
+// ─── Category Row (item + delete) ───
+.categoryRow {
+  display: flex;
+  align-items: center;
+
+  &:hover .categoryDeleteBtn {
+    opacity: 1;
+  }
+}
+
+// ─── Category Delete Button ───
+.categoryDeleteBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+  margin-right: 8px;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  svg {
+    display: block;
+  }
+
+  .light & {
+    color: rgba(0, 0, 0, 0.25);
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+    }
+  }
+}
+
 // ─── Category Item (Level 1) ───
 .categoryItem {
   width: 100%;
