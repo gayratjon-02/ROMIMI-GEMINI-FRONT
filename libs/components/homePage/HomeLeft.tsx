@@ -964,14 +964,27 @@ const HomeLeft: React.FC<HomeLeftProps> = ({
                                         justifyContent: 'center',
                                       }}>
                                         {thumb ? (
-                                          <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'} strokeWidth="2">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                                            <circle cx="8.5" cy="8.5" r="1.5" />
-                                            <polyline points="21 15 16 10 5 21" />
-                                          </svg>
-                                        )}
+                                          <img
+                                            src={thumb}
+                                            alt=""
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                              if (fallback) fallback.style.display = 'block';
+                                            }}
+                                          />
+                                        ) : null}
+                                        <svg
+                                          width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                          stroke={isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)'}
+                                          strokeWidth="2"
+                                          style={{ display: thumb ? 'none' : 'block' }}
+                                        >
+                                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                                          <circle cx="8.5" cy="8.5" r="1.5" />
+                                          <polyline points="21 15 16 10 5 21" />
+                                        </svg>
                                       </div>
 
                                       {/* Info */}

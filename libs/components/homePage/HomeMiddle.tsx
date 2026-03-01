@@ -802,6 +802,9 @@ const VisualCard: React.FC<VisualCardProps> = ({ visual, index, isDarkMode, onRe
                                 alt={visual.type}
                                 className={styles.visualImage}
                                 onClick={() => setIsZoomed(true)}
+                                onError={(e) => {
+                                    e.currentTarget.style.opacity = '0.3';
+                                }}
                             />
                             {/* Actions Overlay */}
                             <AnimatePresence>
